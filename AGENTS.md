@@ -127,13 +127,12 @@ nexus/
 │       ├── config.py            # Pydantic config models + YAML loading
 │       │
 │       ├── agents/
-│       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM
-│       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences
-│       │   ├── scheduler.py     # SchedulerAgent — cron tasks, briefings
+│       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM, skill execution
+│       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences, skills backup
+│       │   ├── scheduler.py     # SchedulerAgent — cron tasks, triggers skills
 │       │   ├── intent.py        # IntentClassifier protocol + implementations
 │       │   ├── dashboard.py     # DashboardServer(GenServer) — live topology + health state
-│       │   ├── llm_router.py    # ModelRouter(AgentProcess) — task-based LLM routing
-│       │   └── briefing/        # Chunked briefing agents
+│       │   └── llm_router.py    # ModelRouter(AgentProcess) — task-based LLM routing
 │       │
 │       ├── transport/
 │       │   ├── base.py          # BaseTransport protocol + InboundMessage
@@ -143,6 +142,11 @@ nexus/
 │       ├── persona/
 │       │   ├── loader.py        # Persona (SOUL.md) loading + injection
 │       │   └── builder.py       # Conversational persona builder
+│       │
+│       ├── skills/
+│       │   ├── manager.py       # SkillManager — load, index, search, CRUD
+│       │   ├── scanner.py       # SkillScanner — web/GitHub discovery (scheduled)
+│       │   └── sync.py          # Community repo sync + git export/import
 │       │
 │       ├── models/
 │       │   ├── tenant.py        # TenantContext, permissions
@@ -187,6 +191,7 @@ These are settled decisions. Do not revisit without discussion.
 | 11 | **Web dashboard via GenServer + HTTPGateway** | `DashboardServer(GenServer)` for thread-safe state, `HTTPGateway` for HTTP serving. Static HTML + vanilla JS, no React/Vue build step. Embeddable in homelab dashboards. |
 | 12 | **LLM router as AgentProcess** | Supervised, hot-swappable, observable in dashboard. Task-based routing with toggles (classify → local, converse → cloud). |
 | 13 | **FTS5 for memory search** | Zero-dependency full-text search. Sufficient for personal assistant scale. Vector search as optional extra later. |
+| 14 | **Skills + MCP are the norm, custom agents are the exception** | Morning briefing, email triage, task management — all skills. Custom agents only for bespoke code (no MCP, custom rendering/UI, stateful API connections). Simplicity over infrastructure. |
 
 ---
 

@@ -132,14 +132,16 @@
 - [ ] Intent-based tool filtering — classify intent first (cheap model), attach only relevant MCP tool schemas to the actual LLM call (expensive model)
 - [ ] Docker compose profile for Ollama sidecar (`--profile local-llm`)
 
-### M2.4 — Scheduled Tasks + Morning Briefing
+### M2.4 — Scheduled Tasks + Morning Briefing (Skill-Driven)
 
 - [ ] `agents/scheduler.py` — cron-based tick loop, state persist/restore via MemoryAgent
-- [ ] Morning briefing — fan-out to parallel chunk agents under `briefing` sub-supervisor
-- [ ] Each chunk uses its own LLM call with relevant MCP tools only
-- [ ] Per-agent timeout — briefing sends with available data, notes unavailable services
+- [ ] Morning briefing as a **skill**: `~/.nexus/skills/morning-briefing/SKILL.md` shipped as default
+- [ ] Scheduler triggers skill execution via ConversationManager (not dedicated briefing agents)
+- [ ] ConversationManager executes skill: parallel MCP tool calls via `asyncio.TaskGroup`
+- [ ] Each tool call uses cheap model (Haiku) via ModelRouter
+- [ ] Per-tool-call timeout (30s) — TaskGroup catches failures, available sections still sent
 - [ ] Iterate all admin tenants for briefing delivery (not hardcoded `users[0]`)
-- [ ] Health monitoring as a scheduled task
+- [ ] Users can edit SKILL.md to customize briefing format, sections, timing
 
 ### M2.5 — Web Dashboard (GenServer + HTTPGateway)
 
@@ -224,15 +226,20 @@
 - [ ] Conversational persona rebuild via Telegram ("change your personality to...")
 - [ ] Persona changes logged in audit trail
 
-### M3.6 — Autonomous Skill Creation
+### M3.6 — Autonomous Skill Creation + Skill Ecosystem
 
 - [ ] Skill format: SKILL.md files in `~/.nexus/skills/` (borrowing OpenClaw/Nanobot conventions)
+- [ ] Skill persistence: filesystem (primary) + SQLite `skills` table (backup) + optional git export
+- [ ] Startup reconciliation: MemoryAgent syncs filesystem ↔ SQLite on boot
 - [ ] Post-task reflection: agent identifies reusable procedures after completing complex tasks
 - [ ] Skill synthesis: writes structured SKILL.md with procedure, pitfalls, verification steps
 - [ ] Skill improvement: existing skills refined during subsequent use
-- [ ] Governance: new skills queued for approval before activation (Telegram inline buttons or CLI)
+- [ ] Governance: all skills (local, community, discovered) require approval before activation (Telegram inline buttons)
 - [ ] Skill loading: relevant skills injected into system prompt per task (retrieve-on-demand, not context-packing)
-- [ ] Public skill repo integration: load compatible skills from community repos where available
+- [ ] Community repo sync: `nexus skills sync` pulls from public `civitas-io/nexus-skills` repo, stages as pending
+- [ ] Skill publishing: `nexus skills publish <skill>` opens PR against community repo
+- [ ] Skill discovery (SkillScanner): scheduled background search for useful procedures on web/GitHub, synthesized into SKILL.md, proposed for approval
+- [ ] `nexus skills export` / `nexus skills import --from-repo` for migration and backup
 
 ### M3 Exit Criteria
 
@@ -351,7 +358,7 @@ M1 Foundation
      ├── M2.1 MCP Infrastructure
      ├── M2.2 Google Workspace (MCP)
      ├── M2.3 LLM Gateway / Router      ← local + cloud + fallback
-     ├── M2.4 Scheduler + Briefing
+     ├── M2.4 Scheduler + Briefing       ← skill-driven, not hardcoded agents
      ├── M2.5 Web Dashboard              ← GenServer + HTTPGateway
      └── M2.6 Lightweight Governance
           │

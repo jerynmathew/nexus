@@ -139,16 +139,17 @@ Each integration (Gmail, Calendar, homelab services) runs as an independent `Age
 
 ```
 nexus (root_supervisor, ONE_FOR_ALL)
-├── conversation_manager          # Routes messages, manages sessions, calls LLM
+├── conversation_manager          # Routes messages, manages sessions, LLM, skill execution
 ├── integrations (supervisor, ONE_FOR_ONE)
-│   ├── [MCP-backed agents]       # Gmail, Calendar, Drive, etc. via MCP servers
-│   └── [homelab agents]          # Jellyfin, Paperless, etc. via REST APIs
-├── briefing (supervisor, ONE_FOR_ONE)
-│   ├── briefing_coordinator      # Fans out to chunk agents
-│   └── briefing_chunks           # Parallel briefing section agents
-├── scheduler                     # Cron-based tasks, morning briefing trigger
-└── memory                        # Persistent facts, preferences, conversation history
+│   ├── [MCP servers]             # Gmail, Calendar, Drive, etc. (Docker sidecars)
+│   └── [custom agents]           # Exception: only when MCP doesn't cover the use case
+├── scheduler                     # Cron-based tasks, triggers skills
+├── memory                        # Persistent facts, preferences, skills backup
+├── llm_router                    # Task-based model selection + fallback
+└── dashboard                     # GenServer — live topology + health, HTTP :8080
 ```
+
+**Design principle:** Skills + MCP tools are the norm. Custom agents are the exception — only for bespoke code where no MCP server exists (custom API integration, custom rendering/UI). Morning briefing, email triage, task management are all skills, not hardcoded agents.
 
 ### F2 — Governance Layer (Presidium Showcase)
 
@@ -255,15 +256,16 @@ Memory is structured in three layers (inspired by Hermes Agent's architecture, a
 **Problem it solves:** A reactive assistant that only responds when asked is half as useful.
 
 **Description:**
-Cron-based scheduled tasks execute proactively. The morning briefing is the flagship scheduled task — parallel, chunked, resilient.
+Cron-based scheduled tasks execute proactively. The morning briefing is the flagship scheduled task — implemented as a **skill**, not hardcoded agents.
 
 **Key behaviors:**
-- Scheduler agent with cron expressions from config
-- Morning briefing: fan-out to parallel chunk agents (email, calendar, tasks, news)
-- Each chunk uses its own LLM call with only the relevant MCP tools
-- Per-agent timeout — briefing sends with available data, notes unavailable services
-- Chunk agents supervised under `ONE_FOR_ONE` — one chunk failing doesn't kill others
-- Health monitoring — periodic checks on homelab services, alert on status change
+- Scheduler agent with cron expressions from config — triggers skill execution
+- Morning briefing defined in `~/.nexus/skills/morning-briefing/SKILL.md` — editable, customizable, versionable
+- Skill execution runs parallel MCP tool calls via `asyncio.TaskGroup` inside ConversationManager
+- Each tool call uses cheap model (Haiku) via ModelRouter — saves cost and rate limits
+- Per-tool-call timeout — briefing sends with available data, notes unavailable services
+- No dedicated briefing agents — simplicity over infrastructure
+- Customizable: users edit the SKILL.md to change format, add/remove sections, adjust timing
 - State persistence — scheduler next-run timestamps survive restarts
 
 ### F9 — Observability (TUI + Web Dashboard)
