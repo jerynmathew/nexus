@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 780" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="a" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5 Z" fill="#6B7280"/>
+    </marker>
+    <marker id="a-blue" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="a-green" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5 Z" fill="#10B981"/>
+    </marker>
+    <marker id="a-purple" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <path d="M0,0 L7,2.5 L0,5 Z" fill="#7C3AED"/>
+    </marker>
+  </defs>
+
+  <rect width="920" height="780" fill="#F9FAFB" rx="8"/>
+  <text x="460" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2937">Nexus — Message Flows</text>
+
+  <!-- ═══ FLOW 1: SIMPLE QUERY ═══ -->
+  <rect x="16" y="44" width="888" height="200" rx="8" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="32" y="66" font-size="12" font-weight="700" fill="#1D4ED8">Flow 1: Simple Query — "What's on my calendar today?"</text>
+
+  <!-- Steps -->
+  <rect x="32" y="82" width="100" height="40" rx="4" fill="#374151"/>
+  <text x="82" y="106" text-anchor="middle" font-size="9" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <line x1="132" y1="102" x2="162" y2="102" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="166" y="82" width="120" height="40" rx="4" fill="#3B82F6"/>
+  <text x="226" y="100" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Transport</text>
+  <text x="226" y="114" text-anchor="middle" font-size="8" fill="#BFDBFE">→ InboundMessage</text>
+
+  <line x1="286" y1="102" x2="316" y2="102" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#a-blue)"/>
+
+  <rect x="320" y="78" width="160" height="48" rx="4" fill="#3B82F6"/>
+  <text x="400" y="98" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">ConversationManager</text>
+  <text x="400" y="112" text-anchor="middle" font-size="8" fill="#BFDBFE">classify → route → format</text>
+
+  <line x1="480" y1="102" x2="510" y2="102" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#a-blue)"/>
+  <text x="495" y="94" text-anchor="middle" font-size="7" fill="#6B7280">ask()</text>
+
+  <rect x="514" y="82" width="130" height="40" rx="4" fill="#3B82F6"/>
+  <text x="579" y="100" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">ModelRouter</text>
+  <text x="579" y="114" text-anchor="middle" font-size="8" fill="#BFDBFE">classify → Haiku</text>
+
+  <line x1="579" y1="122" x2="579" y2="146" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="600" y="138" font-size="7" fill="#6B7280">intent: calendar</text>
+
+  <!-- LLM + MCP tool use -->
+  <rect x="480" y="150" width="220" height="40" rx="4" fill="#10B981"/>
+  <text x="590" y="168" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">LLM + MCP tool-use loop</text>
+  <text x="590" y="182" text-anchor="middle" font-size="8" fill="#D1FAE5">Sonnet → get_events tool → Sonnet → text</text>
+
+  <line x1="480" y1="170" x2="450" y2="170" stroke="#10B981" stroke-width="1.5" marker-end="url(#a-green)"/>
+
+  <!-- Response back -->
+  <rect x="320" y="150" width="126" height="40" rx="4" fill="#3B82F6"/>
+  <text x="383" y="168" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Format response</text>
+  <text x="383" y="182" text-anchor="middle" font-size="8" fill="#BFDBFE">persona + reply</text>
+
+  <line x1="320" y1="170" x2="290" y2="170" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#a-blue)"/>
+
+  <rect x="166" y="150" width="120" height="40" rx="4" fill="#3B82F6"/>
+  <text x="226" y="168" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Transport</text>
+  <text x="226" y="182" text-anchor="middle" font-size="8" fill="#BFDBFE">send_text()</text>
+
+  <line x1="166" y1="170" x2="136" y2="170" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="32" y="150" width="100" height="40" rx="4" fill="#374151"/>
+  <text x="82" y="174" text-anchor="middle" font-size="9" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <!-- Latency annotation -->
+  <rect x="720" y="82" width="170" height="40" rx="4" fill="#F0FDF4" stroke="#10B981" stroke-width="1"/>
+  <text x="805" y="100" text-anchor="middle" font-size="9" font-weight="600" fill="#065F46">Total: ~2-4 seconds</text>
+  <text x="805" y="114" text-anchor="middle" font-size="8" fill="#6B7280">classify: ~200ms + LLM: ~2s</text>
+
+  <!-- ═══ FLOW 2: MULTI-TURN ═══ -->
+  <rect x="16" y="258" width="888" height="230" rx="8" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="32" y="280" font-size="12" font-weight="700" fill="#5B21B6">Flow 2: Multi-Turn — "Draft an email to Sarah about the Q2 review"</text>
+
+  <!-- Turn 1 -->
+  <text x="32" y="304" font-size="10" font-weight="600" fill="#374151">Turn 1: User request</text>
+
+  <rect x="32" y="312" width="80" height="30" rx="3" fill="#374151"/>
+  <text x="72" y="331" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <line x1="112" y1="327" x2="148" y2="327" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="152" y="312" width="140" height="30" rx="3" fill="#3B82F6"/>
+  <text x="222" y="331" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">ConvManager: create session</text>
+
+  <line x1="292" y1="327" x2="328" y2="327" stroke="#3B82F6" stroke-width="1" marker-end="url(#a-blue)"/>
+
+  <rect x="332" y="312" width="140" height="30" rx="3" fill="#10B981"/>
+  <text x="402" y="331" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">LLM: "What points?"</text>
+
+  <line x1="472" y1="327" x2="508" y2="327" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="512" y="312" width="80" height="30" rx="3" fill="#374151"/>
+  <text x="552" y="331" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <!-- Turn 2 -->
+  <text x="32" y="362" font-size="10" font-weight="600" fill="#374151">Turn 2: User provides content</text>
+
+  <rect x="32" y="370" width="80" height="30" rx="3" fill="#374151"/>
+  <text x="72" y="389" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <line x1="112" y1="385" x2="148" y2="385" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="152" y="370" width="140" height="30" rx="3" fill="#3B82F6"/>
+  <text x="222" y="389" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">ConvManager: session ctx</text>
+
+  <line x1="292" y1="385" x2="328" y2="385" stroke="#3B82F6" stroke-width="1" marker-end="url(#a-blue)"/>
+
+  <rect x="332" y="370" width="140" height="30" rx="3" fill="#10B981"/>
+  <text x="402" y="389" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">LLM: generate draft</text>
+
+  <line x1="472" y1="385" x2="508" y2="385" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="512" y="370" width="160" height="30" rx="3" fill="#374151"/>
+  <text x="592" y="389" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">Telegram: draft + [Send][Edit]</text>
+
+  <!-- Turn 3 -->
+  <text x="32" y="420" font-size="10" font-weight="600" fill="#374151">Turn 3: User approves → governance gate</text>
+
+  <rect x="32" y="428" width="80" height="30" rx="3" fill="#374151"/>
+  <text x="72" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">[Send] tap</text>
+
+  <line x1="112" y1="443" x2="148" y2="443" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="152" y="428" width="110" height="30" rx="3" fill="#7C3AED"/>
+  <text x="207" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">Policy: ALLOW?</text>
+
+  <line x1="262" y1="443" x2="298" y2="443" stroke="#7C3AED" stroke-width="1" marker-end="url(#a-purple)"/>
+
+  <rect x="302" y="428" width="120" height="30" rx="3" fill="#10B981"/>
+  <text x="362" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">MCP: send_email</text>
+
+  <line x1="422" y1="443" x2="458" y2="443" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="462" y="428" width="80" height="30" rx="3" fill="#7C3AED"/>
+  <text x="502" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">Audit log</text>
+
+  <line x1="542" y1="443" x2="578" y2="443" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="582" y="428" width="100" height="30" rx="3" fill="#3B82F6"/>
+  <text x="632" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">Trust +0.05</text>
+
+  <line x1="682" y1="443" x2="718" y2="443" stroke="#6B7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <rect x="722" y="428" width="80" height="30" rx="3" fill="#374151"/>
+  <text x="762" y="447" text-anchor="middle" font-size="8" font-weight="600" fill="#F9FAFB">Telegram: ✔</text>
+
+  <!-- Session checkpoint annotation -->
+  <rect x="640" y="312" width="156" height="50" rx="4" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+  <text x="718" y="330" text-anchor="middle" font-size="8" font-weight="600" fill="#92400E">Session checkpointed</text>
+  <text x="718" y="344" text-anchor="middle" font-size="8" fill="#92400E">to MemoryAgent after</text>
+  <text x="718" y="356" text-anchor="middle" font-size="8" fill="#92400E">each turn (survives crash)</text>
+
+  <!-- ═══ FLOW 3: MORNING BRIEFING (SKILL-DRIVEN) ═══ -->
+  <rect x="16" y="502" width="888" height="220" rx="8" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="32" y="524" font-size="12" font-weight="700" fill="#92400E">Flow 3: Morning Briefing — skill-driven, not hardcoded agents</text>
+
+  <!-- Scheduler trigger -->
+  <rect x="32" y="540" width="110" height="36" rx="4" fill="#3B82F6"/>
+  <text x="87" y="556" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Scheduler</text>
+  <text x="87" y="568" text-anchor="middle" font-size="8" fill="#BFDBFE">cron: 0 7 * * *</text>
+
+  <line x1="142" y1="558" x2="168" y2="558" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="155" y="550" text-anchor="middle" font-size="7" fill="#6B7280">send()</text>
+
+  <!-- ConversationManager loads skill -->
+  <rect x="172" y="536" width="150" height="44" rx="4" fill="#3B82F6"/>
+  <text x="247" y="554" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">ConversationManager</text>
+  <text x="247" y="570" text-anchor="middle" font-size="8" fill="#BFDBFE">loads morning-briefing skill</text>
+
+  <line x1="322" y1="558" x2="348" y2="558" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Skill file -->
+  <rect x="352" y="536" width="140" height="44" rx="4" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+  <text x="422" y="554" text-anchor="middle" font-size="9" font-weight="700" fill="#92400E">SKILL.md</text>
+  <text x="422" y="570" text-anchor="middle" font-size="8" fill="#92400E">morning-briefing</text>
+
+  <line x1="492" y1="558" x2="518" y2="558" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="505" y="550" text-anchor="middle" font-size="7" fill="#6B7280">execute</text>
+
+  <!-- Parallel tool calls via TaskGroup -->
+  <rect x="522" y="520" width="160" height="100" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1"/>
+  <text x="602" y="538" text-anchor="middle" font-size="9" font-weight="600" fill="#1D4ED8">asyncio.TaskGroup</text>
+  <text x="602" y="552" text-anchor="middle" font-size="8" fill="#3B82F6">parallel MCP tool calls</text>
+
+  <rect x="532" y="560" width="140" height="16" rx="2" fill="#10B981"/>
+  <text x="602" y="573" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">gmail: search_messages (Haiku)</text>
+
+  <rect x="532" y="580" width="140" height="16" rx="2" fill="#10B981"/>
+  <text x="602" y="593" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">calendar: get_events (Haiku)</text>
+
+  <rect x="532" y="600" width="140" height="16" rx="2" fill="#059669"/>
+  <text x="602" y="613" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">tasks: list_tasks (Haiku)</text>
+
+  <!-- Arrow to telegram -->
+  <line x1="682" y1="558" x2="718" y2="558" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Telegram output -->
+  <rect x="722" y="524" width="170" height="100" rx="6" fill="#374151"/>
+  <text x="807" y="544" text-anchor="middle" font-size="10" font-weight="700" fill="#F9FAFB">Telegram</text>
+  <line x1="734" y1="552" x2="880" y2="552" stroke="#4B5563" stroke-width="0.5"/>
+  <text x="738" y="568" font-size="8" fill="#D1D5DB">📧 3 important, 12 unread...</text>
+  <text x="738" y="582" font-size="8" fill="#D1D5DB">📅 10am standup, 2pm review</text>
+  <text x="738" y="596" font-size="8" fill="#D1D5DB">✅ 3 pending, 1 overdue</text>
+  <text x="738" y="616" font-size="8" fill="#FCA5A5" font-style="italic">⚠ Gmail unavailable</text>
+
+  <!-- Annotations -->
+  <rect x="32" y="636" width="440" height="36" rx="4" fill="#F0FDF4" stroke="#10B981" stroke-width="1"/>
+  <text x="252" y="654" text-anchor="middle" font-size="9" font-weight="600" fill="#065F46">No dedicated briefing agents. Skill defines the procedure.</text>
+  <text x="252" y="668" text-anchor="middle" font-size="8" fill="#065F46">Edit ~/.nexus/skills/morning-briefing/SKILL.md to customize format, sections, timing.</text>
+
+  <rect x="490" y="636" width="400" height="36" rx="4" fill="#FEE2E2" stroke="#EF4444" stroke-width="1"/>
+  <text x="690" y="654" text-anchor="middle" font-size="9" font-weight="600" fill="#991B1B">Per-tool-call timeout (30s). If one MCP call fails, TaskGroup catches it.</text>
+  <text x="690" y="668" text-anchor="middle" font-size="8" fill="#991B1B">Available sections still sent. Failed sections noted with ⚠.</text>
+</svg>
