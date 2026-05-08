@@ -163,10 +163,25 @@
 - [ ] GenServer `handle_call` for synchronous state queries, `handle_cast` for async updates from agents
 - [ ] Agents send health updates to DashboardServer via `self.send("dashboard", {...})` on lifecycle events
 
-### M2.6 — Lightweight Governance (Pre-Presidium)
+### M2.6 — Context Compression
+
+- [ ] `ContextCompressor` protocol — pluggable compression engine
+- [ ] Default implementation: 4-phase compression (prune old tool results → determine boundaries → LLM summarize middle turns → assemble compressed messages)
+- [ ] Trigger: at 50% context window utilization (configurable threshold)
+- [ ] Iterative re-compression: updates existing summary across multiple compressions, doesn't re-summarize from scratch
+- [ ] Tail protection: last N messages always preserved (configurable, default 20)
+- [ ] Uses cheap model (Haiku) for summarization — separate from conversation model
+- [ ] Essential for daily-driver use: without this, multi-day conversations degrade or crash
+
+### M2.7 — Lightweight Governance (Pre-Presidium)
 
 - [ ] In-memory policy engine — YAML-defined rules, ALLOW/DENY/REQUIRE_APPROVAL
 - [ ] Irreversibility gates — `send_email`, `delete_*`, `accept_invite` → REQUIRE_APPROVAL via transport inline buttons
+- [ ] **Risk-based tool approval** — classify tool calls by risk level:
+  - Low (read-only: search, list, get) → auto-allowed
+  - Medium (mutations: create, update, label) → configurable (default: auto-allowed)
+  - High (destructive: delete, send, execute shell) → always prompted
+  - Hardline blocklist: `rm -rf /`, fork bombs, `dd` to block devices — always denied, no override
 - [ ] In-memory trust scores per agent — positive on approved actions, negative on rejected
 - [ ] Basic audit sink — JSONL file with agent identity, action, policy decision, timestamp
 - [ ] Governance hooks in ConversationManager — policy check before MCP tool execution
@@ -225,11 +240,28 @@
 - [ ] `nexus setup-voice` CLI for STT/TTS provider configuration
 - [ ] ffmpeg added to Docker image for audio extraction
 
-### M3.5 — Persona Builder
+### M3.5 — Persona Builder + Identity Evolution
 
 - [ ] `nexus setup-persona` — interactive CLI to create a new SOUL.md
 - [ ] Conversational persona rebuild via Telegram ("change your personality to...")
 - [ ] Persona changes logged in audit trail
+- [ ] **Agent-initiated identity evolution** — agent proposes SOUL.md updates based on interaction patterns:
+  - "I've noticed you prefer shorter responses. Should I update my personality?"
+  - Changes go through approval gate (same as skill creation)
+  - Diff shown before applying — user sees exactly what changes
+  - Audit trail captures before/after for governance
+
+### M3.7 — Proactive Heartbeat
+
+- [ ] Default skill: `~/.nexus/skills/heartbeat/SKILL.md` — shipped alongside morning-briefing
+- [ ] Schedule: `*/30 * * * *` (every 30 minutes, configurable)
+- [ ] Agent reviews: recent session context, USER.md, pending tasks, upcoming events
+- [ ] Decision: agent decides whether to notify — not just a timer, model-driven judgment
+- [ ] Silence is valid: if nothing actionable, agent responds `HEARTBEAT_OK` (no notification sent)
+- [ ] Active hours: configurable window (e.g., 7am-10pm) — no 3am pings
+- [ ] Reengagement cooldown: won't ping again within N minutes of last interaction
+- [ ] Uses cheap model (Haiku) — low token cost per check (~2-5K tokens)
+- [ ] Delivery: via tenant's configured transport (Telegram, etc.)
 
 ### M3.6 — Autonomous Skill Creation + Skill Ecosystem
 
@@ -300,6 +332,21 @@
 - [ ] System prompt dynamically reflects available capabilities
 - [ ] `/status` command shows service health
 
+### M4.6 — Browser Automation (via MCP)
+
+- [ ] Playwright MCP server as Docker sidecar (not custom browser implementation)
+- [ ] Web browsing: navigate, click, type, screenshot, extract text
+- [ ] Use case: fill forms, check status pages, interact with web UIs that have no API
+- [ ] SSRF policy: block private network navigation by default, opt-in allowlist
+- [ ] Governed: browser actions go through same policy check as all tool calls
+
+### M4.7 — Session Checkpoints + Rollback
+
+- [ ] Manual checkpoint: user says "checkpoint this" or `/checkpoint` → session snapshot saved
+- [ ] Rollback: `/rollback` restores to last checkpoint — undo for conversations
+- [ ] Checkpoint storage: alongside session messages in SQLite
+- [ ] Useful for complex multi-turn tasks where you want to try different approaches
+
 ### M4 Exit Criteria
 
 - [ ] Message Nexus on Discord → same persona, same memory as Telegram
@@ -349,6 +396,43 @@
 
 ---
 
+## M6 — Presence: "It lives where you are"
+
+**Goal:** Native apps, animated avatar, voice-first interaction. Low priority — Telegram + web dashboard covers core use cases. This milestone is about presence and personality.
+
+### M6.1 — Web App (PWA)
+
+- [ ] Progressive Web App — installable on any device, works offline for cached data
+- [ ] Chat interface: full conversation UI (alternative to Telegram for users who prefer browser)
+- [ ] Dashboard integration: conversation + dashboard in one interface
+- [ ] Push notifications via service worker
+- [ ] Builds on M2.5 HTTPGateway — same backend, richer frontend
+
+### M6.2 — Android App
+
+- [ ] Companion app — connects to Nexus instance via WebSocket (LAN or Tailscale)
+- [ ] Chat interface + push notifications
+- [ ] Voice input/output (STT/TTS on device or via Nexus backend)
+- [ ] Device pairing: approval flow before first connection
+- [ ] Foreground service for persistent connection
+
+### M6.3 — Animated Avatar + Voice-First Mode
+
+- [ ] Animated persona representation — simple avatar with idle/speaking/thinking animations
+- [ ] Voice-first interaction: wake word or push-to-talk → STT → process → TTS → animated response
+- [ ] Avatar rendered in web app (M6.1) and optionally in Android app (M6.2)
+- [ ] Persona-driven: avatar style, voice, and animations tied to SOUL.md selection
+- [ ] "Dross mode": the assistant has a visual presence, not just text in a chat window
+
+### M6 Exit Criteria
+
+- [ ] Open `http://nexus:8080/chat` — full conversation UI with animated avatar
+- [ ] Android app installed, paired, push notifications working
+- [ ] Voice-first: tap mic → speak → see avatar animate → hear voice response
+- [ ] Same persona, same memory, same governance across Telegram + web + Android
+
+---
+
 ## Dependency Graph
 
 ```
@@ -367,24 +451,32 @@ M1 Foundation
      ├── M2.3 LLM Gateway / Router      ← local + cloud + fallback
      ├── M2.4 Scheduler + Briefing       ← skill-driven, not hardcoded agents
      ├── M2.5 Web Dashboard              ← GenServer + HTTPGateway
-     └── M2.6 Lightweight Governance
+     ├── M2.6 Context Compression        ← essential for daily-driver use
+     └── M2.7 Lightweight Governance     ← risk-based tool approval
           │
           ├── M3.1 Presidium Governance
           ├── M3.2 Trust-Gated Autonomy  ← THE GOVERNANCE DEMO
           ├── M3.3 Web Search (MCP)
-          ├── M3.4 Voice
-          ├── M3.5 Persona Builder
-          └── M3.6 Autonomous Skills     ← agent writes its own procedures
+          ├── M3.4 Media (voice/image/video)
+          ├── M3.5 Persona Builder + Identity Evolution
+          ├── M3.6 Autonomous Skills     ← agent writes its own procedures
+          └── M3.7 Proactive Heartbeat   ← agent decides when to notify
                │
                ├── M4.1 More Messaging
-               ├── M4.2 Homelab Agents   ← deferred from M2
+               ├── M4.2 Homelab Agents
                ├── M4.3 Finance
                ├── M4.4 Visual Output
-               └── M4.5 Resilience
+               ├── M4.5 Resilience
+               ├── M4.6 Browser (MCP)
+               └── M4.7 Session Checkpoints
                     │
                     ├── M5.1 Full Presidium
                     ├── M5.2 Hardening
                     └── M5.3 Docs + Community
+                         │
+                         ├── M6.1 Web App (PWA)
+                         ├── M6.2 Android App
+                         └── M6.3 Animated Avatar + Voice-First  ← "Dross mode"
 ```
 
 M1 sub-tasks are sequential (each builds on the previous).
@@ -404,4 +496,7 @@ M2-M5 sub-tasks within each milestone are largely independent and can be paralle
 | **Multi-tenant + persona** | M1.8 | Two users, different personas, private email, shared calendar. |
 | **Media interaction** | M3.4 | Send voice → voice reply. Send photo → vision analysis. Charts sent as images. |
 | **Autonomous skill creation** | M3.6 | Agent learns a procedure, writes a skill, governance approves it, next time it's faster. |
+| **Proactive check-in** | M3.7 | Agent notices something and pings you — without being asked. Model-driven, not just a timer. |
 | **Cross-transport** | M4.1 | Same assistant on Telegram and Discord, shared memory. |
+| **Browser automation** | M4.6 | "Book that restaurant" → Playwright MCP browses, fills form, confirms. |
+| **Animated avatar** | M6.3 | Talk to Dross — see it animate, hear its voice, feel its personality. |

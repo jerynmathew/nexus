@@ -302,6 +302,46 @@ Built on Civitas's `GenServer` for state management and `HTTPGateway` for servin
 - **JSON API** — `/api/health`, `/api/topology`, `/api/agents`, `/api/activity` for custom integrations
 - **OTEL export** — metrics exportable to Grafana, Prometheus for long-term monitoring
 
+### F10 — Context Compression
+
+**Problem it solves:** Multi-day conversations exceed the LLM's context window, causing degradation or failure.
+
+**Description:**
+Pluggable context compression engine that automatically compresses conversation history when it exceeds a threshold (default: 50% of context window). Uses a cheap model (Haiku) for summarization, preserving recent messages and producing a structured summary of older turns.
+
+**Key behaviors:**
+- Triggers automatically at configurable threshold (50% of context window)
+- 4-phase compression: prune old tool results → determine boundaries → LLM summarize → assemble
+- Iterative re-compression across multiple sessions — updates existing summary, doesn't restart
+- Tail protection: last 20 messages always preserved
+- `ContextCompressor` protocol — pluggable, swap implementations without code changes
+
+### F11 — Proactive Heartbeat
+
+**Problem it solves:** A reactive assistant that only speaks when spoken to misses opportunities to be useful.
+
+**Description:**
+A default skill that runs every 30 minutes, reviews context, and decides whether to notify the user. Not just a timer — the agent uses judgment to determine whether a notification is warranted.
+
+**Key behaviors:**
+- Model-driven: agent reviews recent context, upcoming events, pending tasks, then *decides* whether to speak
+- Silence is valid — most heartbeats produce no notification
+- Active hours: configurable window (e.g., 7am-10pm) — respects sleep
+- Reengagement cooldown: won't ping again within N minutes of last interaction
+- Uses cheap model (Haiku) — ~2-5K tokens per check
+
+### F12 — Native Apps + Animated Avatar (Future)
+
+**Problem it solves:** Text in a chat window lacks presence. A personal assistant should feel like a companion, not a command line.
+
+**Description:**
+Progressive Web App, Android companion app, and an animated avatar that gives the persona a visual and vocal presence. Low priority — Telegram + web dashboard covers core use cases.
+
+**Key behaviors:**
+- **PWA:** Installable chat + dashboard in one interface, push notifications
+- **Android app:** Companion with voice input/output, device pairing, push notifications
+- **Animated avatar:** Idle/speaking/thinking animations tied to persona. Voice-first interaction. "Dross mode" — the assistant has a face and a voice, not just text.
+
 ---
 
 ## 6. Architecture Overview
