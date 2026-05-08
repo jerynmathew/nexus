@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#6B7280"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#3B82F6"/>
+    </marker>
+    <linearGradient id="civitas-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="presidium-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="700" fill="#F9FAFB" rx="8"/>
+
+  <!-- Title -->
+  <text x="450" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2937">Nexus — System Architecture</text>
+
+  <!-- ═══ HOMELAB BOUNDARY ═══ -->
+  <rect x="16" y="42" width="868" height="570" rx="10" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="32" y="62" font-size="11" font-weight="600" fill="#9CA3AF" letter-spacing="1">YOUR HOMELAB — everything inside this box runs on your hardware</text>
+
+  <!-- ═══ TRANSPORTS (left column) ═══ -->
+  <rect x="32" y="80" width="120" height="200" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="92" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">Transports</text>
+
+  <rect x="44" y="112" width="96" height="28" rx="4" fill="#374151"/>
+  <text x="92" y="130" text-anchor="middle" font-size="10" font-weight="600" fill="#F9FAFB">Telegram</text>
+
+  <rect x="44" y="146" width="96" height="28" rx="4" fill="#4B5563"/>
+  <text x="92" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#D1D5DB">Discord</text>
+
+  <rect x="44" y="180" width="96" height="28" rx="4" fill="#4B5563"/>
+  <text x="92" y="198" text-anchor="middle" font-size="10" font-weight="600" fill="#D1D5DB">Slack</text>
+
+  <rect x="44" y="214" width="96" height="28" rx="4" fill="#4B5563"/>
+  <text x="92" y="232" text-anchor="middle" font-size="10" font-weight="600" fill="#D1D5DB">CLI</text>
+
+  <text x="92" y="264" text-anchor="middle" font-size="9" fill="#9CA3AF">BaseTransport</text>
+  <text x="92" y="275" text-anchor="middle" font-size="9" fill="#9CA3AF">protocol</text>
+
+  <!-- Arrow transport → nexus core -->
+  <line x1="152" y1="170" x2="186" y2="170" stroke="#6B7280" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="169" y="162" text-anchor="middle" font-size="8" fill="#6B7280">InboundMsg</text>
+
+  <!-- ═══ NEXUS CORE ═══ -->
+  <rect x="190" y="80" width="420" height="380" rx="10" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="400" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#1D4ED8">NEXUS</text>
+
+  <!-- Civitas Runtime -->
+  <rect x="206" y="110" width="388" height="40" rx="6" fill="url(#civitas-grad)"/>
+  <text x="400" y="128" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFFFF">Civitas Runtime — Supervision · MessageBus · Transport · OTEL</text>
+  <text x="400" y="142" text-anchor="middle" font-size="9" fill="#BFDBFE">crash recovery · backoff · restart counts · observability</text>
+
+  <!-- Presidium Governance -->
+  <rect x="206" y="156" width="388" height="32" rx="6" fill="url(#presidium-grad)"/>
+  <text x="400" y="176" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Presidium Governance — Policy · Trust · Audit · Credentials</text>
+
+  <!-- Supervision Tree -->
+  <rect x="210" y="198" width="392" height="252" rx="6" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1"/>
+  <text x="406" y="216" text-anchor="middle" font-size="11" font-weight="700" fill="#1E40AF">Supervision Tree</text>
+
+  <!-- Root supervisor label -->
+  <text x="220" y="234" font-size="9" fill="#3B82F6" font-weight="600">root (ONE_FOR_ALL)</text>
+
+  <!-- ConversationManager -->
+  <rect x="220" y="242" width="170" height="44" rx="4" fill="#3B82F6"/>
+  <text x="305" y="260" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">ConversationManager</text>
+  <text x="305" y="276" text-anchor="middle" font-size="8" fill="#BFDBFE">routing · sessions · LLM · persona</text>
+
+  <!-- Memory Agent -->
+  <rect x="220" y="294" width="170" height="36" rx="4" fill="#2563EB"/>
+  <text x="305" y="316" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">MemoryAgent</text>
+
+  <!-- Scheduler -->
+  <rect x="220" y="338" width="170" height="36" rx="4" fill="#2563EB"/>
+  <text x="305" y="360" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">SchedulerAgent</text>
+
+  <!-- Integrations supervisor -->
+  <rect x="400" y="238" width="194" height="136" rx="6" fill="#BFDBFE" stroke="#60A5FA" stroke-width="1"/>
+  <text x="497" y="254" text-anchor="middle" font-size="9" font-weight="600" fill="#1E40AF">integrations (ONE_FOR_ONE)</text>
+
+  <!-- MCP agents -->
+  <rect x="410" y="264" width="86" height="26" rx="3" fill="#10B981"/>
+  <text x="453" y="281" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Gmail (MCP)</text>
+
+  <rect x="502" y="264" width="86" height="26" rx="3" fill="#10B981"/>
+  <text x="545" y="281" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Calendar (MCP)</text>
+
+  <rect x="410" y="296" width="86" height="26" rx="3" fill="#10B981"/>
+  <text x="453" y="313" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Drive (MCP)</text>
+
+  <rect x="502" y="296" width="86" height="26" rx="3" fill="#059669"/>
+  <text x="545" y="313" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Search (MCP)</text>
+
+  <!-- Custom agents -->
+  <rect x="410" y="328" width="86" height="26" rx="3" fill="#F59E0B"/>
+  <text x="453" y="345" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Jellyfin</text>
+
+  <rect x="502" y="328" width="86" height="26" rx="3" fill="#F59E0B"/>
+  <text x="545" y="345" text-anchor="middle" font-size="9" font-weight="600" fill="#FFFFFF">Paperless</text>
+
+  <!-- Briefing supervisor -->
+  <rect x="400" y="382" width="194" height="58" rx="6" fill="#BFDBFE" stroke="#60A5FA" stroke-width="1"/>
+  <text x="497" y="398" text-anchor="middle" font-size="9" font-weight="600" fill="#1E40AF">briefing (ONE_FOR_ONE)</text>
+
+  <rect x="410" y="406" width="50" height="22" rx="3" fill="#6366F1"/>
+  <text x="435" y="421" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">email</text>
+
+  <rect x="466" y="406" width="50" height="22" rx="3" fill="#6366F1"/>
+  <text x="491" y="421" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">cal</text>
+
+  <rect x="522" y="406" width="50" height="22" rx="3" fill="#6366F1"/>
+  <text x="547" y="421" text-anchor="middle" font-size="7" font-weight="600" fill="#FFFFFF">tasks</text>
+
+  <!-- ═══ PERSONAS (below core) ═══ -->
+  <rect x="190" y="468" width="130" height="50" rx="6" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+  <text x="255" y="490" text-anchor="middle" font-size="10" font-weight="600" fill="#92400E">Personas</text>
+  <text x="255" y="506" text-anchor="middle" font-size="8" fill="#B45309">SOUL.md · USER.md</text>
+
+  <!-- Memory store -->
+  <rect x="335" y="468" width="130" height="50" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="400" y="490" text-anchor="middle" font-size="10" font-weight="600" fill="#374151">SQLite (aiosqlite)</text>
+  <text x="400" y="506" text-anchor="middle" font-size="8" fill="#6B7280">memory · sessions · config</text>
+
+  <!-- Audit trail -->
+  <rect x="480" y="468" width="130" height="50" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1"/>
+  <text x="545" y="490" text-anchor="middle" font-size="10" font-weight="600" fill="#5B21B6">Audit Trail</text>
+  <text x="545" y="506" text-anchor="middle" font-size="8" fill="#7C3AED">JSONL · signed · exportable</text>
+
+  <!-- ═══ MCP SIDECARS (right column) ═══ -->
+  <rect x="640" y="80" width="230" height="200" rx="8" fill="#F0FDF4" stroke="#10B981" stroke-width="1.5"/>
+  <text x="755" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#065F46">MCP Sidecars (Docker)</text>
+
+  <rect x="652" y="112" width="206" height="28" rx="4" fill="#10B981"/>
+  <text x="755" y="130" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Google Workspace MCP</text>
+
+  <rect x="652" y="146" width="206" height="28" rx="4" fill="#059669"/>
+  <text x="755" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Brave Search MCP</text>
+
+  <rect x="652" y="180" width="206" height="28" rx="4" fill="#047857"/>
+  <text x="755" y="198" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Slack MCP (optional)</text>
+
+  <rect x="652" y="214" width="206" height="28" rx="4" fill="#065F46"/>
+  <text x="755" y="232" text-anchor="middle" font-size="10" font-weight="600" fill="#D1FAE5">Finance MCP (optional)</text>
+
+  <text x="755" y="264" text-anchor="middle" font-size="9" fill="#6B7280">Each sidecar is independent.</text>
+  <text x="755" y="276" text-anchor="middle" font-size="9" fill="#6B7280">Crash recovery via Docker restart.</text>
+
+  <!-- Arrow MCP → nexus -->
+  <line x1="640" y1="170" x2="610" y2="170" stroke="#10B981" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══ HOMELAB SERVICES (right column lower) ═══ -->
+  <rect x="640" y="300" width="230" height="140" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+  <text x="755" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">Homelab Services</text>
+
+  <rect x="652" y="334" width="100" height="28" rx="4" fill="#F59E0B"/>
+  <text x="702" y="352" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Jellyfin</text>
+
+  <rect x="758" y="334" width="100" height="28" rx="4" fill="#F59E0B"/>
+  <text x="808" y="352" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Paperless</text>
+
+  <rect x="652" y="368" width="100" height="28" rx="4" fill="#D97706"/>
+  <text x="702" y="386" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Immich</text>
+
+  <rect x="758" y="368" width="100" height="28" rx="4" fill="#D97706"/>
+  <text x="808" y="386" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Ollama</text>
+
+  <text x="755" y="422" text-anchor="middle" font-size="9" fill="#6B7280">REST APIs on your LAN</text>
+
+  <!-- Arrow homelab → nexus -->
+  <line x1="640" y1="370" x2="610" y2="340" stroke="#F59E0B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══ EXTERNAL APIS (bottom) ═══ -->
+  <rect x="190" y="538" width="420" height="60" rx="8" fill="#FEE2E2" stroke="#EF4444" stroke-width="1"/>
+  <text x="400" y="560" text-anchor="middle" font-size="11" font-weight="700" fill="#991B1B">External APIs (only outbound calls)</text>
+  <text x="400" y="580" text-anchor="middle" font-size="10" fill="#DC2626">Claude / GPT / Gemini · Google APIs · Brave Search</text>
+
+  <!-- Arrow nexus → external -->
+  <line x1="400" y1="520" x2="400" y2="538" stroke="#EF4444" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="430" y="532" font-size="8" fill="#EF4444">LLM + API calls only</text>
+
+  <!-- ═══ LEGEND ═══ -->
+  <rect x="16" y="624" width="868" height="64" rx="8" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="32" y="644" font-size="10" font-weight="700" fill="#374151">Legend</text>
+
+  <rect x="32" y="654" width="12" height="12" rx="2" fill="#3B82F6"/>
+  <text x="50" y="665" font-size="9" fill="#374151"><tspan font-weight="600">Civitas</tspan> — runtime agents</text>
+
+  <rect x="190" y="654" width="12" height="12" rx="2" fill="#7C3AED"/>
+  <text x="208" y="665" font-size="9" fill="#374151"><tspan font-weight="600">Presidium</tspan> — governance</text>
+
+  <rect x="340" y="654" width="12" height="12" rx="2" fill="#10B981"/>
+  <text x="358" y="665" font-size="9" fill="#374151"><tspan font-weight="600">MCP</tspan> — standard protocol integrations</text>
+
+  <rect x="540" y="654" width="12" height="12" rx="2" fill="#F59E0B"/>
+  <text x="558" y="665" font-size="9" fill="#374151"><tspan font-weight="600">Custom</tspan> — IntegrationAgent (REST APIs)</text>
+
+  <rect x="740" y="654" width="12" height="12" rx="2" fill="#EF4444"/>
+  <text x="758" y="665" font-size="9" fill="#374151"><tspan font-weight="600">External</tspan> — leaves your network</text>
+</svg>
