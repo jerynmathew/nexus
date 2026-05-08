@@ -212,13 +212,18 @@
 - [ ] Morning briefing optionally includes news headlines
 - [ ] "What's in the news?" → web search tool call → formatted summary
 
-### M3.4 — Voice Support
+### M3.4 — Media Support (Voice, Image, Video)
 
-- [ ] Telegram voice message handler (download OGG, transcribe)
-- [ ] STT: OpenAI Whisper API or local faster-whisper
-- [ ] TTS: OpenAI TTS or local Kokoro/Piper
-- [ ] Voice-originated text routes through normal intent pipeline
-- [ ] `nexus setup-voice` CLI for voice configuration
+- [ ] **Voice (inbound):** Telegram voice/audio handler → download OGG → STT (OpenAI Whisper API or local faster-whisper) → text pipeline
+- [ ] **Voice (outbound):** TTS response generation (OpenAI TTS or local Kokoro/Piper) → send as Telegram voice note alongside text
+- [ ] **Image (inbound):** Telegram photo handler → download highest-res image → send to vision-capable LLM (Claude, GPT-4o) for analysis/description
+- [ ] **Image (outbound):** Chart rendering (QuickChart.io) → send as Telegram photo with caption. Claude image generation → decode + send.
+- [ ] **Video (inbound):** Telegram video/video_note handler → extract audio (ffmpeg pipe) → STT → text pipeline. Optionally: extract frames → vision LLM.
+- [ ] **Document (inbound):** Telegram document handler → download → parse (PDF text extraction, plain text) → include in LLM context
+- [ ] `InboundMessage.media_type` + `media_bytes` fields in transport protocol (already in design)
+- [ ] `BaseTransport.send_photo()`, `send_voice()`, `send_document()` outbound methods
+- [ ] `nexus setup-voice` CLI for STT/TTS provider configuration
+- [ ] ffmpeg added to Docker image for audio extraction
 
 ### M3.5 — Persona Builder
 
@@ -247,6 +252,8 @@
 - [ ] Trust arc demo: 5 approved drafts → trust rises → low-stakes drafts become autonomous
 - [ ] Rejection → trust falls → more approvals required again
 - [ ] Voice: send voice message → transcribed → processed → voice reply
+- [ ] Image: send photo → vision LLM describes/analyzes → text response
+- [ ] Image outbound: chart data → QuickChart PNG → sent as Telegram photo
 - [ ] Web search: "Find flights to Tokyo" → search results
 - [ ] `nexus setup-persona` creates new persona, next message uses it
 - [ ] Skill creation: agent completes a complex task → proposes a skill → user approves → skill available for next similar task
@@ -395,6 +402,6 @@ M2-M5 sub-tasks within each milestone are largely independent and can be paralle
 | **Governance denial + audit** | M2.6 | Actions are policy-enforced, not just logged. |
 | **Trust-gated autonomy arc** | M3.2 | Agent earns trust over time. Governance is dynamic, not static. |
 | **Multi-tenant + persona** | M1.8 | Two users, different personas, private email, shared calendar. |
-| **Voice interaction** | M3.4 | Send voice message, get voice reply. |
+| **Media interaction** | M3.4 | Send voice → voice reply. Send photo → vision analysis. Charts sent as images. |
 | **Autonomous skill creation** | M3.6 | Agent learns a procedure, writes a skill, governance approves it, next time it's faster. |
 | **Cross-transport** | M4.1 | Same assistant on Telegram and Discord, shared memory. |
