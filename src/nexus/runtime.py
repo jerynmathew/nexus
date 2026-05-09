@@ -14,6 +14,7 @@ from nexus.agents.conversation import ConversationManager
 from nexus.agents.memory import MemoryAgent
 from nexus.agents.scheduler import SchedulerAgent
 from nexus.config import NexusConfig
+from nexus.mcp.manager import MCPManager
 from nexus.transport.telegram import TelegramTransport
 
 logger = logging.getLogger(__name__)
@@ -34,12 +35,15 @@ def build_runtime(config: NexusConfig) -> tuple[Runtime, dict[str, AgentProcess]
         llm_base_url=config.llm.base_url,
         llm_api_key=config.llm.api_key,
         llm_model=config.llm.model,
+        llm_cheap_model=config.llm.cheap_model,
         llm_max_tokens=config.llm.max_tokens,
         personas_dir=config.persona_dir,
         users_dir=config.users_dir,
+        skills_dir=config.skills_dir,
+        audit_path=config.governance.audit_path,
     )
 
-    scheduler = SchedulerAgent(name="scheduler")
+    scheduler = SchedulerAgent(name="scheduler", skills_dir=config.skills_dir)
 
     root = Supervisor(
         name="root",
@@ -104,6 +108,13 @@ async def run_nexus(config: NexusConfig) -> None:
 
     conv = agents["conversation_manager"]
     assert isinstance(conv, ConversationManager)
+
+    if config.mcp.servers:
+        mcp_manager = MCPManager()
+        await mcp_manager.connect_all(config.mcp.servers)
+        conv.set_mcp_manager(mcp_manager)
+        logger.info("MCP: %d server(s) configured", len(config.mcp.servers))
+
     transport: TelegramTransport | None = None
 
     if config.telegram:
