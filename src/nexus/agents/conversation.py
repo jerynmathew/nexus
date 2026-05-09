@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import uuid
 from pathlib import Path
@@ -296,8 +297,12 @@ class ConversationManager(AgentProcess):
     def _get_tools_for_intent(self, intent: Intent) -> list[dict[str, Any]] | None:
         if not self._mcp:
             return None
-        tools = self._mcp.filter_tools(intent.tool_groups)
-        return tools if tools else None
+        if intent.tool_groups:
+            tools = self._mcp.filter_tools(intent.tool_groups)
+            if tools:
+                return tools
+        all_tools = self._mcp.all_tool_schemas()
+        return all_tools if all_tools else None
 
     async def _tool_use_loop(
         self,
@@ -335,7 +340,11 @@ class ConversationManager(AgentProcess):
                         "tool_calls": [
                             {
                                 "id": tc.id,
-                                "function": {"name": tc.name, "arguments": str(tc.input)},
+                                "type": "function",
+                                "function": {
+                                    "name": tc.name,
+                                    "arguments": json.dumps(tc.input),
+                                },
                             }
                         ],
                     }
