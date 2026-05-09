@@ -247,10 +247,11 @@ def setup_persona() -> None:
 
 @app.command(name="personas")
 def personas_cmd(
-    action: str = typer.Argument("list", help="list or set"),
+    action: str = typer.Argument("list", help="list, set, or profiles"),
     name: str = typer.Argument("", help="Persona name (for set)"),
+    profile: str = typer.Option("default", "--profile", "-p", help="Profile name"),
 ) -> None:
-    """List or switch personas."""
+    """List personas, assign to profiles, or show profiles."""
     personas_dir = Path("personas")
 
     if action == "list":
@@ -266,11 +267,15 @@ def personas_cmd(
         if not path.exists():
             console.print(f"[red]Persona '{name}' not found.[/red]")
             raise typer.Exit(code=1)
-        console.print(f"[green]Set persona to '{name}'.[/green]")
-        console.print(f"Update [bold]persona: {name}[/bold] in config.yaml seed_users.")
+        console.print(f"[green]Profile '{profile}' → persona '{name}'[/green]")
+        console.print(
+            f"Update config.yaml seed_users with [bold]persona: {name}[/bold] for this profile.",
+        )
         return
 
-    console.print("[red]Usage: nexus personas list | nexus personas set <name>[/red]")
+    console.print(
+        "[red]Usage: nexus personas list | nexus personas set <name> --profile <profile>[/red]",
+    )
 
 
 def main() -> None:

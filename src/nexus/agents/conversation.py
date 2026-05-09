@@ -277,7 +277,7 @@ class ConversationManager(AgentProcess):
 
         parts: list[str] = [
             self._persona_loader.build_system_identity(
-                persona_name=tenant.persona_name,
+                persona_name=tenant.persona_for_profile(),
                 tenant_id=tenant.tenant_id,
                 tenant_name=tenant.name,
                 timezone=tenant.timezone,
