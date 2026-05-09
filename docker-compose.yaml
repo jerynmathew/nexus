@@ -49,6 +49,20 @@ services:
     profiles:
       - google
 
+  mcp-search:
+    build:
+      context: https://github.com/Aas-ee/open-webSearch.git
+    container_name: mcp-search
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - MODE=http
+      - PORT=3000
+      - DEFAULT_SEARCH_ENGINE=duckduckgo
+    profiles:
+      - search
+
 volumes:
   nexus-data:
   mcp-google-creds:

@@ -39,6 +39,11 @@ _TASK_PATTERNS = re.compile(
     r"\b(task|todo|reminder|to-do|pending)\b",
     re.IGNORECASE,
 )
+_SEARCH_PATTERNS = re.compile(
+    r"\b(search\s+for|look\s+up|find\s+(?:me\s+)?|what.s\s+in\s+the\s+news|"
+    r"news|headlines|google|web\s+search|browse)\b",
+    re.IGNORECASE,
+)
 
 
 class RegexClassifier:
@@ -76,6 +81,15 @@ class RegexClassifier:
                 target_service="tasks",
                 action="read",
                 tool_groups=["tasks"],
+                confidence=0.7,
+                original_text=text,
+            )
+
+        if _SEARCH_PATTERNS.search(text):
+            return Intent(
+                target_service="search",
+                action="read",
+                tool_groups=["search", "web"],
                 confidence=0.7,
                 original_text=text,
             )
