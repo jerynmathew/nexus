@@ -320,6 +320,12 @@ class ConversationManager(AgentProcess):
         if intent.tool_groups:
             tools = self._mcp.filter_tools(intent.tool_groups)
             if tools:
+                logger.info(
+                    "[%s] Filtered %d tools for groups %s",
+                    self.name,
+                    len(tools),
+                    intent.tool_groups,
+                )
                 return tools
         all_tools = self._mcp.all_tool_schemas()
         return all_tools if all_tools else None

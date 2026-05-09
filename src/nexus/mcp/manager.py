@@ -162,11 +162,21 @@ class MCPManager:
     def filter_tools(self, tool_groups: list[str]) -> list[dict[str, Any]]:
         if not tool_groups:
             return list(self._tool_schemas.values())
-        return [
+
+        by_group = [
             schema
             for name, schema in self._tool_schemas.items()
             if self._tool_to_group.get(name) in tool_groups
         ]
+        if by_group:
+            return by_group
+
+        by_prefix = [
+            schema
+            for name, schema in self._tool_schemas.items()
+            if any(group in name for group in tool_groups)
+        ]
+        return by_prefix
 
     def all_tool_schemas(self) -> list[dict[str, Any]]:
         return list(self._tool_schemas.values())
