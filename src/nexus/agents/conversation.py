@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
 from civitas.messages import Message
@@ -46,8 +47,6 @@ class ConversationManager(AgentProcess):
         self._transport: Any = None
 
     async def on_start(self) -> None:
-        from pathlib import Path
-
         self._llm = LLMClient(
             base_url=self._llm_base_url,
             api_key=self._llm_api_key,

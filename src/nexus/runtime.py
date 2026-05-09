@@ -14,6 +14,7 @@ from nexus.agents.conversation import ConversationManager
 from nexus.agents.memory import MemoryAgent
 from nexus.agents.scheduler import SchedulerAgent
 from nexus.config import NexusConfig
+from nexus.transport.telegram import TelegramTransport
 
 logger = logging.getLogger(__name__)
 
@@ -104,8 +105,6 @@ async def run_nexus(config: NexusConfig) -> None:
     conv = agents["conversation_manager"]
 
     if config.telegram:
-        from nexus.transport.telegram import TelegramTransport
-
         tenant_map: dict[str, str] = {}
         for u in config.seed_users:
             if u.telegram_user_id is not None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass, field
 from typing import Any
@@ -90,8 +91,6 @@ class LLMClient:
         raw_tool_calls = message.get("tool_calls", [])
         for tc in raw_tool_calls:
             func = tc.get("function", {})
-            import json
-
             try:
                 args = json.loads(func.get("arguments", "{}"))
             except json.JSONDecodeError:

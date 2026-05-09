@@ -1,31 +1,30 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+import sys
 from pathlib import Path
 
+import civitas
 import typer
 from rich.console import Console
 
+from nexus import __version__
+from nexus.config import load_config
+from nexus.runtime import run_nexus
+
 app = typer.Typer(name="nexus", no_args_is_help=True)
 console = Console()
+
+_CIVITAS_VERSION = getattr(civitas, "__version__", "unknown")
 
 
 @app.command()
 def version() -> None:
     """Print Nexus version info."""
-    import sys
-
-    from nexus import __version__
-
-    try:
-        import civitas
-
-        civitas_version = getattr(civitas, "__version__", "unknown")
-    except ImportError:
-        civitas_version = "not installed"
-
     console.print(f"Nexus {__version__}")
     console.print(f"Python {sys.version.split()[0]}")
-    console.print(f"Civitas {civitas_version}")
+    console.print(f"Civitas {_CIVITAS_VERSION}")
 
 
 _DEFAULT_CONFIG = typer.Option("config.yaml", "--config", "-c", help="Path to config file")
@@ -36,16 +35,11 @@ def run(
     config: Path = _DEFAULT_CONFIG,
 ) -> None:
     """Start the Nexus assistant."""
-    from nexus.config import load_config
-
     try:
         cfg = load_config(config)
     except (FileNotFoundError, ValueError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
-
-    import asyncio
-    import logging
 
     logging.basicConfig(
         level=logging.INFO,
@@ -59,8 +53,6 @@ def run(
     console.print(f"  Memory: {cfg.memory.db_path}")
     console.print(f"  Seed users: {len(cfg.seed_users)}")
 
-    from nexus.runtime import run_nexus
-
     asyncio.run(run_nexus(cfg))
 
 
@@ -72,7 +64,6 @@ def setup(
     output: Path = _DEFAULT_OUTPUT,
 ) -> None:
     """First-boot setup wizard — generates config.yaml interactively."""
-
     if output.exists():
         overwrite = typer.confirm(f"{output} already exists. Overwrite?", default=False)
         if not overwrite:

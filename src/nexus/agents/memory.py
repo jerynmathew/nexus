@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -185,8 +186,6 @@ class MemoryAgent(AgentProcess):
 
     @staticmethod
     def _sanitize_fts_query(query: str) -> str:
-        import re
-
         sanitized = re.sub(r"[^\w\s]", " ", query)
         words = sanitized.split()
         if not words:
