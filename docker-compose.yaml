@@ -31,5 +31,23 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     command: ["-f", "/config.yaml"]
 
+  mcp-google:
+    image: taylorwilsdon/google_workspace_mcp:latest
+    container_name: mcp-google
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - mcp-google-creds:/app/data
+    environment:
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - ENABLED_SERVICES=gmail,calendar,tasks
+      - MCP_TRANSPORT=streamable-http
+      - WORKSPACE_MCP_PERSISTENT_AUTH=true
+    profiles:
+      - google
+
 volumes:
   nexus-data:
+  mcp-google-creds:

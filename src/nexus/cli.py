@@ -120,5 +120,40 @@ def setup(
     console.print(f"\nRun [bold]nexus run --config {output}[/bold] to start.")
 
 
+@app.command(name="setup-google")
+def setup_google() -> None:
+    """Set up Google Workspace MCP — OAuth credentials and Docker sidecar."""
+    console.print("[bold]Google Workspace MCP Setup[/bold]\n")
+    console.print("Prerequisites:")
+    console.print("  1. Create a Google Cloud project")
+    console.print("  2. Enable Gmail, Calendar, and Tasks APIs")
+    console.print("  3. Create OAuth 2.0 credentials (Desktop app type)")
+    console.print()
+
+    client_id = typer.prompt("Google OAuth Client ID")
+    client_secret = typer.prompt("Google OAuth Client Secret")
+
+    env_path = Path(".env")
+    existing = env_path.read_text() if env_path.exists() else ""
+
+    additions: list[str] = []
+    if "GOOGLE_OAUTH_CLIENT_ID" not in existing:
+        additions.append(f"GOOGLE_OAUTH_CLIENT_ID={client_id}")
+    if "GOOGLE_OAUTH_CLIENT_SECRET" not in existing:
+        additions.append(f"GOOGLE_OAUTH_CLIENT_SECRET={client_secret}")
+
+    if additions:
+        with env_path.open("a") as f:
+            f.write("\n".join(["", *additions, ""]))
+        console.print(f"[green]Credentials added to {env_path}[/green]")
+
+    console.print("\nNext steps:")
+    console.print("  1. Start the MCP server:")
+    console.print("     [bold]docker compose --profile google up -d[/bold]")
+    console.print("  2. Open [bold]http://localhost:8000[/bold] to complete OAuth")
+    console.print("  3. Set [bold]mcp.servers[0].enabled: true[/bold] in config.yaml")
+    console.print("  4. Restart Nexus")
+
+
 def main() -> None:
     app()

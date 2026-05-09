@@ -6,6 +6,7 @@ llm:
   base_url: "http://localhost:4000"    # AgentGateway sidecar
   api_key: "${ANTHROPIC_API_KEY}"
   model: "claude-sonnet-4-20250514"
+  cheap_model: "claude-haiku-4-20250414"  # Used for classify, summarize, skill execution
   max_tokens: 4096
 
 telegram:
@@ -15,9 +16,24 @@ telegram:
 memory:
   db_path: "data/nexus.db"
 
+# MCP servers — each runs as a Docker sidecar
+# Enable Google Workspace: docker compose --profile google up
+mcp:
+  servers:
+    - name: google
+      transport: streamable-http
+      url: "http://localhost:8000/mcp"
+      tool_group: google
+      enabled: false                     # Enable after OAuth setup
+
+governance:
+  audit_path: "data/audit.jsonl"
+  enabled: true
+
 persona_dir: "personas"
 users_dir: "data/users"
 data_dir: "data"
+skills_dir: "skills"
 
 seed_users:
   - name: "Jeryn"
