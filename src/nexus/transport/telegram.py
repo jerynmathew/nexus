@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import html
 import logging
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -17,6 +19,22 @@ from telegram.ext import (
 from nexus.transport.base import Button, InboundMessage
 
 logger = logging.getLogger(__name__)
+
+_MAX_MESSAGE_LENGTH = 4096
+
+
+def _markdown_to_html(text: str) -> str:
+    safe = html.escape(text)
+
+    safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)
+    safe = re.sub(r"__(.+?)__", r"<u>\1</u>", safe)
+    safe = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"<i>\1</i>", safe)
+    safe = re.sub(r"(?<!_)_(?!_)(.+?)(?<!_)_(?!_)", r"<i>\1</i>", safe)
+    safe = re.sub(r"```(\w*)\n(.*?)```", r"<pre>\2</pre>", safe, flags=re.DOTALL)
+    safe = re.sub(r"`(.+?)`", r"<code>\1</code>", safe)
+    safe = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', safe)
+
+    return safe
 
 
 class TelegramTransport:
@@ -99,14 +117,35 @@ class TelegramTransport:
         )
 
     async def send_text(self, channel_id: str, text: str) -> None:
-        try:
-            await self._bot.send_message(
-                chat_id=int(channel_id),
-                text=text,
-                parse_mode=ParseMode.MARKDOWN,
-            )
-        except Exception:
-            await self._bot.send_message(chat_id=int(channel_id), text=text)
+        chat_id = int(channel_id)
+        formatted = _markdown_to_html(text)
+
+        for chunk in self._split_message(formatted):
+            try:
+                await self._bot.send_message(
+                    chat_id=chat_id,
+                    text=chunk,
+                    parse_mode=ParseMode.HTML,
+                )
+            except Exception:
+                plain_chunk = self._split_message(text)[0] if chunk == formatted else chunk
+                await self._bot.send_message(chat_id=chat_id, text=plain_chunk)
+
+    @staticmethod
+    def _split_message(text: str) -> list[str]:
+        if len(text) <= _MAX_MESSAGE_LENGTH:
+            return [text]
+        chunks: list[str] = []
+        while text:
+            if len(text) <= _MAX_MESSAGE_LENGTH:
+                chunks.append(text)
+                break
+            split_at = text.rfind("\n", 0, _MAX_MESSAGE_LENGTH)
+            if split_at == -1:
+                split_at = _MAX_MESSAGE_LENGTH
+            chunks.append(text[:split_at])
+            text = text[split_at:].lstrip("\n")
+        return chunks
 
     async def send_buttons(
         self,
