@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#059669"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#ea580c"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="620" rx="12" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <rect x="0" y="0" width="1000" height="52" rx="12" fill="url(#headerGrad)"/>
+  <rect x="0" y="40" width="1000" height="12" fill="url(#headerGrad)"/>
+  <text x="500" y="34" text-anchor="middle" fill="white" font-size="17" font-weight="700">M2 Wave B — HTTPGateway + Content Viewer + Context Compression</text>
+
+  <!-- ═══════ User surfaces (top) ═══════ -->
+  <!-- Telegram -->
+  <rect x="40" y="75" width="130" height="55" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="105" y="97" text-anchor="middle" fill="#334155" font-size="12" font-weight="600">📱 Telegram</text>
+  <text x="105" y="113" text-anchor="middle" fill="#64748b" font-size="10">TL;DR + link</text>
+
+  <!-- Browser -->
+  <rect x="220" y="75" width="130" height="55" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="285" y="97" text-anchor="middle" fill="#334155" font-size="12" font-weight="600">🌐 Browser</text>
+  <text x="285" y="113" text-anchor="middle" fill="#64748b" font-size="10">Dashboard + /view/</text>
+
+  <!-- Homelab -->
+  <rect x="400" y="75" width="160" height="55" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="480" y="97" text-anchor="middle" fill="#334155" font-size="12" font-weight="600">🏠 Homepage/Heimdall</text>
+  <text x="480" y="113" text-anchor="middle" fill="#64748b" font-size="10">iframe embed :8080</text>
+
+  <!-- Arrows to HTTPGateway -->
+  <line x1="105" y1="130" x2="350" y2="175" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="285" y1="130" x2="350" y2="175" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="480" y1="130" x2="480" y2="175" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+
+  <!-- ═══════ HTTPGateway ═══════ -->
+  <rect x="200" y="175" width="560" height="110" rx="10" fill="white" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="200" y="175" width="560" height="28" rx="10" fill="#3b82f6"/>
+  <rect x="200" y="193" width="560" height="10" fill="#3b82f6"/>
+  <text x="480" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="700">HTTPGateway (Civitas AgentProcess) — :8080</text>
+
+  <!-- Route boxes -->
+  <rect x="215" y="215" width="120" height="35" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="275" y="237" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">GET /</text>
+
+  <rect x="345" y="215" width="120" height="35" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="405" y="237" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">GET /api/*</text>
+
+  <rect x="475" y="215" width="130" height="35" rx="5" fill="#dcfce7" stroke="#86efac"/>
+  <text x="540" y="237" text-anchor="middle" fill="#166534" font-size="10" font-weight="700">GET /view/&lt;id&gt;</text>
+
+  <rect x="615" y="215" width="130" height="35" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="680" y="237" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">GET /api/events</text>
+
+  <text x="215" y="270" fill="#64748b" font-size="9">Static dashboard</text>
+  <text x="345" y="270" fill="#64748b" font-size="9">health/topology/agents</text>
+  <text x="475" y="270" fill="#166534" font-size="9" font-weight="600">Rich content viewer</text>
+  <text x="615" y="270" fill="#64748b" font-size="9">SSE live updates</text>
+
+  <!-- ═══════ DashboardServer (GenServer) ═══════ -->
+  <rect x="200" y="310" width="350" height="120" rx="10" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="200" y="310" width="350" height="24" rx="10" fill="#8b5cf6"/>
+  <rect x="200" y="326" width="350" height="8" fill="#8b5cf6"/>
+  <text x="375" y="328" text-anchor="middle" fill="white" font-size="12" font-weight="700">DashboardServer (GenServer)</text>
+
+  <text x="215" y="352" fill="#334155" font-size="10">handle_call → topology, agent status, activity</text>
+  <text x="215" y="368" fill="#334155" font-size="10">handle_cast → health updates from agents</text>
+  <text x="215" y="384" fill="#334155" font-size="10">handle_info → periodic metric aggregation</text>
+  <text x="215" y="402" fill="#64748b" font-size="9">State: supervision tree, restart counts, recent activity</text>
+
+  <!-- Arrow: HTTPGateway → DashboardServer -->
+  <line x1="375" y1="285" x2="375" y2="310" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <text x="385" y="300" fill="#8b5cf6" font-size="9">call()</text>
+
+  <!-- ═══════ Content Viewer (filesystem) ═══════ -->
+  <rect x="590" y="310" width="200" height="120" rx="10" fill="white" stroke="#059669" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="590" y="310" width="200" height="24" rx="10" fill="#059669"/>
+  <rect x="590" y="326" width="200" height="8" fill="#059669"/>
+  <text x="690" y="328" text-anchor="middle" fill="white" font-size="12" font-weight="700">Content Viewer</text>
+
+  <text x="605" y="352" fill="#334155" font-size="10">data/views/{id}.html</text>
+  <text x="605" y="368" fill="#334155" font-size="10">24h TTL, auto-cleanup</text>
+  <text x="605" y="384" fill="#334155" font-size="10">Rich HTML: tables, charts</text>
+  <text x="605" y="402" fill="#64748b" font-size="9">ConvManager stores → gets URL back</text>
+
+  <!-- Arrow: HTTPGateway → Content Viewer -->
+  <line x1="540" y1="250" x2="690" y2="310" stroke="#059669" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="630" y="276" fill="#059669" font-size="9">/view/</text>
+
+  <!-- ═══════ ConversationManager (bottom) ═══════ -->
+  <rect x="40" y="460" width="300" height="90" rx="10" fill="white" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="40" y="460" width="300" height="24" rx="10" fill="#3b82f6"/>
+  <rect x="40" y="476" width="300" height="8" fill="#3b82f6"/>
+  <text x="190" y="478" text-anchor="middle" fill="white" font-size="12" font-weight="700">ConversationManager</text>
+
+  <text x="55" y="502" fill="#334155" font-size="10">→ Store rich content to filesystem</text>
+  <text x="55" y="518" fill="#334155" font-size="10">→ Get URL: http://nexus:8080/view/abc123</text>
+  <text x="55" y="534" fill="#334155" font-size="10">→ Send TL;DR + link on Telegram</text>
+
+  <!-- Arrow: ConvManager → Content Store -->
+  <path d="M340,500 Q500,480 690,430" fill="none" stroke="#059669" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="510" y="460" fill="#059669" font-size="9">store_view()</text>
+
+  <!-- Arrow: ConvManager → DashboardServer (cast health) -->
+  <path d="M240,460 Q300,440 375,430" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrowGray)"/>
+  <text x="290" y="440" fill="#8b5cf6" font-size="9">cast(health)</text>
+
+  <!-- ═══════ Context Compression (bottom right) ═══════ -->
+  <rect x="580" y="460" width="380" height="130" rx="10" fill="white" stroke="#ea580c" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="580" y="460" width="380" height="24" rx="10" fill="#ea580c"/>
+  <rect x="580" y="476" width="380" height="8" fill="#ea580c"/>
+  <text x="770" y="478" text-anchor="middle" fill="white" font-size="12" font-weight="700">Context Compression</text>
+
+  <text x="595" y="502" fill="#334155" font-size="10">1. Prune stale tool results</text>
+  <text x="595" y="518" fill="#334155" font-size="10">2. Determine compression boundary</text>
+  <text x="595" y="534" fill="#334155" font-size="10">3. LLM summarize middle turns (Haiku)</text>
+  <text x="595" y="550" fill="#334155" font-size="10">4. Assemble: [summary] + [tail N messages]</text>
+  <text x="595" y="572" fill="#64748b" font-size="9">Trigger: 50% context window • Tail: last 20 messages preserved</text>
+
+  <!-- Arrow: ConvManager → Compression -->
+  <line x1="340" y1="520" x2="580" y2="520" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arrowOrange)"/>
+  <text x="460" y="513" fill="#ea580c" font-size="9">compress_if_needed()</text>
+</svg>
