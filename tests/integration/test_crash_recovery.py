@@ -53,7 +53,7 @@ class TestSupervisionTree:
     async def test_agent_count(self, running_runtime):
         runtime, _ = running_runtime
         all_agents = runtime.all_agents()
-        assert len(all_agents) == 3
+        assert len(all_agents) == 4
 
 
 class TestCrashRecovery:

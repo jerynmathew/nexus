@@ -11,7 +11,10 @@ from typing import Any
 from civitas.messages import Message
 from civitas.process import AgentProcess
 
+from nexus.agents.compressor import ContextCompressor
 from nexus.agents.intent import Intent, RegexClassifier
+from nexus.config import DashboardConfig
+from nexus.dashboard.views import ContentStore
 from nexus.governance.audit import AuditEntry, AuditSink
 from nexus.governance.policy import PolicyDecision, PolicyEngine
 from nexus.llm.client import LLMClient, LLMResponse
@@ -25,6 +28,7 @@ from nexus.skills.parser import Skill
 logger = logging.getLogger(__name__)
 
 _MAX_TOOL_ITERATIONS = 5
+_LONG_RESPONSE_THRESHOLD = 2000
 
 
 class ConversationManager(AgentProcess):
@@ -60,6 +64,9 @@ class ConversationManager(AgentProcess):
         self._policy = PolicyEngine()
         self._audit = AuditSink(audit_path)
         self._skill_manager: SkillManager | None = None
+        self._compressor = ContextCompressor()
+        self._content_store: ContentStore | None = None
+        self._dashboard_config: DashboardConfig | None = None
         self._sessions: dict[str, Session] = {}
         self._pending_approvals: dict[str, dict[str, Any]] = {}
         self._transport: Any = None
@@ -91,6 +98,14 @@ class ConversationManager(AgentProcess):
 
     def set_mcp_manager(self, mcp: MCPManager) -> None:
         self._mcp = mcp
+
+    def set_content_store(
+        self,
+        store: ContentStore,
+        config: DashboardConfig,
+    ) -> None:
+        self._content_store = store
+        self._dashboard_config = config
 
     async def handle(self, message: Message) -> Message | None:
         action = message.payload.get("action")
@@ -152,7 +167,7 @@ class ConversationManager(AgentProcess):
         await self._persist_message(session.session_id, "user", text)
         await self._persist_message(session.session_id, "assistant", response_text)
         await self._checkpoint_session(session)
-        await self._send_reply(channel_id, response_text)
+        await self._send_response_with_viewer(channel_id, response_text)
         return None
 
     async def _resolve_tenant(self, tenant_id: str) -> TenantContext | None:
@@ -244,8 +259,12 @@ class ConversationManager(AgentProcess):
 
         system_prompt = await self._build_system_prompt(tenant, intent)
         messages = self._build_messages(session, text)
-        tools = self._get_tools_for_intent(intent)
 
+        if self._llm and self._compressor.needs_compression(messages):
+            messages = await self._compressor.compress(messages, self._llm)
+            logger.info("[%s] Context compressed for %s", self.name, tenant.tenant_id)
+
+        tools = self._get_tools_for_intent(intent)
         response = await self._tool_use_loop(messages, system_prompt, tools, tenant)
         return response.content
 
@@ -561,6 +580,28 @@ class ConversationManager(AgentProcess):
                 await self._transport.send_text(channel_id, text)
             except Exception:
                 logger.debug("[%s] Failed to send reply via transport", self.name)
+
+    async def _send_response_with_viewer(
+        self,
+        channel_id: str,
+        response_text: str,
+    ) -> None:
+        if (
+            len(response_text) > _LONG_RESPONSE_THRESHOLD
+            and self._content_store
+            and self._dashboard_config
+        ):
+            view_id = self._content_store.store(response_text)
+            host = self._dashboard_config.host
+            port = self._dashboard_config.port
+            view_url = f"http://{host}:{port}/view/{view_id}"
+            tldr = response_text[:300].rsplit(" ", 1)[0] + "..."
+            await self._send_reply(
+                channel_id,
+                f"{tldr}\n\nSee full details → {view_url}",
+            )
+        else:
+            await self._send_reply(channel_id, response_text)
 
     async def _send_typing(self, channel_id: str) -> None:
         if self._transport and hasattr(self._transport, "send_typing"):

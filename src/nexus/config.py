@@ -31,6 +31,7 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "memory",
         "mcp",
         "governance",
+        "dashboard",
         "seed_users",
         "persona_dir",
         "users_dir",
@@ -76,6 +77,15 @@ class GovernanceConfig(BaseModel):
     enabled: bool = True
 
 
+class DashboardConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    enabled: bool = True
+    port: int = 8080
+    host: str = "localhost"
+    views_dir: str = "data/views"
+
+
 class TelegramConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -108,6 +118,7 @@ class NexusConfig(BaseModel):
     memory: MemoryConfig = MemoryConfig()
     mcp: MCPConfig = MCPConfig()
     governance: GovernanceConfig = GovernanceConfig()
+    dashboard: DashboardConfig = DashboardConfig()
     seed_users: list[TenantSeedUser] = []
     persona_dir: str = "personas"
     users_dir: str = "data/users"

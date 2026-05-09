@@ -14,6 +14,9 @@ from nexus.agents.conversation import ConversationManager
 from nexus.agents.memory import MemoryAgent
 from nexus.agents.scheduler import SchedulerAgent
 from nexus.config import NexusConfig
+from nexus.dashboard.gateway import DashboardApp
+from nexus.dashboard.server import DashboardServer
+from nexus.dashboard.views import ContentStore
 from nexus.mcp.manager import MCPManager
 from nexus.transport.telegram import TelegramTransport
 
@@ -45,9 +48,11 @@ def build_runtime(config: NexusConfig) -> tuple[Runtime, dict[str, AgentProcess]
 
     scheduler = SchedulerAgent(name="scheduler", skills_dir=config.skills_dir)
 
+    dashboard = DashboardServer(name="dashboard")
+
     root = Supervisor(
         name="root",
-        children=[memory, conversation, scheduler],
+        children=[memory, conversation, scheduler, dashboard],
         strategy="ONE_FOR_ALL",
         max_restarts=5,
         restart_window=60.0,
@@ -57,10 +62,11 @@ def build_runtime(config: NexusConfig) -> tuple[Runtime, dict[str, AgentProcess]
 
     runtime = Runtime(supervisor=root)
 
-    agents = {
+    agents: dict[str, AgentProcess] = {
         "memory": memory,
         "conversation_manager": conversation,
         "scheduler": scheduler,
+        "dashboard": dashboard,
     }
 
     return runtime, agents
@@ -115,6 +121,18 @@ async def run_nexus(config: NexusConfig) -> None:
         conv.set_mcp_manager(mcp_manager)
         logger.info("MCP: %d server(s) configured", len(config.mcp.servers))
 
+    dashboard_app: DashboardApp | None = None
+    if config.dashboard.enabled:
+        content_store = ContentStore(views_dir=config.dashboard.views_dir)
+        dashboard_app = DashboardApp(
+            runtime=runtime,
+            content_store=content_store,
+            port=config.dashboard.port,
+        )
+        conv.set_content_store(content_store, config.dashboard)
+        await dashboard_app.start()
+        logger.info("Dashboard at http://0.0.0.0:%d", config.dashboard.port)
+
     transport: TelegramTransport | None = None
 
     if config.telegram:
@@ -152,5 +170,7 @@ async def run_nexus(config: NexusConfig) -> None:
     logger.info("Shutting down...")
     if transport is not None:
         await transport.stop()
+    if dashboard_app is not None:
+        await dashboard_app.stop()
     await runtime.stop()
     logger.info("Nexus stopped")
