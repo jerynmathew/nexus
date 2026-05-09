@@ -117,27 +117,47 @@ class MCPManager:
 
         session = self._clients.get(f"_session_{server_name}")
         if session is None:
-            config = self._server_configs.get(server_name)
-            if config:
-                await self._connect_server(config)
-                session = self._clients.get(f"_session_{server_name}")
+            session = await self._reconnect_server(server_name)
             if session is None:
                 return f"MCP server '{server_name}' unavailable"
 
         try:
             result = await session.call_tool(tool_name, arguments=arguments)
-            parts = []
+            return self._parse_tool_result(result)
+        except Exception as exc:
+            logger.warning("MCP tool '%s' failed: %s", tool_name, exc)
+            await self._reconnect_server(server_name)
+            return f"Tool '{tool_name}' failed: {exc}"
+
+    async def _reconnect_server(self, server_name: str) -> Any | None:
+        config = self._server_configs.get(server_name)
+        if config:
+            logger.info("Reconnecting to MCP server '%s'", server_name)
+            await self._connect_server(config)
+        return self._clients.get(f"_session_{server_name}")
+
+    @staticmethod
+    def _parse_tool_result(result: Any) -> str:
+        parts: list[str] = []
+
+        if hasattr(result, "isError") and result.isError:
             for block in result.content:
                 if hasattr(block, "text"):
                     parts.append(block.text)
-            return "\n".join(parts) if parts else str(result.content)
-        except Exception as exc:
-            logger.warning("MCP tool '%s' failed: %s", tool_name, exc)
-            config = self._server_configs.get(server_name)
-            if config:
-                logger.info("Attempting reconnect to '%s'", server_name)
-                await self._connect_server(config)
-            return f"Tool '{tool_name}' failed: {exc}"
+            error_text = "\n".join(parts) if parts else "Unknown error"
+            return f"Tool error: {error_text}"
+
+        for block in result.content:
+            if hasattr(block, "text"):
+                parts.append(block.text)
+            elif hasattr(block, "data") and hasattr(block, "mimeType"):
+                parts.append(f"[Image: {block.mimeType}]")
+            elif hasattr(block, "resource"):
+                res = block.resource
+                uri = getattr(res, "uri", "unknown")
+                parts.append(f"[Resource: {uri}]")
+
+        return "\n".join(parts) if parts else "(empty result)"
 
     def filter_tools(self, tool_groups: list[str]) -> list[dict[str, Any]]:
         if not tool_groups:
