@@ -85,5 +85,6 @@ class TestDashboardServer:
         await server.init()
         await _cast(server, {"action": "agent_health", "agent": "memory", "status": "running"})
         result = await _call(server, {"action": "get_topology"})
-        assert result["supervisor"] == "root"
-        assert len(result["children"]) == 1
+        nexus = result["nexus"]
+        assert nexus["supervisor"] == "root"
+        assert len(nexus["children"]) == 1

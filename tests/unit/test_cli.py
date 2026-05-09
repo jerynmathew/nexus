@@ -31,7 +31,7 @@ class TestRun:
         config.write_text("llm:\n  model: test\n")
 
         mock_run = AsyncMock()
-        with patch("nexus.runtime.run_nexus", mock_run):
+        with patch("nexus.cli.run_nexus", mock_run):
             result = runner.invoke(app, ["run", "--config", str(config)])
 
         assert result.exit_code == 0
