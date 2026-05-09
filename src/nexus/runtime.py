@@ -232,9 +232,15 @@ async def run_nexus(config: NexusConfig) -> None:
     await stop_event.wait()
 
     logger.info("Shutting down...")
-    if transport is not None:
-        await transport.stop()
-    if dashboard_app is not None:
-        await dashboard_app.stop()
-    await runtime.stop()
+    for name, coro in [
+        ("transport", transport.stop() if transport else None),
+        ("dashboard", dashboard_app.stop() if dashboard_app else None),
+        ("runtime", runtime.stop()),
+    ]:
+        if coro is None:
+            continue
+        try:
+            await coro
+        except Exception:
+            logger.debug("Error stopping %s", name, exc_info=True)
     logger.info("Nexus stopped")

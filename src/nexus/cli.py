@@ -53,7 +53,10 @@ def run(
     console.print(f"  Memory: {cfg.memory.db_path}")
     console.print(f"  Seed users: {len(cfg.seed_users)}")
 
-    asyncio.run(run_nexus(cfg))
+    try:
+        asyncio.run(run_nexus(cfg))
+    except KeyboardInterrupt:
+        console.print("\n[dim]Nexus stopped.[/dim]")
 
 
 _DEFAULT_OUTPUT = typer.Option("config.yaml", "--output", "-o", help="Output config path")
