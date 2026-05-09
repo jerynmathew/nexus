@@ -132,15 +132,18 @@ def setup_google() -> None:
 
     client_id = typer.prompt("Google OAuth Client ID")
     client_secret = typer.prompt("Google OAuth Client Secret")
+    google_email = typer.prompt("Google email address")
 
     env_path = Path(".env")
     existing = env_path.read_text() if env_path.exists() else ""
 
-    additions: list[str] = []
-    if "GOOGLE_OAUTH_CLIENT_ID" not in existing:
-        additions.append(f"GOOGLE_OAUTH_CLIENT_ID={client_id}")
-    if "GOOGLE_OAUTH_CLIENT_SECRET" not in existing:
-        additions.append(f"GOOGLE_OAUTH_CLIENT_SECRET={client_secret}")
+    env_vars = {
+        "GOOGLE_OAUTH_CLIENT_ID": client_id,
+        "GOOGLE_OAUTH_CLIENT_SECRET": client_secret,
+        "GOOGLE_EMAIL": google_email,
+    }
+
+    additions = [f"{key}={value}" for key, value in env_vars.items() if key not in existing]
 
     if additions:
         with env_path.open("a") as f:
@@ -149,10 +152,10 @@ def setup_google() -> None:
 
     console.print("\nNext steps:")
     console.print("  1. Start the MCP server:")
-    console.print("     [bold]docker compose --profile google up -d[/bold]")
-    console.print("  2. Open [bold]http://localhost:8000[/bold] to complete OAuth")
-    console.print("  3. Set [bold]mcp.servers[0].enabled: true[/bold] in config.yaml")
-    console.print("  4. Restart Nexus")
+    console.print("     [bold]docker compose --profile google up -d --build[/bold]")
+    console.print("  2. Trigger OAuth by sending a Google query to Nexus on Telegram")
+    console.print("  3. Follow the auth URL that Nexus returns")
+    console.print("  4. Set [bold]mcp.servers[0].enabled: true[/bold] in config.yaml")
 
 
 def main() -> None:
