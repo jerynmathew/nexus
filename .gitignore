@@ -32,6 +32,7 @@ config/google-creds.json
 config/google-token.json
 config/*.json
 !config.example.yaml
+config.yaml
 
 # Data
 data/

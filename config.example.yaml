@@ -1,0 +1,28 @@
+# Nexus Configuration
+# Copy to config.yaml and fill in your values.
+# Secrets use ${ENV_VAR} syntax — set them in your environment or .env file.
+
+llm:
+  base_url: "http://localhost:4000"    # AgentGateway sidecar
+  api_key: "${ANTHROPIC_API_KEY}"
+  model: "claude-sonnet-4-20250514"
+  max_tokens: 4096
+
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  allowed_user_ids: []                 # Telegram user IDs allowed to interact
+
+memory:
+  db_path: "data/nexus.db"
+
+persona_dir: "personas"
+users_dir: "data/users"
+data_dir: "data"
+
+seed_users:
+  - name: "Jeryn"
+    tenant_id: "jeryn"
+    role: "admin"
+    persona: "dross"
+    timezone: "Asia/Kolkata"
+    telegram_user_id: 123456789        # Your Telegram user ID
