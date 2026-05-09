@@ -1,0 +1,20 @@
+transport:
+  type: in_process
+
+supervision:
+  name: root
+  strategy: ONE_FOR_ALL
+  max_restarts: 5
+  restart_window: 60
+  backoff: CONSTANT
+  backoff_base: 0.5
+  children:
+    - agent:
+        name: memory
+        type: nexus.agents.memory.MemoryAgent
+    - agent:
+        name: scheduler
+        type: nexus.agents.scheduler.SchedulerAgent
+    - agent:
+        name: conversation_manager
+        type: nexus.agents.conversation.ConversationManager
