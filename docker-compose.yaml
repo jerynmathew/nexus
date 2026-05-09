@@ -32,19 +32,19 @@ services:
     command: ["-f", "/config.yaml"]
 
   mcp-google:
-    image: taylorwilsdon/google_workspace_mcp:latest
+    build:
+      context: https://github.com/taylorwilsdon/google_workspace_mcp.git
     container_name: mcp-google
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
-      - mcp-google-creds:/app/data
+      - mcp-google-creds:/app/store_creds
     environment:
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-      - ENABLED_SERVICES=gmail,calendar,tasks
-      - MCP_TRANSPORT=streamable-http
-      - WORKSPACE_MCP_PERSISTENT_AUTH=true
+      - TOOLS=gmail,calendar,tasks
+      - OAUTHLIB_INSECURE_TRANSPORT=1
     profiles:
       - google
 
