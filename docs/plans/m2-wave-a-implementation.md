@@ -416,22 +416,30 @@ T2.1.2 MCPManager core
 
 | Phase | Task | Status | Notes |
 |---|---|---|---|
-| 1 | T2.3.1 Task routing | ⬜ Not started | |
-| 1 | T2.3.2 AgentGateway config | ⬜ Not started | |
-| 2 | T2.1.1 MCP config models | ⬜ Not started | |
-| 2 | T2.1.2 MCPManager core | ⬜ Not started | |
-| 2 | T2.1.3 Auto-reconnect | ⬜ Not started | |
-| 2 | T2.1.4 Wire into ConversationManager | ⬜ Not started | |
-| 3 | T2.7.1 Policy engine | ⬜ Not started | |
-| 3 | T2.7.2 Audit sink | ⬜ Not started | |
-| 3 | T2.7.3 Approval flow | ⬜ Not started | |
-| 3 | T2.7.4 Wire governance | ⬜ Not started | |
-| 4 | T2.4.1 SKILL.md parser | ⬜ Not started | |
-| 4 | T2.4.2 SkillManager | ⬜ Not started | |
-| 4 | T2.4.3 Skill execution | ⬜ Not started | |
-| 4 | T2.4.4 Scheduler cron | ⬜ Not started | |
-| 4 | T2.4.5 Morning briefing | ⬜ Not started | |
-| 5 | T2.2.1 Docker compose | ⬜ Not started | |
-| 5 | T2.2.2 Config | ⬜ Not started | |
-| 5 | T2.2.3 OAuth wizard | ⬜ Not started | |
-| 5 | T2.2.4 Integration test | ⬜ Not started | |
+| 1 | T2.3.1 Task routing | ✅ Done | model_for_task() with cheap/primary split |
+| 1 | T2.3.2 AgentGateway config | ✅ Done | Both sonnet + haiku registered |
+| 2 | T2.1.1 MCP config models | ✅ Done | MCPServerEntry, MCPConfig, GovernanceConfig |
+| 2 | T2.1.2 MCPManager core | ✅ Done | mcp SDK, sse/streamable-http/stdio, tool filtering |
+| 2 | T2.1.3 Auto-reconnect | ✅ Done | _reconnect_server on failure |
+| 2 | T2.1.4 Wire into ConversationManager | ✅ Done | set_mcp_manager(), tool fallback to all tools |
+| 3 | T2.7.1 Policy engine | ✅ Done | Read→ALLOW, Write→REQUIRE_APPROVAL, deny list |
+| 3 | T2.7.2 Audit sink | ✅ Done | JSONL append, argument redaction |
+| 3 | T2.7.3 Approval flow | ✅ Done | Callback handling for approve/reject |
+| 3 | T2.7.4 Wire governance | ✅ Done | Policy check + audit before every tool call |
+| 4 | T2.4.1 SKILL.md parser | ✅ Done | YAML frontmatter + section parsing |
+| 4 | T2.4.2 SkillManager | ✅ Done | Load, index, search, scheduled filter |
+| 4 | T2.4.3 Skill execution | ✅ Done | Parallel (TaskGroup) + sequential modes |
+| 4 | T2.4.4 Scheduler cron | ✅ Done | croniter.match, tick loop, state persistence |
+| 4 | T2.4.5 Morning briefing | ✅ Done | SKILL.md with email/calendar/tasks sections |
+| 5 | T2.2.1 Docker compose | ✅ Done | Build from source, streamable-http, OAuth |
+| 5 | T2.2.2 Config | ✅ Done | MCP + governance + skills_dir in config |
+| 5 | T2.2.3 OAuth wizard | ✅ Done | nexus setup-google CLI + .env.template |
+| 5 | T2.2.4 Integration test | ✅ Done | Live: "check my email" → Gmail via MCP → response |
+
+**All 19 tasks complete. Live verified: Gmail tool calls via MCP working on Telegram.**
+
+### Post-Wave-A fixes (also shipped)
+- Tool-use loop: added `type: function` + `json.dumps(arguments)` for OpenAI format
+- MCP result parsing: handle isError, ImageContent, EmbeddedResource
+- Telegram formatting: markdown→HTML conversion, message splitting at 4096 chars
+- Google MCP: build from source (no pre-built image), TOOLS space-separated, GOOGLE_EMAIL env
