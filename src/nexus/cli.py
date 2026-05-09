@@ -172,5 +172,106 @@ def setup_google() -> None:
     console.print("  4. Set [bold]mcp.servers[0].enabled: true[/bold] in config.yaml")
 
 
+_PERSONA_TEMPLATE = """\
+# {name}
+
+You are {name}, a personal AI assistant.
+
+## Personality
+
+{traits}
+
+## Communication Style
+
+- {formality_desc}
+- Match the user's energy: brief question → brief answer, detailed question → detailed answer
+{quirks}
+
+## Values
+
+- Reliability over speed — correct and slightly late beats fast and wrong
+- Privacy is non-negotiable — never volunteer one user's info to another
+- Transparency — say what you did and why
+
+## Constraints
+
+- Never send email, accept invite, or delete anything without approval
+- Prefer reversible actions: archive over delete, draft over send
+- If uncertain about user intent, ask — don't guess
+"""
+
+_FORMALITY_MAP = {
+    "1": ("Very casual", "Talk like a close friend — contractions, slang OK"),
+    "2": ("Casual-professional", "Professional but relaxed — no corporate speak"),
+    "3": ("Professional", "Clear and structured — appropriate for work contexts"),
+    "4": ("Very formal", "Formal language — no contractions, measured tone"),
+}
+
+
+@app.command(name="setup-persona")
+def setup_persona() -> None:
+    """Create a new persona (SOUL.md) interactively."""
+    console.print("[bold]Persona Builder[/bold]\n")
+
+    name = typer.prompt("Persona name (e.g., Dross, Friday)")
+    traits_raw = typer.prompt("Personality in a few words (e.g., witty, direct, helpful)")
+
+    console.print("\nFormality level:")
+    for k, (label, _) in _FORMALITY_MAP.items():
+        console.print(f"  [{k}] {label}")
+    formality = typer.prompt("Choose", default="2")
+    _, formality_desc = _FORMALITY_MAP.get(formality, _FORMALITY_MAP["2"])
+
+    quirks_raw = typer.prompt("Any specific quirks or rules? (leave blank to skip)", default="")
+
+    traits = "\n".join(f"- {t.strip()}" for t in traits_raw.split(",") if t.strip())
+    quirks = "\n".join(f"- {q.strip()}" for q in quirks_raw.split(".") if q.strip())
+    if quirks:
+        quirks = "\n" + quirks
+
+    content = _PERSONA_TEMPLATE.format(
+        name=name,
+        traits=traits,
+        formality_desc=formality_desc,
+        quirks=quirks,
+    )
+
+    safe_name = name.lower().replace(" ", "-")
+    persona_path = Path("personas") / f"{safe_name}.md"
+    persona_path.parent.mkdir(parents=True, exist_ok=True)
+    persona_path.write_text(content)
+
+    console.print(f"\n[green]Persona saved to {persona_path}[/green]")
+    console.print(f"\nTo use it, set [bold]persona: {safe_name}[/bold] in your seed_users config.")
+
+
+@app.command(name="personas")
+def personas_cmd(
+    action: str = typer.Argument("list", help="list or set"),
+    name: str = typer.Argument("", help="Persona name (for set)"),
+) -> None:
+    """List or switch personas."""
+    personas_dir = Path("personas")
+
+    if action == "list":
+        if not personas_dir.exists():
+            console.print("[yellow]No personas directory found.[/yellow]")
+            return
+        for p in sorted(personas_dir.glob("*.md")):
+            console.print(f"  {p.stem}")
+        return
+
+    if action == "set" and name:
+        path = personas_dir / f"{name}.md"
+        if not path.exists():
+            console.print(f"[red]Persona '{name}' not found.[/red]")
+            raise typer.Exit(code=1)
+        console.print(f"[green]Set persona to '{name}'.[/green]")
+        console.print(f"Update [bold]persona: {name}[/bold] in config.yaml seed_users.")
+        return
+
+    console.print("[red]Usage: nexus personas list | nexus personas set <name>[/red]")
+
+
 def main() -> None:
     app()
