@@ -66,7 +66,7 @@ class RegexClassifier:
             return Intent(
                 target_service="calendar",
                 action="write" if write_keywords else "read",
-                tool_groups=["calendar"],
+                tool_groups=["calendar", "event", "freebusy"],
                 confidence=0.8,
                 original_text=text,
             )
