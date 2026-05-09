@@ -30,6 +30,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      OTEL_SDK_DISABLED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
