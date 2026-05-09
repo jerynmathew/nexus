@@ -47,7 +47,14 @@ class TelegramTransport:
         self._bot_token = bot_token
         self._send_to_conv_manager = conversation_manager_send
         self._resolve = tenant_resolver
-        self._app = ApplicationBuilder().token(bot_token).build()
+        self._app = (
+            ApplicationBuilder()
+            .token(bot_token)
+            .connect_timeout(30.0)
+            .read_timeout(30.0)
+            .write_timeout(30.0)
+            .build()
+        )
         self._bot = Bot(token=bot_token)
 
     @property
