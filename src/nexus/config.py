@@ -29,10 +29,13 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "llm",
         "telegram",
         "memory",
+        "mcp",
+        "governance",
         "seed_users",
         "persona_dir",
         "users_dir",
         "data_dir",
+        "skills_dir",
     }
 )
 
@@ -43,7 +46,34 @@ class LLMConfig(BaseModel):
     base_url: str = "http://localhost:4000"
     api_key: str = ""
     model: str = "claude-sonnet-4-20250514"
+    cheap_model: str = "claude-haiku-4-20250414"
     max_tokens: int = 4096
+
+
+class MCPServerEntry(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    transport: str = "streamable-http"
+    url: str | None = None
+    command: str | None = None
+    args: list[str] = []
+    env: dict[str, str] = {}
+    tool_group: str | None = None
+    enabled: bool = True
+
+
+class MCPConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    servers: list[MCPServerEntry] = []
+
+
+class GovernanceConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    audit_path: str = "data/audit.jsonl"
+    enabled: bool = True
 
 
 class TelegramConfig(BaseModel):
@@ -76,10 +106,13 @@ class NexusConfig(BaseModel):
     llm: LLMConfig = LLMConfig()
     telegram: TelegramConfig | None = None
     memory: MemoryConfig = MemoryConfig()
+    mcp: MCPConfig = MCPConfig()
+    governance: GovernanceConfig = GovernanceConfig()
     seed_users: list[TenantSeedUser] = []
     persona_dir: str = "personas"
     users_dir: str = "data/users"
     data_dir: str = "data"
+    skills_dir: str = "skills"
 
     @field_validator("seed_users", mode="before")
     @classmethod
@@ -109,7 +142,7 @@ def load_config(path: Path) -> NexusConfig:
 
     config_dir = path.parent.resolve()
 
-    for key in ("persona_dir", "users_dir", "data_dir"):
+    for key in ("persona_dir", "users_dir", "data_dir", "skills_dir"):
         if key in raw and not Path(raw[key]).is_absolute():
             raw[key] = str(config_dir / raw[key])
 

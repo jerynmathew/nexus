@@ -26,16 +26,21 @@ class LLMResponse:
     tool_calls: list[ToolCall] = field(default_factory=list)
 
 
+_CHEAP_TASKS = frozenset({"CLASSIFY", "SUMMARIZE", "FORMAT", "SKILL_EXEC"})
+
+
 class LLMClient:
     def __init__(
         self,
         base_url: str = "http://localhost:4000",
         api_key: str = "",
         default_model: str = "claude-sonnet-4-20250514",
+        cheap_model: str = "claude-haiku-4-20250414",
         timeout: float = 120.0,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._default_model = default_model
+        self._cheap_model = cheap_model
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -44,6 +49,11 @@ class LLMClient:
             headers=headers,
             timeout=timeout,
         )
+
+    def model_for_task(self, task: str) -> str:
+        if task.upper() in _CHEAP_TASKS:
+            return self._cheap_model
+        return self._default_model
 
     async def chat(
         self,
