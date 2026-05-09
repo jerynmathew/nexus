@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from pathlib import Path
@@ -71,20 +72,20 @@ class ConversationManager(AgentProcess):
 
         if action == "inbound_message":
             return await self._handle_inbound(message)
-        elif action == "execute_skill":
+        if action == "execute_skill":
             return await self._handle_skill_trigger(message)
-        elif action == "callback":
+        if action == "callback":
             return await self._handle_transport_callback(message)
-        elif action == "status":
+        if action == "status":
             return self.reply(
                 {
                     "status": "running",
                     "active_sessions": len(self._sessions),
                 }
             )
-        else:
-            logger.warning("[%s] Unknown action: %s", self.name, action)
-            return None
+
+        logger.warning("[%s] Unknown action: %s", self.name, action)
+        return None
 
     async def _handle_inbound(self, message: Message) -> Message | None:
         payload = message.payload
@@ -354,10 +355,8 @@ class ConversationManager(AgentProcess):
 
     async def _send_typing(self, channel_id: str) -> None:
         if self._transport and hasattr(self._transport, "send_typing"):
-            try:
+            with contextlib.suppress(Exception):
                 await self._transport.send_typing(channel_id)
-            except Exception:
-                pass
 
     async def _handle_skill_trigger(self, message: Message) -> Message | None:
         logger.info("[%s] Skill execution not yet implemented", self.name)

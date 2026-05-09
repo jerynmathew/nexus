@@ -56,7 +56,7 @@ class TestTelegramTransport:
         send_fn.assert_not_called()
 
     async def test_on_callback(self, transport):
-        t, send_fn, resolver = transport
+        t, send_fn, _resolver = transport
 
         update = MagicMock()
         update.effective_user.id = 12345

@@ -103,6 +103,8 @@ async def run_nexus(config: NexusConfig) -> None:
     await seed_on_start(runtime, config)
 
     conv = agents["conversation_manager"]
+    assert isinstance(conv, ConversationManager)
+    transport: TelegramTransport | None = None
 
     if config.telegram:
         tenant_map: dict[str, str] = {}
@@ -137,7 +139,7 @@ async def run_nexus(config: NexusConfig) -> None:
     await stop_event.wait()
 
     logger.info("Shutting down...")
-    if config.telegram:
-        await transport.stop()  # type: ignore[possibly-undefined]
+    if transport is not None:
+        await transport.stop()
     await runtime.stop()
     logger.info("Nexus stopped")

@@ -46,7 +46,7 @@ async def running_runtime(tmp_path):
 
 class TestSupervisionTree:
     async def test_all_agents_start(self, running_runtime):
-        runtime, agents = running_runtime
+        _runtime, agents = running_runtime
         for name, agent in agents.items():
             assert agent.status.value == "RUNNING", f"{name} is not running"
 

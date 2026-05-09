@@ -37,6 +37,8 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.8",
     "mypy>=1.13",
+    "pre-commit>=4.0",
+    "types-pyyaml>=6.0",
 ]
 otel = [
     "opentelemetry-api>=1.28",
@@ -60,14 +62,55 @@ packages = ["src/nexus"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "ASYNC"]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "ASYNC",  # flake8-async
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RET",    # flake8-return
+    "PTH",    # flake8-use-pathlib
+    "T20",    # flake8-print (no print() in source)
+    "N",      # pep8-naming
+    "C90",    # mccabe complexity
+    "PLR",    # pylint refactor (includes too-many-statements)
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "PLR2004",  # magic-value-comparison — too noisy for config/test code
+    "PLR0913",  # too-many-arguments — agents have legitimate multi-param constructors
+    "RET504",   # unnecessary-assign — sometimes aids readability
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20", "PLR0915", "N802", "SIM"]
+"src/nexus/transport/cli.py" = ["T20"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "civitas.*",
+    "telegram.*",
+]
+ignore_missing_imports = true
+follow_untyped_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
