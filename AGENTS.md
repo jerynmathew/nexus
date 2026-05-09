@@ -1,7 +1,7 @@
 # AGENTS.md — Nexus
 
 > Machine-readable project reference for AI coding assistants.
-> Last updated: 2026-05-08
+> Last updated: 2026-05-09
 
 ## Project Identity
 
@@ -131,13 +131,17 @@ nexus/
 │       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences, skills backup
 │       │   ├── scheduler.py     # SchedulerAgent — cron tasks, triggers skills
 │       │   ├── intent.py        # IntentClassifier protocol + implementations
-│       │   ├── dashboard.py     # DashboardServer(GenServer) — live topology + health state
-│       │   └── llm_router.py    # ModelRouter(AgentProcess) — task-based LLM routing
+│       │   └── dashboard.py     # DashboardServer(GenServer) — live topology + health state
+│       │
+│       ├── llm/
+│       │   ├── __init__.py
+│       │   └── client.py        # LLMClient — httpx to AgentGateway (OpenAI-compatible)
 │       │
 │       ├── transport/
 │       │   ├── base.py          # BaseTransport protocol + InboundMessage
 │       │   ├── telegram.py      # Telegram transport
-│       │   └── ...              # Future: Discord, Slack, SMS, CLI
+│       │   ├── cli.py           # CLI transport (stdin/stdout, for dev/testing)
+│       │   └── ...              # Future: Discord, Slack, SMS
 │       │
 │       ├── persona/
 │       │   ├── loader.py        # Persona (SOUL.md) loading + injection
@@ -189,7 +193,7 @@ These are settled decisions. Do not revisit without discussion.
 | 9 | **Config: YAML for infra, SQLite for user** | Infrastructure (bot tokens, MCP URLs) in YAML. User config (persona, preferences) in DB. Learned from Vigil M4.0. |
 | 10 | **Presidium governance hooks designed in** | Policy evaluation points, trust score interfaces, audit sink wiring — all in the architecture from day one, not bolted on. |
 | 11 | **Web dashboard via GenServer + HTTPGateway** | `DashboardServer(GenServer)` for thread-safe state, `HTTPGateway` for HTTP serving. Static HTML + vanilla JS, no React/Vue build step. Embeddable in homelab dashboards. |
-| 12 | **LLM router as AgentProcess** | Supervised, hot-swappable, observable in dashboard. Task-based routing with toggles (classify → local, converse → cloud). |
+| 12 | **AgentGateway sidecar for LLM routing** | [AgentGateway](https://github.com/agentgateway/agentgateway) (Rust single binary, ~50MB) runs as a Docker sidecar on port 4000. ConversationManager calls it directly via httpx using the OpenAI-compatible API. Provides native failover, rate limiting, cost tracking via OTEL, and MCP gateway — all without custom code. Task-based model routing (classify → cheap, converse → primary) deferred to M2 as a thin wrapper. Replaces the original ModelRouter(AgentProcess) design. |
 | 13 | **FTS5 for memory search** | Zero-dependency full-text search. Sufficient for personal assistant scale. Vector search as optional extra later. |
 | 14 | **Skills + MCP are the norm, custom agents are the exception** | Morning briefing, email triage, task management — all skills. Custom agents only for bespoke code (no MCP, custom rendering/UI, stateful API connections). Simplicity over infrastructure. |
 
