@@ -43,7 +43,7 @@ services:
     environment:
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-      - TOOLS=gmail,calendar,tasks
+      - TOOLS=gmail calendar tasks
       - OAUTHLIB_INSECURE_TRANSPORT=1
     profiles:
       - google
