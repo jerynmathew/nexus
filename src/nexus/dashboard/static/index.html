@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nexus Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.wrap{max-width:960px;margin:0 auto;padding:20px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+h1{font-size:20px;font-weight:700;color:#f1f5f9}
+.status-badge{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot.healthy{background:#22c55e}
+.dot.degraded{background:#f59e0b}
+.dot.disconnected{background:#ef4444}
+.meta{font-size:12px;color:#64748b}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.card{background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155}
+.card-name{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px}
+.card-status{display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:4px}
+.card-meta{font-size:12px;color:#64748b}
+.section-title{font-size:14px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px}
+.feed{background:#1e293b;border-radius:10px;border:1px solid #334155;max-height:320px;overflow-y:auto}
+.feed-item{padding:10px 16px;border-bottom:1px solid #1e293b;display:flex;gap:12px;align-items:baseline;font-size:13px}
+.feed-item:last-child{border-bottom:none}
+.feed-item:nth-child(odd){background:#1e293b}
+.feed-item:nth-child(even){background:#162032}
+.feed-time{color:#64748b;font-size:11px;white-space:nowrap;min-width:60px}
+.feed-agent{font-family:monospace;color:#60a5fa;min-width:100px}
+.feed-detail{color:#94a3b8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{text-align:center;padding:40px;color:#475569;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Nexus Dashboard</h1>
+    <div class="status-badge">
+      <span class="dot disconnected" id="hDot"></span>
+      <span id="hStatus">connecting...</span>
+      <span class="meta" id="hUptime"></span>
+    </div>
+  </header>
+  <div class="section-title">Agents</div>
+  <div class="grid" id="agents"><div class="empty">Loading...</div></div>
+  <div class="section-title">Activity</div>
+  <div class="feed" id="activity"><div class="empty">No activity yet</div></div>
+</div>
+<script>
+function relTime(ts){
+  var d=Math.floor(Date.now()/1000-ts);
+  if(d<5)return"just now";
+  if(d<60)return d+"s ago";
+  if(d<3600)return Math.floor(d/60)+"m ago";
+  if(d<86400)return Math.floor(d/3600)+"h ago";
+  return Math.floor(d/86400)+"d ago"
+}
+function fmtUptime(s){
+  var h=Math.floor(s/3600),m=Math.floor(s%3600/60);
+  return h>0?h+"h "+m+"m":m+"m"
+}
+function renderAgents(data){
+  var el=document.getElementById("agents");
+  var agents=data.agents||{};
+  var names=Object.keys(agents);
+  if(!names.length){el.innerHTML='<div class="empty">No agents</div>';return}
+  el.innerHTML=names.map(function(n){
+    var a=agents[n];
+    var s=a.status||"unknown";
+    var c=s==="running"?"healthy":s==="crashed"?"disconnected":"degraded";
+    return'<div class="card"><div class="card-name">'+n+'</div>'
+      +'<div class="card-status"><span class="dot '+c+'"></span>'+s+'</div>'
+      +'<div class="card-meta">restarts: '+((a.restart_count)||0)+'</div>'
+      +'<div class="card-meta">'+relTime(a.last_active||0)+'</div></div>'
+  }).join("")
+}
+function renderActivity(data){
+  var el=document.getElementById("activity");
+  var items=(data.activity||[]).slice().reverse();
+  if(!items.length){el.innerHTML='<div class="empty">No activity yet</div>';return}
+  el.innerHTML=items.slice(0,50).map(function(e){
+    return'<div class="feed-item"><span class="feed-time">'+relTime(e.timestamp||0)+'</span>'
+      +'<span class="feed-agent">'+e.agent+'</span>'
+      +'<span class="feed-detail">'+((e.type||"")+" "+(e.detail||""))+'</span></div>'
+  }).join("")
+}
+function renderHealth(data){
+  var dot=document.getElementById("hDot");
+  var st=document.getElementById("hStatus");
+  var up=document.getElementById("hUptime");
+  var s=data.status||"unknown";
+  dot.className="dot "+(s==="healthy"?"healthy":"degraded");
+  st.textContent=s+" ("+((data.agent_count)||0)+" agents)";
+  up.textContent="up "+fmtUptime(data.uptime_seconds||0)
+}
+function setDisconnected(){
+  document.getElementById("hDot").className="dot disconnected";
+  document.getElementById("hStatus").textContent="disconnected"
+}
+async function poll(){
+  try{
+    var[h,a,f]=await Promise.all([
+      fetch("/api/health").then(function(r){return r.json()}),
+      fetch("/api/agents").then(function(r){return r.json()}),
+      fetch("/api/activity").then(function(r){return r.json()})
+    ]);
+    renderHealth(h);renderAgents(a);renderActivity(f)
+  }catch(e){setDisconnected()}
+}
+poll();setInterval(poll,5000)
+</script>
+</body>
+</html>
