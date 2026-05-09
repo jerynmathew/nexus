@@ -34,6 +34,8 @@ class DashboardServer(GenServer):
             return {"agents": dict(self.state.get("agents", {}))}
         if action == "get_activity":
             return {"activity": list(self._activity)}
+        if action == "get_trust":
+            return {"trust": dict(self.state.get("trust_scores", {}))}
 
         return {"error": f"unknown action: {action}"}
 
@@ -68,6 +70,14 @@ class DashboardServer(GenServer):
                     "connected": payload.get("connected", False),
                     "tool_count": payload.get("tool_count", 0),
                 }
+
+        elif action == "trust_update":
+            tenant_id = payload.get("tenant_id", "")
+            category = payload.get("category", "")
+            score = payload.get("score", 0.5)
+            trust = self.state.setdefault("trust_scores", {})
+            tenant_trust = trust.setdefault(tenant_id, {})
+            tenant_trust[category] = score
 
     async def handle_info(self, payload: dict[str, Any]) -> None:
         if payload.get("action") == "tick":

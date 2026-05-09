@@ -59,6 +59,7 @@ class DashboardApp:
             "/api/topology": "get_topology",
             "/api/agents": "get_agents",
             "/api/activity": "get_activity",
+            "/api/trust": "get_trust",
         }
 
         action = action_map.get(path)

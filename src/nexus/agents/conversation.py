@@ -17,6 +17,7 @@ from nexus.config import DashboardConfig
 from nexus.dashboard.views import ContentStore
 from nexus.governance.audit import AuditEntry, AuditSink
 from nexus.governance.policy import PolicyDecision, PolicyEngine
+from nexus.governance.trust import TrustStore, tool_category
 from nexus.llm.client import LLMClient, LLMResponse
 from nexus.mcp.manager import MCPManager
 from nexus.models.session import Session
@@ -63,6 +64,7 @@ class ConversationManager(AgentProcess):
         self._mcp: MCPManager | None = None
         self._policy = PolicyEngine()
         self._audit = AuditSink(audit_path)
+        self._trust = TrustStore()
         self._skill_manager: SkillManager | None = None
         self._compressor = ContextCompressor()
         self._content_store: ContentStore | None = None
@@ -393,7 +395,9 @@ class ConversationManager(AgentProcess):
         arguments: dict[str, Any],
         tenant: TenantContext,
     ) -> str:
-        decision = self._policy.check(tool_name, arguments)
+        category = tool_category(tool_name)
+        trust_score = self._trust.get_score(tenant.tenant_id, category)
+        decision = self._policy.check(tool_name, arguments, trust_score=trust_score)
 
         self._audit.log(
             AuditEntry(
@@ -402,11 +406,13 @@ class ConversationManager(AgentProcess):
                 tool_name=tool_name,
                 arguments_summary=AuditSink.summarize_arguments(arguments),
                 decision=decision.value,
+                detail=f"trust={trust_score:.2f}",
             )
         )
 
         if decision == PolicyDecision.DENY:
-            return f"Action '{tool_name}' is not allowed by policy."
+            self._trust.update_score(tenant.tenant_id, category, -0.15)
+            return f"Action '{tool_name}' is not allowed (trust: {trust_score:.2f})."
 
         if decision == PolicyDecision.REQUIRE_APPROVAL:
             logger.info("[%s] Tool '%s' requires approval", self.name, tool_name)
@@ -514,7 +520,10 @@ class ConversationManager(AgentProcess):
             model=model,
             tools=tools,
         )
-        await self._send_reply(channel_id, resp.content)
+        if resp.content.strip() == "HEARTBEAT_OK":
+            logger.info("[%s] Heartbeat: nothing actionable", self.name)
+            return
+        await self._send_response_with_viewer(channel_id, resp.content)
 
     async def _handle_transport_callback(self, message: Message) -> Message | None:
         callback_data = message.payload.get("callback_data", "")
@@ -525,30 +534,44 @@ class ConversationManager(AgentProcess):
             approval_id = callback_data.removeprefix("approve:")
             pending = self._pending_approvals.pop(approval_id, None)
             if pending:
+                t_name = pending.get("tool_name", "")
+                category = tool_category(t_name)
+                self._trust.update_score(tenant_id, category, +0.05)
                 self._audit.log(
                     AuditEntry(
                         agent=self.name,
                         tenant_id=tenant_id,
-                        tool_name=pending.get("tool_name", ""),
+                        tool_name=t_name,
                         decision="APPROVED",
                     )
                 )
-                await self._send_reply(channel_id, "✅ Approved.")
+                score = self._trust.get_score(tenant_id, category)
+                await self._send_reply(
+                    channel_id,
+                    f"✅ Approved. ({category} trust: {score:.2f})",
+                )
             return None
 
         if callback_data.startswith("reject:"):
             approval_id = callback_data.removeprefix("reject:")
             pending = self._pending_approvals.pop(approval_id, None)
             if pending:
+                t_name = pending.get("tool_name", "")
+                category = tool_category(t_name)
+                self._trust.update_score(tenant_id, category, -0.10)
                 self._audit.log(
                     AuditEntry(
                         agent=self.name,
                         tenant_id=tenant_id,
-                        tool_name=pending.get("tool_name", ""),
+                        tool_name=t_name,
                         decision="REJECTED",
                     )
                 )
-                await self._send_reply(channel_id, "❌ Rejected.")
+                score = self._trust.get_score(tenant_id, category)
+                await self._send_reply(
+                    channel_id,
+                    f"❌ Rejected. ({category} trust: {score:.2f})",
+                )
             return None
 
         logger.warning("[%s] Unknown callback: %s", self.name, callback_data)
