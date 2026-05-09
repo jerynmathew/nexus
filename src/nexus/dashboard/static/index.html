@@ -7,108 +7,71 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-.wrap{max-width:960px;margin:0 auto;padding:20px}
+.wrap{max-width:1060px;margin:0 auto;padding:20px}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
 h1{font-size:20px;font-weight:700;color:#f1f5f9}
+.hdr-right{display:flex;align-items:center;gap:16px}
 .status-badge{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.dot.healthy{background:#22c55e}
-.dot.degraded{background:#f59e0b}
-.dot.disconnected{background:#ef4444}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.running,.dot.healthy,.dot.connected{background:#22c55e}
+.dot.crashed,.dot.disconnected{background:#ef4444}
+.dot.degraded,.dot.unknown,.dot.initializing{background:#f59e0b}
 .meta{font-size:12px;color:#64748b}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
-.card{background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155}
-.card-name{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px}
-.card-status{display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:4px}
-.card-meta{font-size:12px;color:#64748b}
-.section-title{font-size:14px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px}
-.feed{background:#1e293b;border-radius:10px;border:1px solid #334155;max-height:320px;overflow-y:auto}
-.feed-item{padding:10px 16px;border-bottom:1px solid #1e293b;display:flex;gap:12px;align-items:baseline;font-size:13px}
-.feed-item:last-child{border-bottom:none}
+.section-title{font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px}
+.topo{background:#1e293b;border-radius:12px;border:1px solid #334155;padding:20px;margin-bottom:20px;overflow-x:auto}
+.topo-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.topo-row:last-child{margin-bottom:0}
+.topo-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;width:80px;padding-top:10px;flex-shrink:0}
+.topo-nodes{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.node{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px 14px;min-width:140px}
+.node.sup{border-color:#3b82f6;border-width:2px}
+.node.ext{border-color:#8b5cf6;border-style:dashed}
+.node-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.node-name{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:12px;font-weight:600;color:#f1f5f9}
+.node-type{font-size:10px;color:#64748b}
+.node-meta{font-size:11px;color:#64748b}
+.connector{border-left:2px solid #334155;height:16px;margin-left:40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.card{background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155}
+.card-name{font-family:monospace;font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:6px}
+.card-row{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:3px}
+.card-meta{font-size:11px;color:#64748b}
+.feed{background:#1e293b;border-radius:10px;border:1px solid #334155;max-height:260px;overflow-y:auto}
+.feed-item{padding:8px 14px;border-bottom:1px solid #0f172a;display:flex;gap:10px;align-items:baseline;font-size:12px}
 .feed-item:nth-child(odd){background:#1e293b}
 .feed-item:nth-child(even){background:#162032}
-.feed-time{color:#64748b;font-size:11px;white-space:nowrap;min-width:60px}
-.feed-agent{font-family:monospace;color:#60a5fa;min-width:100px}
+.feed-time{color:#64748b;font-size:11px;white-space:nowrap;min-width:56px}
+.feed-agent{font-family:monospace;color:#60a5fa;min-width:80px}
 .feed-detail{color:#94a3b8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.empty{text-align:center;padding:40px;color:#475569;font-size:14px}
+.empty{text-align:center;padding:32px;color:#475569;font-size:13px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>Nexus Dashboard</h1>
-    <div class="status-badge">
-      <span class="dot disconnected" id="hDot"></span>
-      <span id="hStatus">connecting...</span>
+    <div class="hdr-right">
+      <div class="status-badge"><span class="dot unknown" id="hDot"></span><span id="hStatus">connecting...</span></div>
       <span class="meta" id="hUptime"></span>
     </div>
   </header>
+  <div class="section-title">Topology</div>
+  <div class="topo" id="topo"><div class="empty">Loading...</div></div>
   <div class="section-title">Agents</div>
   <div class="grid" id="agents"><div class="empty">Loading...</div></div>
   <div class="section-title">Activity</div>
   <div class="feed" id="activity"><div class="empty">No activity yet</div></div>
 </div>
 <script>
-function relTime(ts){
-  var d=Math.floor(Date.now()/1000-ts);
-  if(d<5)return"just now";
-  if(d<60)return d+"s ago";
-  if(d<3600)return Math.floor(d/60)+"m ago";
-  if(d<86400)return Math.floor(d/3600)+"h ago";
-  return Math.floor(d/86400)+"d ago"
-}
-function fmtUptime(s){
-  var h=Math.floor(s/3600),m=Math.floor(s%3600/60);
-  return h>0?h+"h "+m+"m":m+"m"
-}
-function renderAgents(data){
-  var el=document.getElementById("agents");
-  var agents=data.agents||{};
-  var names=Object.keys(agents);
-  if(!names.length){el.innerHTML='<div class="empty">No agents</div>';return}
-  el.innerHTML=names.map(function(n){
-    var a=agents[n];
-    var s=a.status||"unknown";
-    var c=s==="running"?"healthy":s==="crashed"?"disconnected":"degraded";
-    return'<div class="card"><div class="card-name">'+n+'</div>'
-      +'<div class="card-status"><span class="dot '+c+'"></span>'+s+'</div>'
-      +'<div class="card-meta">restarts: '+((a.restart_count)||0)+'</div>'
-      +'<div class="card-meta">'+relTime(a.last_active||0)+'</div></div>'
-  }).join("")
-}
-function renderActivity(data){
-  var el=document.getElementById("activity");
-  var items=(data.activity||[]).slice().reverse();
-  if(!items.length){el.innerHTML='<div class="empty">No activity yet</div>';return}
-  el.innerHTML=items.slice(0,50).map(function(e){
-    return'<div class="feed-item"><span class="feed-time">'+relTime(e.timestamp||0)+'</span>'
-      +'<span class="feed-agent">'+e.agent+'</span>'
-      +'<span class="feed-detail">'+((e.type||"")+" "+(e.detail||""))+'</span></div>'
-  }).join("")
-}
-function renderHealth(data){
-  var dot=document.getElementById("hDot");
-  var st=document.getElementById("hStatus");
-  var up=document.getElementById("hUptime");
-  var s=data.status||"unknown";
-  dot.className="dot "+(s==="healthy"?"healthy":"degraded");
-  st.textContent=s+" ("+((data.agent_count)||0)+" agents)";
-  up.textContent="up "+fmtUptime(data.uptime_seconds||0)
-}
-function setDisconnected(){
-  document.getElementById("hDot").className="dot disconnected";
-  document.getElementById("hStatus").textContent="disconnected"
-}
-async function poll(){
-  try{
-    var[h,a,f]=await Promise.all([
-      fetch("/api/health").then(function(r){return r.json()}),
-      fetch("/api/agents").then(function(r){return r.json()}),
-      fetch("/api/activity").then(function(r){return r.json()})
-    ]);
-    renderHealth(h);renderAgents(a);renderActivity(f)
-  }catch(e){setDisconnected()}
-}
+function relTime(ts){var d=Math.floor(Date.now()/1000-ts);if(d<5)return"just now";if(d<60)return d+"s ago";if(d<3600)return Math.floor(d/60)+"m ago";if(d<86400)return Math.floor(d/3600)+"h ago";return Math.floor(d/86400)+"d ago"}
+function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h>0?h+"h "+m+"m":m+"m"}
+function dc(s){if(s==="running"||s==="healthy"||s==="connected")return"running";if(s==="crashed"||s==="disconnected")return"crashed";return"unknown"}
+function nd(name,type,status,extra){var c=type==="supervisor"?"sup":type==="external"?"ext":"";return'<div class="node '+c+'"><div class="node-hdr"><span class="dot '+dc(status)+'"></span><span class="node-name">'+name+'</span></div><div class="node-type">'+type+'</div>'+(extra?'<div class="node-meta">'+extra+'</div>':'')+'</div>'}
+function renderTopo(data){var el=document.getElementById("topo"),nx=data.nexus||{},ext=data.external||{},h='';h+='<div class="topo-row"><div class="topo-label">Civitas</div><div class="topo-nodes">'+nd("root","supervisor","running","ONE_FOR_ALL")+'</div></div><div class="connector"></div>';var ch=nx.children||[];if(ch.length){h+='<div class="topo-row"><div class="topo-label">Agents</div><div class="topo-nodes">';ch.forEach(function(c){h+=nd(c.name,c.type||"AgentProcess",c.status||"unknown","restarts: "+(c.restart_count||0))});h+='</div></div>'}var ag=ext.agentgateway,mcp=ext.mcp_servers||{},mn=Object.keys(mcp);if(ag||mn.length){h+='<div class="topo-row"><div class="topo-label">External</div><div class="topo-nodes">';if(ag)h+=nd("AgentGateway","external",ag.status||"unknown",":"+ag.port+" LLM proxy");mn.forEach(function(n){var s=mcp[n];h+=nd("MCP: "+n,"external",s.status||"disconnected",s.tool_count?s.tool_count+" tools":"")});h+='</div></div>'}el.innerHTML=h}
+function renderAgents(data){var el=document.getElementById("agents"),agents=data.agents||{},names=Object.keys(agents);if(!names.length){el.innerHTML='<div class="empty">No agents</div>';return}el.innerHTML=names.map(function(n){var a=agents[n],s=a.status||"unknown";return'<div class="card"><div class="card-name">'+n+'</div><div class="card-row"><span class="dot '+dc(s)+'"></span>'+s+'</div><div class="card-meta">type: '+(a.type||"agent")+'</div><div class="card-meta">restarts: '+((a.restart_count)||0)+'</div><div class="card-meta">'+relTime(a.last_active||0)+'</div></div>'}).join("")}
+function renderActivity(data){var el=document.getElementById("activity"),items=(data.activity||[]).slice().reverse();if(!items.length){el.innerHTML='<div class="empty">No activity yet</div>';return}el.innerHTML=items.slice(0,50).map(function(e){return'<div class="feed-item"><span class="feed-time">'+relTime(e.timestamp||0)+'</span><span class="feed-agent">'+e.agent+'</span><span class="feed-detail">'+((e.type||"")+" "+(e.detail||""))+'</span></div>'}).join("")}
+function renderHealth(data){var dot=document.getElementById("hDot"),st=document.getElementById("hStatus"),up=document.getElementById("hUptime"),s=data.status||"unknown";dot.className="dot "+dc(s);st.textContent=s+" ("+((data.agent_count)||0)+" agents)";up.textContent="up "+fmtUp(data.uptime_seconds||0)}
+async function poll(){try{var[h,t,a,f]=await Promise.all([fetch("/api/health").then(function(r){return r.json()}),fetch("/api/topology").then(function(r){return r.json()}),fetch("/api/agents").then(function(r){return r.json()}),fetch("/api/activity").then(function(r){return r.json()})]);renderHealth(h);renderTopo(t);renderAgents(a);renderActivity(f)}catch(e){document.getElementById("hDot").className="dot crashed";document.getElementById("hStatus").textContent="disconnected"}}
 poll();setInterval(poll,5000)
 </script>
 </body>

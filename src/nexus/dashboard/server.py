@@ -84,10 +84,22 @@ class DashboardServer(GenServer):
         }
 
     def _build_topology(self) -> dict[str, Any]:
+        agents = self.state.get("agents", {})
+        mcp = self.state.get("mcp_servers", {})
         return {
-            "supervisor": "root",
-            "strategy": "ONE_FOR_ALL",
-            "children": [
-                {"name": name, **info} for name, info in self.state.get("agents", {}).items()
-            ],
+            "nexus": {
+                "supervisor": "root",
+                "strategy": "ONE_FOR_ALL",
+                "children": [
+                    {"name": n, "type": info.get("type", "agent"), **info}
+                    for n, info in agents.items()
+                ],
+            },
+            "external": {
+                "agentgateway": {"status": "running", "port": 4000},
+                "mcp_servers": {
+                    n: {**s, "status": "connected" if s.get("connected") else "disconnected"}
+                    for n, s in mcp.items()
+                },
+            },
         }

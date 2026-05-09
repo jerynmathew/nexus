@@ -102,6 +102,14 @@ async def seed_on_start(
     logger.info("Seeded %d tenant(s)", len(users))
 
 
+_AGENT_TYPES = {
+    "memory": "AgentProcess",
+    "conversation_manager": "AgentProcess",
+    "scheduler": "AgentProcess",
+    "dashboard": "GenServer",
+}
+
+
 async def _register_agents_with_dashboard(
     runtime: Runtime,
     agents: dict[str, AgentProcess],
@@ -112,12 +120,90 @@ async def _register_agents_with_dashboard(
             {
                 "action": "agent_health",
                 "agent": name,
+                "type": _AGENT_TYPES.get(name, "AgentProcess"),
                 "status": agent.status.value.lower()
                 if hasattr(agent.status, "value")
                 else "unknown",
                 "restart_count": 0,
             },
         )
+
+
+async def _start_mcp(
+    config: NexusConfig,
+    conv: ConversationManager,
+) -> MCPManager | None:
+    if not config.mcp.servers:
+        return None
+    mcp_manager = MCPManager()
+    await mcp_manager.connect_all(config.mcp.servers)
+    conv.set_mcp_manager(mcp_manager)
+    logger.info("MCP: %d server(s) configured", len(config.mcp.servers))
+    return mcp_manager
+
+
+async def _start_dashboard(
+    config: NexusConfig,
+    runtime: Runtime,
+    agents: dict[str, AgentProcess],
+    conv: ConversationManager,
+    mcp_manager: MCPManager | None,
+) -> DashboardApp | None:
+    if not config.dashboard.enabled:
+        return None
+    content_store = ContentStore(views_dir=config.dashboard.views_dir)
+    dashboard_app = DashboardApp(
+        runtime=runtime,
+        content_store=content_store,
+        port=config.dashboard.port,
+    )
+    conv.set_content_store(content_store, config.dashboard)
+    await dashboard_app.start()
+    await _register_agents_with_dashboard(runtime, agents)
+    if mcp_manager:
+        for name, healthy in (await mcp_manager.health_check()).items():
+            await runtime.cast(
+                "dashboard",
+                {
+                    "action": "mcp_status",
+                    "server": name,
+                    "connected": healthy,
+                    "tool_count": len(mcp_manager.filter_tools([name])),
+                },
+            )
+    logger.info("Dashboard at http://0.0.0.0:%d", config.dashboard.port)
+    return dashboard_app
+
+
+async def _start_telegram(
+    config: NexusConfig,
+    runtime: Runtime,
+    conv: ConversationManager,
+) -> TelegramTransport | None:
+    if not config.telegram:
+        logger.info("No transport configured — running headless")
+        return None
+
+    tenant_map: dict[str, str] = {}
+    for u in config.seed_users:
+        if u.telegram_user_id is not None:
+            tenant_map[str(u.telegram_user_id)] = u.tenant_id
+
+    def resolve_tenant(user_id: str) -> str | None:
+        return tenant_map.get(user_id)
+
+    async def send_to_conv(payload: dict[str, Any]) -> None:
+        await runtime.send("conversation_manager", payload)
+
+    transport = TelegramTransport(
+        bot_token=config.telegram.bot_token,
+        conversation_manager_send=send_to_conv,
+        tenant_resolver=resolve_tenant,
+    )
+    conv.set_transport(transport)
+    await transport.start()
+    logger.info("Telegram transport started")
+    return transport
 
 
 async def run_nexus(config: NexusConfig) -> None:
@@ -133,53 +219,12 @@ async def run_nexus(config: NexusConfig) -> None:
     conv = agents["conversation_manager"]
     assert isinstance(conv, ConversationManager)
 
-    if config.mcp.servers:
-        mcp_manager = MCPManager()
-        await mcp_manager.connect_all(config.mcp.servers)
-        conv.set_mcp_manager(mcp_manager)
-        logger.info("MCP: %d server(s) configured", len(config.mcp.servers))
-
-    dashboard_app: DashboardApp | None = None
-    if config.dashboard.enabled:
-        content_store = ContentStore(views_dir=config.dashboard.views_dir)
-        dashboard_app = DashboardApp(
-            runtime=runtime,
-            content_store=content_store,
-            port=config.dashboard.port,
-        )
-        conv.set_content_store(content_store, config.dashboard)
-        await dashboard_app.start()
-        await _register_agents_with_dashboard(runtime, agents)
-        logger.info("Dashboard at http://0.0.0.0:%d", config.dashboard.port)
-
-    transport: TelegramTransport | None = None
-
-    if config.telegram:
-        tenant_map: dict[str, str] = {}
-        for u in config.seed_users:
-            if u.telegram_user_id is not None:
-                tenant_map[str(u.telegram_user_id)] = u.tenant_id
-
-        def resolve_tenant(user_id: str) -> str | None:
-            return tenant_map.get(user_id)
-
-        async def send_to_conv(payload: dict[str, Any]) -> None:
-            await runtime.send("conversation_manager", payload)
-
-        transport = TelegramTransport(
-            bot_token=config.telegram.bot_token,
-            conversation_manager_send=send_to_conv,
-            tenant_resolver=resolve_tenant,
-        )
-        conv.set_transport(transport)
-        await transport.start()
-        logger.info("Telegram transport started")
-    else:
-        logger.info("No transport configured — running headless")
+    mcp_manager = await _start_mcp(config, conv)
+    dashboard_app = await _start_dashboard(config, runtime, agents, conv, mcp_manager)
+    transport = await _start_telegram(config, runtime, conv)
 
     stop_event = asyncio.Event()
     loop = asyncio.get_running_loop()
-
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop_event.set)
 
