@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -45,6 +46,16 @@ def run(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+    for noisy_logger in (
+        "opentelemetry",
+        "httpx",
+        "httpcore",
+        "aiosqlite",
+        "telegram",
+    ):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
+    os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 
     console.print(f"[green]Config loaded:[/green] {config}")
     console.print(f"  LLM: {cfg.llm.model} @ {cfg.llm.base_url}")
