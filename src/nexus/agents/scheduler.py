@@ -18,9 +18,18 @@ _TICK_INTERVAL_MS = 60_000
 
 
 class SchedulerAgent(AgentProcess):
-    def __init__(self, name: str, skills_dir: str = "skills", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        name: str,
+        skills_dir: str = "skills",
+        active_hours_start: int = 7,
+        active_hours_end: int = 22,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(name, **kwargs)
         self._skills_dir = skills_dir
+        self._active_start = active_hours_start
+        self._active_end = active_hours_end
         self._state_loaded = False
         self._last_runs: dict[str, str] = {}
 
@@ -92,10 +101,15 @@ class SchedulerAgent(AgentProcess):
                 continue
             if not self._cron_matches(skill.schedule, now):
                 continue
+            if skill.active_hours_only and not self._in_active_hours(now):
+                continue
 
             self._last_runs[skill.name] = current_minute
             await self._trigger_skill(skill.name)
             await self._persist_last_run(skill.name, current_minute)
+
+    def _in_active_hours(self, now: datetime) -> bool:
+        return self._active_start <= now.hour < self._active_end
 
     @staticmethod
     def _cron_matches(cron_expr: str, now: datetime) -> bool:

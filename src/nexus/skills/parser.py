@@ -26,6 +26,7 @@ class Skill:
     tool_groups: list[str] = field(default_factory=list)
     schedule: str | None = None
     timeout_per_section: int = 30
+    active_hours_only: bool = False
     sections: list[SkillSection] = field(default_factory=list)
     content: str = ""
     source_path: Path | None = None
@@ -54,6 +55,7 @@ def parse_skill(path: Path) -> Skill:
         tool_groups=meta.get("tool_groups", []),
         schedule=meta.get("schedule"),
         timeout_per_section=timeout,
+        active_hours_only=bool(meta.get("active_hours_only", False)),
         sections=sections,
         content=body.strip(),
         source_path=path,
