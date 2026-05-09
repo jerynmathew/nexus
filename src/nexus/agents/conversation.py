@@ -168,6 +168,7 @@ class ConversationManager(AgentProcess):
         await self._persist_message(session.session_id, "assistant", response_text)
         await self._checkpoint_session(session)
         await self._send_response_with_viewer(channel_id, response_text)
+        await self._report_activity(tenant_id, text)
         return None
 
     async def _resolve_tenant(self, tenant_id: str) -> TenantContext | None:
@@ -607,3 +608,15 @@ class ConversationManager(AgentProcess):
         if self._transport and hasattr(self._transport, "send_typing"):
             with contextlib.suppress(Exception):
                 await self._transport.send_typing(channel_id)
+
+    async def _report_activity(self, tenant_id: str, text: str) -> None:
+        with contextlib.suppress(Exception):
+            await self.cast(
+                "dashboard",
+                {
+                    "action": "activity",
+                    "agent": self.name,
+                    "type": "inbound",
+                    "detail": f"{tenant_id}: {text[:80]}",
+                },
+            )

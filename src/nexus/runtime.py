@@ -102,6 +102,24 @@ async def seed_on_start(
     logger.info("Seeded %d tenant(s)", len(users))
 
 
+async def _register_agents_with_dashboard(
+    runtime: Runtime,
+    agents: dict[str, AgentProcess],
+) -> None:
+    for name, agent in agents.items():
+        await runtime.cast(
+            "dashboard",
+            {
+                "action": "agent_health",
+                "agent": name,
+                "status": agent.status.value.lower()
+                if hasattr(agent.status, "value")
+                else "unknown",
+                "restart_count": 0,
+            },
+        )
+
+
 async def run_nexus(config: NexusConfig) -> None:
     """Start and run Nexus until interrupted."""
     runtime, agents = build_runtime(config)
@@ -131,6 +149,7 @@ async def run_nexus(config: NexusConfig) -> None:
         )
         conv.set_content_store(content_store, config.dashboard)
         await dashboard_app.start()
+        await _register_agents_with_dashboard(runtime, agents)
         logger.info("Dashboard at http://0.0.0.0:%d", config.dashboard.port)
 
     transport: TelegramTransport | None = None
