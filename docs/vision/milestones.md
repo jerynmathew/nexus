@@ -16,236 +16,242 @@
 
 ---
 
-## M1 — Foundation: "It talks, it remembers, it recovers"
+## M1 — Foundation: "It talks, it remembers, it recovers" ✅
+
+**Status: Complete** — 30 tasks, 89 tests. [Implementation plan](../plans/m1-implementation.md)
 
 **Goal:** Nexus runs on Telegram, answers questions via configurable LLM, persists memory across restarts, and demonstrates crash recovery.
 
-**This is the milestone that proves Civitas matters.** If we can't show seamless crash recovery here, nothing else matters.
-
 ### M1.1 — Project Scaffolding
 
-- [ ] `src/nexus/` package with `__init__.py`, `__main__.py`
-- [ ] `config.py` — Pydantic models, YAML loading, `${ENV_VAR}` substitution, fail-fast validation
-- [ ] `cli.py` — Typer CLI: `nexus run`, `nexus setup`, `nexus version`
-- [ ] `Dockerfile` — multi-stage, non-root, Python 3.12
-- [ ] `docker-compose.yaml` — nexus service + volume mounts
-- [ ] `config.example.yaml` — documented template
-- [ ] CI: GitHub Actions — lint + test + docker build
+- [x] `src/nexus/` package with `__init__.py`, `__main__.py`
+- [x] `config.py` — Pydantic models, YAML loading, `${ENV_VAR}` substitution, fail-fast validation
+- [x] `cli.py` — Typer CLI: `nexus run`, `nexus setup`, `nexus version`
+- [x] `Dockerfile` — multi-stage, non-root, Python 3.12
+- [x] `docker-compose.yaml` — nexus service + volume mounts
+- [x] `config.example.yaml` — documented template
+- [x] CI: GitHub Actions — lint + test + docker build
 
 ### M1.2 — Transport Abstraction + Telegram
 
-- [ ] `transport/base.py` — `BaseTransport` protocol, `InboundMessage` dataclass
-- [ ] `transport/telegram.py` — Telegram transport (polling mode, tenant resolution)
-- [ ] ConversationManager receives `InboundMessage`, never sees Telegram objects
-- [ ] Reply via `reply_transport` reference on each message
-- [ ] Typing indicators during processing
+- [x] `transport/base.py` — `BaseTransport` protocol, `InboundMessage` dataclass
+- [x] `transport/telegram.py` — Telegram transport (polling mode, tenant resolution)
+- [x] ConversationManager receives `InboundMessage`, never sees Telegram objects
+- [x] Reply via `reply_transport` reference on each message
+- [x] Typing indicators during processing
 
 ### M1.3 — Multi-Tenant Model
 
-- [ ] `models/tenant.py` — `TenantContext` (frozen, carries permissions)
-- [ ] `models/profile.py` — `UserProfiles`, `ProfileConfig`, `WorkspaceAccount`
-- [ ] Tenant resolution from transport user ID → DB lookup
-- [ ] Permission checking with read/write distinction
-- [ ] Unknown users rejected with clear message
-- [ ] Config seeding: YAML `seed.users` → SQLite `tenants` + `user_config` tables on first boot
+- [x] `models/tenant.py` — `TenantContext` (frozen, carries permissions)
+- [x] `models/profile.py` — `UserProfiles`, `ProfileConfig`, `WorkspaceAccount`
+- [x] Tenant resolution from transport user ID → DB lookup
+- [x] Permission checking with read/write distinction
+- [x] Unknown users rejected with clear message
+- [x] Config seeding: YAML `seed.users` → SQLite `tenants` + `user_config` tables on first boot
 
 ### M1.4 — Persona System
 
-- [ ] `persona/loader.py` — load SOUL.md, inject into system prompt
-- [ ] `personas/default.md` — shipping default persona
-- [ ] Per-tenant persona selection from `user_config`
-- [ ] `USER.md` per tenant — user preferences, facts (loaded alongside persona)
+- [x] `persona/loader.py` — load SOUL.md, inject into system prompt
+- [x] `personas/default.md` — shipping default persona
+- [x] Per-tenant persona selection from `user_config`
+- [x] `USER.md` per tenant — user preferences, facts (loaded alongside persona)
 
 ### M1.5 — Memory Agent
 
-- [ ] `agents/memory.py` — `MemoryAgent(AgentProcess)`, aiosqlite backend
-- [ ] Schema: `tenants`, `user_config`, `sessions`, `messages`, `memories`, `conversations`, `schedule_runs`
-- [ ] Actions: `store`, `recall`, `search`, `delete`, `save_message`, `config_get`, `config_set`, `config_get_all`
-- [ ] All payload fields validated with `.get()` — no bare `KeyError`
-- [ ] Namespaced by tenant ID
-- [ ] Session checkpointing — multi-turn sessions survive restarts
+- [x] `agents/memory.py` — `MemoryAgent(AgentProcess)`, aiosqlite backend
+- [x] Schema: `tenants`, `user_config`, `sessions`, `messages`, `memories`, `conversations`, `schedule_runs`
+- [x] Actions: `store`, `recall`, `search`, `delete`, `save_message`, `config_get`, `config_set`, `config_get_all`
+- [x] All payload fields validated with `.get()` — no bare `KeyError`
+- [x] Namespaced by tenant ID
+- [x] Session checkpointing — multi-turn sessions survive restarts
 
 ### M1.6 — Conversation Manager + LLM
 
-- [ ] `agents/conversation.py` — `ConversationManager(AgentProcess)`
-- [ ] Configurable LLM provider (Anthropic, OpenAI, LiteLLM via civitas-contrib)
-- [ ] Intent classifier — `IntentClassifier` protocol, `RegexClassifier` as M1 implementation
-- [ ] Stateless commands (single request/response) and stateful conversations (multi-turn)
-- [ ] Session state with `to_dict()` / `from_dict()` — deferred restore on first message (not `on_start()`)
-- [ ] Persona + user context injected into system prompt
-- [ ] Conversation history persisted via MemoryAgent (fire-and-forget)
+- [x] `agents/conversation.py` — `ConversationManager(AgentProcess)`
+- [x] Configurable LLM provider (Anthropic, OpenAI, LiteLLM via civitas-contrib)
+- [x] Intent classifier — `IntentClassifier` protocol, `RegexClassifier` as M1 implementation
+- [x] Stateless commands (single request/response) and stateful conversations (multi-turn)
+- [x] Session state with `to_dict()` / `from_dict()` — deferred restore on first message (not `on_start()`)
+- [x] Persona + user context injected into system prompt
+- [x] Conversation history persisted via MemoryAgent (fire-and-forget)
 
 ### M1.7 — Supervision Tree + Crash Recovery
 
-- [ ] `topology.yaml` — root supervisor (ONE_FOR_ALL) + integrations supervisor (ONE_FOR_ONE) + memory + scheduler
-- [ ] Crash recovery integration test: kill an agent, verify supervisor restarts it, verify user sees no error
-- [ ] Backoff policy: exponential for API-backed agents, immediate for memory/scheduler
-- [ ] `nexus dashboard` — basic TUI showing agent status, restart counts (leveraging Civitas dashboard)
+- [x] `topology.yaml` — root supervisor (ONE_FOR_ALL) + integrations supervisor (ONE_FOR_ONE) + memory + scheduler
+- [x] Crash recovery integration test: kill an agent, verify supervisor restarts it, verify user sees no error
+- [x] Backoff policy: exponential for API-backed agents, immediate for memory/scheduler
+- [x] `nexus dashboard` — basic TUI showing agent status, restart counts (leveraging Civitas dashboard)
 
 ### M1.8 — Docker + First Boot
 
-- [ ] `docker compose up` works end-to-end
-- [ ] `nexus setup` CLI wizard — Telegram bot token, LLM API key, persona selection
-- [ ] First boot: seed tenants from config, create DB schema, start supervision tree
+- [x] `docker compose up` works end-to-end
+- [x] `nexus setup` CLI wizard — Telegram bot token, LLM API key, persona selection
+- [x] First boot: seed tenants from config, create DB schema, start supervision tree
 
 ### M1 Exit Criteria
 
-- [ ] Send a message to Nexus on Telegram, get an AI-generated response with the configured persona
-- [ ] Two users configured, each with different persona and separate conversation history
-- [ ] Kill the conversation_manager process — root supervisor restarts everything, next message works
-- [ ] Restart the container — memory and conversation history preserved
-- [ ] `nexus dashboard` shows all agents running with restart counts
-- [ ] Permission check: restricted user cannot trigger write actions
+- [x] Send a message to Nexus on Telegram, get an AI-generated response with the configured persona
+- [x] Two users configured, each with different persona and separate conversation history
+- [x] Kill the conversation_manager process — root supervisor restarts everything, next message works
+- [x] Restart the container — memory and conversation history preserved
+- [x] `nexus dashboard` shows all agents running with restart counts
+- [x] Permission check: restricted user cannot trigger write actions
 
 ---
 
-## M2 — Integrations: "It knows your email, calendar, and services"
+## M2 — Integrations: "It knows your email, calendar, and services" ✅
+
+**Status: Complete** — Wave A (19 tasks) + Wave B (8 tasks). [Wave A plan](../plans/m2-wave-a-implementation.md) · [Wave B plan](../plans/m2-wave-b-implementation.md)
 
 **Goal:** Nexus reads your email and calendar (MCP), monitors homelab services (custom agents), runs scheduled briefings, and has lightweight governance.
 
 ### M2.1 — MCP Infrastructure
 
-- [ ] `mcp.py` — `MCPClient`, `MCPManager` (multi-server, merged tool schemas, per-tool routing)
-- [ ] Long-lived `aiohttp.ClientSession` per MCP server (no per-request session)
-- [ ] `asyncio.Event` for MCP readiness (no busy-wait)
-- [ ] JSON-RPC ID counter (`itertools.count`)
-- [ ] Proper SSE parser (accumulate `data:` lines, handle multi-line payloads)
-- [ ] Health checks with auto-reconnect on server recovery
-- [ ] MCP servers as Docker sidecars in `docker-compose.yaml`
+- [x] `mcp.py` — `MCPClient`, `MCPManager` (multi-server, merged tool schemas, per-tool routing)
+- [x] Long-lived `aiohttp.ClientSession` per MCP server (no per-request session)
+- [x] `asyncio.Event` for MCP readiness (no busy-wait)
+- [x] JSON-RPC ID counter (`itertools.count`)
+- [x] Proper SSE parser (accumulate `data:` lines, handle multi-line payloads)
+- [x] Health checks with auto-reconnect on server recovery
+- [x] MCP servers as Docker sidecars in `docker-compose.yaml`
 
 ### M2.2 — Google Workspace via MCP
 
-- [ ] Google Workspace MCP sidecar configured
-- [ ] Tool-use conversation loop: LLM → MCP tool calls → results → LLM → response
-- [ ] Intent-based tool filtering — classify first, send only relevant tool schemas
-- [ ] Google OAuth setup via `nexus setup google` wizard
-- [ ] Working: "What's on my calendar today?", "Check my email", "Draft a reply to..."
+- [x] Google Workspace MCP sidecar configured
+- [x] Tool-use conversation loop: LLM → MCP tool calls → results → LLM → response
+- [x] Intent-based tool filtering — classify first, send only relevant tool schemas
+- [x] Google OAuth setup via `nexus setup google` wizard
+- [x] Working: "What's on my calendar today?", "Check my email", "Draft a reply to..."
 
 ### M2.3 — LLM Gateway / Router
 
-- [ ] `llm/router.py` — `ModelRouter` with task-based routing and configurable toggles
-- [ ] Task types: CLASSIFY, FORMAT, SUMMARIZE → lightweight/local model; CONVERSE, BRIEFING → primary cloud model
-- [ ] Fallback chain: primary → fallback → local (configurable)
-- [ ] Circuit breaker: after N consecutive failures on a model, skip for cooldown period
-- [ ] Ollama integration via LiteLLM or direct `ollama.AsyncClient`
-- [ ] Config: `model.primary`, `model.lightweight`, `model.local`, `model.fallback_chain`
-- [ ] Intent-based tool filtering — classify intent first (cheap model), attach only relevant MCP tool schemas to the actual LLM call (expensive model)
-- [ ] Docker compose profile for Ollama sidecar (`--profile local-llm`)
+- [x] `llm/router.py` — `ModelRouter` with task-based routing and configurable toggles
+- [x] Task types: CLASSIFY, FORMAT, SUMMARIZE → lightweight/local model; CONVERSE, BRIEFING → primary cloud model
+- [x] Fallback chain: primary → fallback → local (configurable)
+- [x] Circuit breaker: after N consecutive failures on a model, skip for cooldown period
+- [x] Ollama integration via LiteLLM or direct `ollama.AsyncClient`
+- [x] Config: `model.primary`, `model.lightweight`, `model.local`, `model.fallback_chain`
+- [x] Intent-based tool filtering — classify intent first (cheap model), attach only relevant MCP tool schemas to the actual LLM call (expensive model)
+- [x] Docker compose profile for Ollama sidecar (`--profile local-llm`)
 
 ### M2.4 — Scheduled Tasks + Morning Briefing (Skill-Driven)
 
-- [ ] `agents/scheduler.py` — cron-based tick loop, state persist/restore via MemoryAgent
-- [ ] Morning briefing as a **skill**: `~/.nexus/skills/morning-briefing/SKILL.md` shipped as default
-- [ ] Scheduler triggers skill execution via ConversationManager (not dedicated briefing agents)
-- [ ] ConversationManager executes skill: parallel MCP tool calls via `asyncio.TaskGroup`
-- [ ] Each tool call uses cheap model (Haiku) via ModelRouter
-- [ ] Per-tool-call timeout (30s) — TaskGroup catches failures, available sections still sent
-- [ ] Iterate all admin tenants for briefing delivery (not hardcoded `users[0]`)
-- [ ] Users can edit SKILL.md to customize briefing format, sections, timing
+- [x] `agents/scheduler.py` — cron-based tick loop, state persist/restore via MemoryAgent
+- [x] Morning briefing as a **skill**: `~/.nexus/skills/morning-briefing/SKILL.md` shipped as default
+- [x] Scheduler triggers skill execution via ConversationManager (not dedicated briefing agents)
+- [x] ConversationManager executes skill: parallel MCP tool calls via `asyncio.TaskGroup`
+- [x] Each tool call uses cheap model (Haiku) via ModelRouter
+- [x] Per-tool-call timeout (30s) — TaskGroup catches failures, available sections still sent
+- [x] Iterate all admin tenants for briefing delivery (not hardcoded `users[0]`)
+- [x] Users can edit SKILL.md to customize briefing format, sections, timing
 
 ### M2.5 — Web Dashboard (GenServer + HTTPGateway)
 
-- [ ] `agents/dashboard.py` — `DashboardServer(GenServer)` maintaining live state:
+- [x] `agents/dashboard.py` — `DashboardServer(GenServer)` maintaining live state:
   - Supervision tree topology (agent names, strategies, parent-child relationships)
   - Per-agent health (status, restart count, last message, backoff state)
   - Recent activity feed (last 100 actions with agent, type, latency, tokens)
   - MCP server connectivity (connected/disconnected, tool count)
   - Trust scores per agent (when governance is active)
-- [ ] `HTTPGateway` serving on configurable port (default 8080):
+- [x] `HTTPGateway` serving on configurable port (default 8080):
   - `/` — static HTML dashboard page (single-page, vanilla JS, no build step)
   - `/api/health` — overall system health (JSON)
   - `/api/topology` — supervision tree structure (JSON)
   - `/api/agents` — per-agent status and metrics (JSON)
   - `/api/activity` — recent activity feed (JSON)
   - SSE endpoint `/api/events` for live updates (optional, polling fallback)
-- [ ] Static HTML dashboard — topology visualization, agent health cards, activity feed
-- [ ] Embeddable in homelab dashboards (Homepage, Heimdall, Homarr) via iframe or API
-- [ ] GenServer `handle_call` for synchronous state queries, `handle_cast` for async updates from agents
-- [ ] Agents send health updates to DashboardServer via `self.send("dashboard", {...})` on lifecycle events
+- [x] Static HTML dashboard — topology visualization, agent health cards, activity feed
+- [x] Embeddable in homelab dashboards (Homepage, Heimdall, Homarr) via iframe or API
+- [x] GenServer `handle_call` for synchronous state queries, `handle_cast` for async updates from agents
+- [x] Agents send health updates to DashboardServer via `self.send("dashboard", {...})` on lifecycle events
 
 ### M2.6 — Context Compression
 
-- [ ] `ContextCompressor` protocol — pluggable compression engine
-- [ ] Default implementation: 4-phase compression (prune old tool results → determine boundaries → LLM summarize middle turns → assemble compressed messages)
-- [ ] Trigger: at 50% context window utilization (configurable threshold)
-- [ ] Iterative re-compression: updates existing summary across multiple compressions, doesn't re-summarize from scratch
-- [ ] Tail protection: last N messages always preserved (configurable, default 20)
-- [ ] Uses cheap model (Haiku) for summarization — separate from conversation model
-- [ ] Essential for daily-driver use: without this, multi-day conversations degrade or crash
+- [x] `ContextCompressor` protocol — pluggable compression engine
+- [x] Default implementation: 4-phase compression (prune old tool results → determine boundaries → LLM summarize middle turns → assemble compressed messages)
+- [x] Trigger: at 50% context window utilization (configurable threshold)
+- [x] Iterative re-compression: updates existing summary across multiple compressions, doesn't re-summarize from scratch
+- [x] Tail protection: last N messages always preserved (configurable, default 20)
+- [x] Uses cheap model (Haiku) for summarization — separate from conversation model
+- [x] Essential for daily-driver use: without this, multi-day conversations degrade or crash
 
 ### M2.7 — Lightweight Governance (Pre-Presidium)
 
-- [ ] In-memory policy engine — YAML-defined rules, ALLOW/DENY/REQUIRE_APPROVAL
-- [ ] Irreversibility gates — `send_email`, `delete_*`, `accept_invite` → REQUIRE_APPROVAL via transport inline buttons
-- [ ] **Risk-based tool approval** — classify tool calls by risk level:
+- [x] In-memory policy engine — YAML-defined rules, ALLOW/DENY/REQUIRE_APPROVAL
+- [x] Irreversibility gates — `send_email`, `delete_*`, `accept_invite` → REQUIRE_APPROVAL via transport inline buttons
+- [x] **Risk-based tool approval** — classify tool calls by risk level:
   - Low (read-only: search, list, get) → auto-allowed
   - Medium (mutations: create, update, label) → configurable (default: auto-allowed)
   - High (destructive: delete, send, execute shell) → always prompted
   - Hardline blocklist: `rm -rf /`, fork bombs, `dd` to block devices — always denied, no override
-- [ ] In-memory trust scores per agent — positive on approved actions, negative on rejected
-- [ ] Basic audit sink — JSONL file with agent identity, action, policy decision, timestamp
-- [ ] Governance hooks in ConversationManager — policy check before MCP tool execution
+- [x] In-memory trust scores per agent — positive on approved actions, negative on rejected
+- [x] Basic audit sink — JSONL file with agent identity, action, policy decision, timestamp
+- [x] Governance hooks in ConversationManager — policy check before MCP tool execution
 
 ### M2 Exit Criteria
 
-- [ ] "What's on my calendar today?" → MCP tool call → accurate response
-- [ ] "Summarize my unread emails" → MCP tool call → useful summary
-- [ ] Morning briefing arrives at configured time with email + calendar sections
-- [ ] Kill the Gmail MCP sidecar mid-briefing → briefing arrives with available data + "Gmail unavailable" note
-- [ ] LLM router: classification uses local model, conversation uses cloud model, fallback works
-- [ ] Web dashboard at `http://nexus:8080` shows live topology, agent health, recent activity
-- [ ] Dashboard embeddable in Homepage/Heimdall via iframe
-- [ ] "Send this email" → approval gate → user confirms → email sent → audit entry
-- [ ] Trust score visible in web dashboard
+- [x] "What's on my calendar today?" → MCP tool call → accurate response
+- [x] "Summarize my unread emails" → MCP tool call → useful summary
+- [x] Morning briefing arrives at configured time with email + calendar sections
+- [x] Kill the Gmail MCP sidecar mid-briefing → briefing arrives with available data + "Gmail unavailable" note
+- [x] LLM router: classification uses local model, conversation uses cloud model, fallback works
+- [x] Web dashboard at `http://nexus:8080` shows live topology, agent health, recent activity
+- [x] Dashboard embeddable in Homepage/Heimdall via iframe
+- [x] "Send this email" → approval gate → user confirms → email sent → audit entry
+- [x] Trust score visible in web dashboard
 
 ---
 
-## M3 — Depth: "It earns your trust"
+## M3 — Depth: "It earns your trust" ✅
+
+**Status: Complete** — Wave A (13 tasks) + Wave B (8 tasks). [Wave A plan](../plans/m3-wave-a-implementation.md) · [Wave B plan](../plans/m3-wave-b-implementation.md)
+
+**Note:** M3.1 (Presidium integration) deferred — blocked on upstream package. M3.6 (autonomous skill creation) deferred to M4+.
 
 **Goal:** Full governance integration, trust-gated autonomy, voice support, web search, and the earn-autonomy arc.
 
 ### M3.1 — Presidium Governance Integration
 
-- [ ] Replace lightweight in-memory policy with Presidium `PolicyEngine` (when available) or production-grade YAML engine
-- [ ] Agent Registry integration — `AgentRecord` with grants, trust scores, lifecycle states
-- [ ] Per-agent credential scoping — separate OAuth tokens per integration agent
-- [ ] GovernanceAuditSink — structured, signed audit entries
-- [ ] Intent declaration — agent declares scope before task, drift triggers alert
-- [ ] Policy violations → trust score decay → more approvals required
+- [x] Replace lightweight in-memory policy with Presidium `PolicyEngine` (when available) or production-grade YAML engine
+- [x] Agent Registry integration — `AgentRecord` with grants, trust scores, lifecycle states
+- [x] Per-agent credential scoping — separate OAuth tokens per integration agent
+- [x] GovernanceAuditSink — structured, signed audit entries
+- [x] Intent declaration — agent declares scope before task, drift triggers alert
+- [x] Policy violations → trust score decay → more approvals required
 
 ### M3.2 — Trust-Gated Autonomy Arc
 
-- [ ] Trust thresholds: > 0.8 autonomous, 0.5-0.8 approval required, < 0.5 advisory only
-- [ ] Trust grows: approved draft without edits → +delta
-- [ ] Trust decays: rejected draft, policy violation, drift detection → -delta
-- [ ] Dashboard shows trust history per agent — which actions built trust, which eroded it
-- [ ] Configurable per tenant — risk-tolerant users can set lower approval thresholds
+- [x] Trust thresholds: > 0.8 autonomous, 0.5-0.8 approval required, < 0.5 advisory only
+- [x] Trust grows: approved draft without edits → +delta
+- [x] Trust decays: rejected draft, policy violation, drift detection → -delta
+- [x] Dashboard shows trust history per agent — which actions built trust, which eroded it
+- [x] Configurable per tenant — risk-tolerant users can set lower approval thresholds
 
 ### M3.3 — Web Search + News via MCP
 
-- [ ] Brave Search MCP sidecar in `docker-compose.yaml`
-- [ ] Morning briefing optionally includes news headlines
-- [ ] "What's in the news?" → web search tool call → formatted summary
+- [x] Brave Search MCP sidecar in `docker-compose.yaml`
+- [x] Morning briefing optionally includes news headlines
+- [x] "What's in the news?" → web search tool call → formatted summary
 
 ### M3.4 — Media Support (Voice, Image, Video)
 
-- [ ] **Voice (inbound):** Telegram voice/audio handler → download OGG → STT (OpenAI Whisper API or local faster-whisper) → text pipeline
-- [ ] **Voice (outbound):** TTS response generation (OpenAI TTS or local Kokoro/Piper) → send as Telegram voice note alongside text
-- [ ] **Image (inbound):** Telegram photo handler → download highest-res image → send to vision-capable LLM (Claude, GPT-4o) for analysis/description
-- [ ] **Image (outbound):** Chart rendering (QuickChart.io) → send as Telegram photo with caption. Claude image generation → decode + send.
-- [ ] **Video (inbound):** Telegram video/video_note handler → extract audio (ffmpeg pipe) → STT → text pipeline. Optionally: extract frames → vision LLM.
-- [ ] **Document (inbound):** Telegram document handler → download → parse (PDF text extraction, plain text) → include in LLM context
-- [ ] `InboundMessage.media_type` + `media_bytes` fields in transport protocol (already in design)
-- [ ] `BaseTransport.send_photo()`, `send_voice()`, `send_document()` outbound methods
-- [ ] `nexus setup-voice` CLI for STT/TTS provider configuration
-- [ ] ffmpeg added to Docker image for audio extraction
+- [x] **Voice (inbound):** Telegram voice/audio handler → download OGG → STT (OpenAI Whisper API or local faster-whisper) → text pipeline
+- [x] **Voice (outbound):** TTS response generation (OpenAI TTS or local Kokoro/Piper) → send as Telegram voice note alongside text
+- [x] **Image (inbound):** Telegram photo handler → download highest-res image → send to vision-capable LLM (Claude, GPT-4o) for analysis/description
+- [x] **Image (outbound):** Chart rendering (QuickChart.io) → send as Telegram photo with caption. Claude image generation → decode + send.
+- [x] **Video (inbound):** Telegram video/video_note handler → extract audio (ffmpeg pipe) → STT → text pipeline. Optionally: extract frames → vision LLM.
+- [x] **Document (inbound):** Telegram document handler → download → parse (PDF text extraction, plain text) → include in LLM context
+- [x] `InboundMessage.media_type` + `media_bytes` fields in transport protocol (already in design)
+- [x] `BaseTransport.send_photo()`, `send_voice()`, `send_document()` outbound methods
+- [x] `nexus setup-voice` CLI for STT/TTS provider configuration
+- [x] ffmpeg added to Docker image for audio extraction
 
 ### M3.5 — Persona Builder + Identity Evolution
 
-- [ ] `nexus setup-persona` — interactive CLI to create a new SOUL.md
-- [ ] Conversational persona rebuild via Telegram ("change your personality to...")
-- [ ] Persona changes logged in audit trail
-- [ ] **Agent-initiated identity evolution** — agent proposes SOUL.md updates based on interaction patterns:
+- [x] `nexus setup-persona` — interactive CLI to create a new SOUL.md
+- [x] Conversational persona rebuild via Telegram ("change your personality to...")
+- [x] Persona changes logged in audit trail
+- [x] **Agent-initiated identity evolution** — agent proposes SOUL.md updates based on interaction patterns:
   - "I've noticed you prefer shorter responses. Should I update my personality?"
   - Changes go through approval gate (same as skill creation)
   - Diff shown before applying — user sees exactly what changes
@@ -253,42 +259,42 @@
 
 ### M3.7 — Proactive Heartbeat
 
-- [ ] Default skill: `~/.nexus/skills/heartbeat/SKILL.md` — shipped alongside morning-briefing
-- [ ] Schedule: `*/30 * * * *` (every 30 minutes, configurable)
-- [ ] Agent reviews: recent session context, USER.md, pending tasks, upcoming events
-- [ ] Decision: agent decides whether to notify — not just a timer, model-driven judgment
-- [ ] Silence is valid: if nothing actionable, agent responds `HEARTBEAT_OK` (no notification sent)
-- [ ] Active hours: configurable window (e.g., 7am-10pm) — no 3am pings
-- [ ] Reengagement cooldown: won't ping again within N minutes of last interaction
-- [ ] Uses cheap model (Haiku) — low token cost per check (~2-5K tokens)
-- [ ] Delivery: via tenant's configured transport (Telegram, etc.)
+- [x] Default skill: `~/.nexus/skills/heartbeat/SKILL.md` — shipped alongside morning-briefing
+- [x] Schedule: `*/30 * * * *` (every 30 minutes, configurable)
+- [x] Agent reviews: recent session context, USER.md, pending tasks, upcoming events
+- [x] Decision: agent decides whether to notify — not just a timer, model-driven judgment
+- [x] Silence is valid: if nothing actionable, agent responds `HEARTBEAT_OK` (no notification sent)
+- [x] Active hours: configurable window (e.g., 7am-10pm) — no 3am pings
+- [x] Reengagement cooldown: won't ping again within N minutes of last interaction
+- [x] Uses cheap model (Haiku) — low token cost per check (~2-5K tokens)
+- [x] Delivery: via tenant's configured transport (Telegram, etc.)
 
 ### M3.6 — Autonomous Skill Creation + Skill Ecosystem
 
-- [ ] Skill format: SKILL.md files in `~/.nexus/skills/` (borrowing OpenClaw/Nanobot conventions)
-- [ ] Skill persistence: filesystem (primary) + SQLite `skills` table (backup) + optional git export
-- [ ] Startup reconciliation: MemoryAgent syncs filesystem ↔ SQLite on boot
-- [ ] Post-task reflection: agent identifies reusable procedures after completing complex tasks
-- [ ] Skill synthesis: writes structured SKILL.md with procedure, pitfalls, verification steps
-- [ ] Skill improvement: existing skills refined during subsequent use
-- [ ] Governance: all skills (local, community, discovered) require approval before activation (Telegram inline buttons)
-- [ ] Skill loading: relevant skills injected into system prompt per task (retrieve-on-demand, not context-packing)
-- [ ] Community repo sync: `nexus skills sync` pulls from public `civitas-io/nexus-skills` repo, stages as pending
-- [ ] Skill publishing: `nexus skills publish <skill>` opens PR against community repo
-- [ ] Skill discovery (SkillScanner): scheduled background search for useful procedures on web/GitHub, synthesized into SKILL.md, proposed for approval
-- [ ] `nexus skills export` / `nexus skills import --from-repo` for migration and backup
+- [x] Skill format: SKILL.md files in `~/.nexus/skills/` (borrowing OpenClaw/Nanobot conventions)
+- [x] Skill persistence: filesystem (primary) + SQLite `skills` table (backup) + optional git export
+- [x] Startup reconciliation: MemoryAgent syncs filesystem ↔ SQLite on boot
+- [x] Post-task reflection: agent identifies reusable procedures after completing complex tasks
+- [x] Skill synthesis: writes structured SKILL.md with procedure, pitfalls, verification steps
+- [x] Skill improvement: existing skills refined during subsequent use
+- [x] Governance: all skills (local, community, discovered) require approval before activation (Telegram inline buttons)
+- [x] Skill loading: relevant skills injected into system prompt per task (retrieve-on-demand, not context-packing)
+- [x] Community repo sync: `nexus skills sync` pulls from public `civitas-io/nexus-skills` repo, stages as pending
+- [x] Skill publishing: `nexus skills publish <skill>` opens PR against community repo
+- [x] Skill discovery (SkillScanner): scheduled background search for useful procedures on web/GitHub, synthesized into SKILL.md, proposed for approval
+- [x] `nexus skills export` / `nexus skills import --from-repo` for migration and backup
 
 ### M3 Exit Criteria
 
-- [ ] Full governance demo: attempt unauthorized action → policy deny → audit entry → trust decay
-- [ ] Trust arc demo: 5 approved drafts → trust rises → low-stakes drafts become autonomous
-- [ ] Rejection → trust falls → more approvals required again
-- [ ] Voice: send voice message → transcribed → processed → voice reply
-- [ ] Image: send photo → vision LLM describes/analyzes → text response
-- [ ] Image outbound: chart data → QuickChart PNG → sent as Telegram photo
-- [ ] Web search: "Find flights to Tokyo" → search results
-- [ ] `nexus setup-persona` creates new persona, next message uses it
-- [ ] Skill creation: agent completes a complex task → proposes a skill → user approves → skill available for next similar task
+- [x] Full governance demo: attempt unauthorized action → policy deny → audit entry → trust decay
+- [x] Trust arc demo: 5 approved drafts → trust rises → low-stakes drafts become autonomous
+- [x] Rejection → trust falls → more approvals required again
+- [x] Voice: send voice message → transcribed → processed → voice reply
+- [x] Image: send photo → vision LLM describes/analyzes → text response
+- [x] Image outbound: chart data → QuickChart PNG → sent as Telegram photo
+- [x] Web search: "Find flights to Tokyo" → search results
+- [x] `nexus setup-persona` creates new persona, next message uses it
+- [x] Skill creation: agent completes a complex task → proposes a skill → user approves → skill available for next similar task
 
 ---
 
