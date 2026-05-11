@@ -240,7 +240,8 @@ async def run_nexus(config: NexusConfig) -> None:
     await seed_on_start(runtime, config)
 
     conv = agents["conversation_manager"]
-    assert isinstance(conv, ConversationManager)
+    if not isinstance(conv, ConversationManager):
+        raise TypeError("Expected ConversationManager for 'conversation_manager' agent")
 
     mcp_manager = await _start_mcp(config, conv)
     _setup_media_handler(conv)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 import subprocess
 import tempfile
@@ -35,6 +36,10 @@ class MediaHandler:
         self._stt = stt
         self._tts = tts
         self._vision = vision
+
+    @property
+    def has_vision(self) -> bool:
+        return self._vision is not None
 
     async def process_voice(self, audio_bytes: bytes, audio_format: str = "ogg") -> str:
         if not self._stt:
@@ -137,8 +142,6 @@ def _extract_pdf_text(pdf_bytes: bytes) -> str:
         return (
             "[PDF received but pdfplumber is not installed. Install with: pip install nexus[docs]]"
         )
-
-    import io
 
     text_parts: list[str] = []
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:

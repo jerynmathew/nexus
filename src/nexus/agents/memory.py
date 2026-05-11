@@ -115,6 +115,8 @@ class MemoryAgent(AgentProcess):
         self._db: aiosqlite.Connection | None = None
 
     async def on_start(self) -> None:
+        if self._db:
+            await self._db.close()
         Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)
         self._db = await aiosqlite.connect(self._db_path)
         await self._db.execute("PRAGMA journal_mode=WAL")

@@ -5,6 +5,11 @@ import contextlib
 import logging
 from typing import Any
 
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.sse import sse_client
+from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamablehttp_client
+
 from nexus.config import MCPServerEntry
 
 logger = logging.getLogger(__name__)
@@ -49,10 +54,6 @@ class MCPManager:
         self,
         server: MCPServerEntry,
     ) -> tuple[Any, list[dict[str, Any]]]:
-        from mcp import ClientSession
-        from mcp.client.sse import sse_client
-        from mcp.client.streamable_http import streamablehttp_client
-
         if server.transport in ("sse", "streamable-http") and server.url:
             if server.transport == "sse":
                 client_ctx = sse_client(url=server.url)
@@ -74,9 +75,6 @@ class MCPManager:
             return session, tools
 
         if server.transport == "stdio" and server.command:
-            from mcp import StdioServerParameters
-            from mcp.client.stdio import stdio_client
-
             params = StdioServerParameters(
                 command=server.command,
                 args=server.args,

@@ -66,6 +66,8 @@ class ContentStore:
         return view_id
 
     def get(self, view_id: str) -> str | None:
+        if not view_id.isalnum() or ".." in view_id:
+            return None
         path = self._views_dir / f"{view_id}.html"
         if not path.exists():
             return None

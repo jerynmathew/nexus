@@ -10,8 +10,10 @@ async def memory_agent(tmp_path):
     db_path = str(tmp_path / "test.db")
     agent = MemoryAgent(name="memory", db_path=db_path)
     await agent.on_start()
-    yield agent
-    await agent.on_stop()
+    try:
+        yield agent
+    finally:
+        await agent.on_stop()
 
 
 def _make_msg(payload):
@@ -32,9 +34,13 @@ class TestMemorySchema:
     async def test_schema_creation(self, memory_agent):
         assert memory_agent._db is not None
 
-    async def test_schema_idempotent(self, memory_agent):
-        await memory_agent.on_start()
-        assert memory_agent._db is not None
+    async def test_schema_idempotent(self, tmp_path):
+        db_path = str(tmp_path / "idem.db")
+        agent = MemoryAgent(name="memory", db_path=db_path)
+        await agent.on_start()
+        await agent.on_start()
+        assert agent._db is not None
+        await agent.on_stop()
 
 
 class TestStoreRecall:

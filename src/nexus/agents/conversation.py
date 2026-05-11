@@ -675,7 +675,7 @@ class ConversationManager(AgentProcess):
             parts = [text] if text else []
             if transcription:
                 parts.append(f"[Video audio: {transcription}]")
-            if frames and self._media_handler._vision:
+            if frames and self._media_handler.has_vision:
                 desc = await self._media_handler.process_image(frames[0])
                 parts.append(f"[Video frame: {desc}]")
             return "\n\n".join(parts) if parts else "[Video received]"
