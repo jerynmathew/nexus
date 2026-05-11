@@ -41,7 +41,12 @@ _TASK_PATTERNS = re.compile(
 )
 _SEARCH_PATTERNS = re.compile(
     r"\b(search\s+for|look\s+up|find\s+(?:me\s+)?|what.s\s+in\s+the\s+news|"
-    r"news|headlines|google|web\s+search|browse)\b",
+    r"news|headlines|google|web\s+search)\b",
+    re.IGNORECASE,
+)
+_BROWSER_PATTERNS = re.compile(
+    r"\b(browse|open\s+(?:the\s+)?(?:url|website|page|site)|navigate\s+to|"
+    r"screenshot|fill\s+(?:the\s+)?form|click\s+on)\b",
     re.IGNORECASE,
 )
 
@@ -90,6 +95,15 @@ class RegexClassifier:
                 target_service="search",
                 action="read",
                 tool_groups=["search", "web"],
+                confidence=0.7,
+                original_text=text,
+            )
+
+        if _BROWSER_PATTERNS.search(text):
+            return Intent(
+                target_service="browser",
+                action="write",
+                tool_groups=["browser", "playwright"],
                 confidence=0.7,
                 original_text=text,
             )

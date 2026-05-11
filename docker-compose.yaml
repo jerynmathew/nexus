@@ -63,6 +63,15 @@ services:
     profiles:
       - search
 
+  mcp-browser:
+    image: mcr.microsoft.com/playwright/mcp:latest
+    container_name: mcp-browser
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    profiles:
+      - browser
+
 volumes:
   nexus-data:
   mcp-google-creds:

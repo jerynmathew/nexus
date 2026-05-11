@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Any
 
 _READ_PREFIXES = ("search_", "list_", "get_", "query_", "read_", "fetch_", "find_")
 _WRITE_PREFIXES = ("send_", "create_", "delete_", "update_", "modify_", "remove_", "manage_")
+
+_PRIVATE_IP_PATTERN = re.compile(
+    r"(?:^|\b)(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+    r"|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}"
+    r"|192\.168\.\d{1,3}\.\d{1,3}"
+    r"|127\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+    r"|localhost)(?:\b|$)",
+)
 
 
 class PolicyDecision(Enum):
@@ -38,6 +47,9 @@ class PolicyEngine:
             if pattern in tool_name:
                 return PolicyDecision.DENY
 
+        if arguments and self._contains_private_url(arguments):
+            return PolicyDecision.DENY
+
         lower = tool_name.lower()
 
         if any(lower.startswith(prefix) for prefix in _READ_PREFIXES):
@@ -56,3 +68,10 @@ class PolicyEngine:
         if trust_score < self._advisory_threshold:
             return PolicyDecision.DENY
         return PolicyDecision.REQUIRE_APPROVAL
+
+    @staticmethod
+    def _contains_private_url(arguments: dict[str, Any]) -> bool:
+        for value in arguments.values():
+            if isinstance(value, str) and _PRIVATE_IP_PATTERN.search(value):
+                return True
+        return False
