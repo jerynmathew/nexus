@@ -1,103 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 520" font-family="Arial, Helvetica, sans-serif">
   <defs>
     <marker id="ar" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-      <path d="M0,0 L7,2.5 L0,5 Z" fill="#6B7280"/>
+      <path d="M0,0 L7,2.5 L0,5 Z" fill="#8b949e"/>
     </marker>
   </defs>
+  <rect width="920" height="520" rx="12" fill="#161b22"/>
 
-  <rect width="920" height="520" fill="#F9FAFB" rx="8"/>
-  <text x="460" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2937">Nexus — Multi-Tenant, Multi-Profile, Multi-Persona Model</text>
+  <rect width="920" height="520" fill="#161b22" rx="8"/>
+  <text x="460" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#c9d1d9">Nexus — Multi-Tenant, Multi-Profile, Multi-Persona Model</text>
 
   <!-- ═══ TENANT A ═══ -->
-  <rect x="24" y="50" width="420" height="310" rx="10" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
-  <text x="234" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#1D4ED8">Tenant: Jeryn (admin)</text>
-  <text x="234" y="88" text-anchor="middle" font-size="9" fill="#3B82F6">telegram_id: 123456789 · permissions: ["*"]</text>
+  <rect x="24" y="50" width="420" height="310" rx="10" fill="#1c2333" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="234" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#58a6ff">Tenant: Jeryn (admin)</text>
+  <text x="234" y="88" text-anchor="middle" font-size="9" fill="#58a6ff">telegram_id: 123456789 · permissions: ["*"]</text>
 
   <!-- Persona -->
-  <rect x="36" y="100" width="140" height="60" rx="6" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
-  <text x="106" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#92400E">Persona: Dross</text>
-  <text x="106" y="136" text-anchor="middle" font-size="8" fill="#92400E">SOUL.md</text>
-  <text x="106" y="150" text-anchor="middle" font-size="8" fill="#B45309">witty, direct, opinionated</text>
+  <rect x="36" y="100" width="140" height="60" rx="6" fill="#3b2e1a" stroke="#e3b341" stroke-width="1"/>
+  <text x="106" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#d29922">Persona: Dross</text>
+  <text x="106" y="136" text-anchor="middle" font-size="8" fill="#d29922">SOUL.md</text>
+  <text x="106" y="150" text-anchor="middle" font-size="8" fill="#d29922">witty, direct, opinionated</text>
 
   <!-- USER.md -->
-  <rect x="186" y="100" width="120" height="60" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
-  <text x="246" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">USER.md</text>
-  <text x="246" y="136" text-anchor="middle" font-size="8" fill="#6B7280">vegetarian</text>
-  <text x="246" y="148" text-anchor="middle" font-size="8" fill="#6B7280">prefers morning meetings</text>
+  <rect x="186" y="100" width="120" height="60" rx="6" fill="#161b22" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="246" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#8b949e">USER.md</text>
+  <text x="246" y="136" text-anchor="middle" font-size="8" fill="#8b949e">vegetarian</text>
+  <text x="246" y="148" text-anchor="middle" font-size="8" fill="#8b949e">prefers morning meetings</text>
 
   <!-- Profile: Personal -->
-  <rect x="36" y="172" width="196" height="90" rx="6" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1"/>
-  <text x="134" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#1E40AF">Profile: personal</text>
-  <rect x="46" y="200" width="176" height="20" rx="3" fill="#3B82F6"/>
-  <text x="134" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">jeryn@gmail.com → MCP: google</text>
-  <text x="134" y="240" text-anchor="middle" font-size="8" fill="#1E40AF">include_in_briefing: true</text>
-  <text x="134" y="252" text-anchor="middle" font-size="8" fill="#1E40AF">integrations: [gmail, calendar, drive]</text>
+  <rect x="36" y="172" width="196" height="90" rx="6" fill="#1c2333" stroke="#79c0ff" stroke-width="1"/>
+  <text x="134" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#58a6ff">Profile: personal</text>
+  <rect x="46" y="200" width="176" height="20" rx="3" fill="#58a6ff"/>
+  <text x="134" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#0d1117">jeryn@gmail.com → MCP: google</text>
+  <text x="134" y="240" text-anchor="middle" font-size="8" fill="#58a6ff">include_in_briefing: true</text>
+  <text x="134" y="252" text-anchor="middle" font-size="8" fill="#58a6ff">integrations: [gmail, calendar, drive]</text>
 
   <!-- Profile: Work -->
-  <rect x="242" y="172" width="196" height="90" rx="6" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1"/>
-  <text x="340" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#1E40AF">Profile: work</text>
-  <rect x="252" y="200" width="176" height="20" rx="3" fill="#3B82F6"/>
-  <text x="340" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">jeryn@company.com → MCP: google-work</text>
-  <text x="340" y="240" text-anchor="middle" font-size="8" fill="#1E40AF">include_in_briefing: true</text>
-  <text x="340" y="252" text-anchor="middle" font-size="8" fill="#1E40AF">integrations: [gmail, calendar, slack]</text>
+  <rect x="242" y="172" width="196" height="90" rx="6" fill="#1c2333" stroke="#79c0ff" stroke-width="1"/>
+  <text x="340" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#58a6ff">Profile: work</text>
+  <rect x="252" y="200" width="176" height="20" rx="3" fill="#58a6ff"/>
+  <text x="340" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#0d1117">jeryn@company.com → MCP: google-work</text>
+  <text x="340" y="240" text-anchor="middle" font-size="8" fill="#58a6ff">include_in_briefing: true</text>
+  <text x="340" y="252" text-anchor="middle" font-size="8" fill="#58a6ff">integrations: [gmail, calendar, slack]</text>
 
   <!-- Memory namespace -->
-  <rect x="36" y="274" width="402" height="38" rx="4" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
-  <text x="237" y="292" text-anchor="middle" font-size="9" font-weight="600" fill="#374151">Memory (namespaced: tenant_id=123456789)</text>
-  <text x="237" y="306" text-anchor="middle" font-size="8" fill="#6B7280">sessions · messages · memories · conversations · schedule_runs</text>
+  <rect x="36" y="274" width="402" height="38" rx="4" fill="#161b22" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="237" y="292" text-anchor="middle" font-size="9" font-weight="600" fill="#8b949e">Memory (namespaced: tenant_id=123456789)</text>
+  <text x="237" y="306" text-anchor="middle" font-size="8" fill="#8b949e">sessions · messages · memories · conversations · schedule_runs</text>
 
   <!-- Trust scores -->
-  <rect x="316" y="100" width="120" height="60" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1"/>
-  <text x="376" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#5B21B6">Trust Scores</text>
-  <text x="376" y="136" text-anchor="middle" font-size="8" fill="#7C3AED">email_draft: 0.82</text>
-  <text x="376" y="148" text-anchor="middle" font-size="8" fill="#7C3AED">calendar_write: 0.65</text>
+  <rect x="316" y="100" width="120" height="60" rx="6" fill="#2a1c33" stroke="#bc8cff" stroke-width="1"/>
+  <text x="376" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#bc8cff">Trust Scores</text>
+  <text x="376" y="136" text-anchor="middle" font-size="8" fill="#bc8cff">email_draft: 0.82</text>
+  <text x="376" y="148" text-anchor="middle" font-size="8" fill="#bc8cff">calendar_write: 0.65</text>
 
   <!-- ═══ TENANT B ═══ -->
-  <rect x="476" y="50" width="420" height="310" rx="10" fill="#F0FDF4" stroke="#10B981" stroke-width="1.5"/>
-  <text x="686" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">Tenant: Partner (member)</text>
-  <text x="686" y="88" text-anchor="middle" font-size="9" fill="#059669">telegram_id: 987654321 · permissions: ["calendar.*", "gmail.read"]</text>
+  <rect x="476" y="50" width="420" height="310" rx="10" fill="#F0FDF4" stroke="#56d364" stroke-width="1.5"/>
+  <text x="686" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#3fb950">Tenant: Partner (member)</text>
+  <text x="686" y="88" text-anchor="middle" font-size="9" fill="#3fb950">telegram_id: 987654321 · permissions: ["calendar.*", "gmail.read"]</text>
 
   <!-- Persona -->
-  <rect x="488" y="100" width="140" height="60" rx="6" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
-  <text x="558" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#92400E">Persona: Friday</text>
-  <text x="558" y="136" text-anchor="middle" font-size="8" fill="#92400E">SOUL.md</text>
-  <text x="558" y="150" text-anchor="middle" font-size="8" fill="#B45309">formal, concise, supportive</text>
+  <rect x="488" y="100" width="140" height="60" rx="6" fill="#3b2e1a" stroke="#e3b341" stroke-width="1"/>
+  <text x="558" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#d29922">Persona: Friday</text>
+  <text x="558" y="136" text-anchor="middle" font-size="8" fill="#d29922">SOUL.md</text>
+  <text x="558" y="150" text-anchor="middle" font-size="8" fill="#d29922">formal, concise, supportive</text>
 
   <!-- USER.md -->
-  <rect x="638" y="100" width="120" height="60" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
-  <text x="698" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">USER.md</text>
-  <text x="698" y="136" text-anchor="middle" font-size="8" fill="#6B7280">early riser</text>
-  <text x="698" y="148" text-anchor="middle" font-size="8" fill="#6B7280">prefers Hindi greetings</text>
+  <rect x="638" y="100" width="120" height="60" rx="6" fill="#161b22" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="698" y="120" text-anchor="middle" font-size="10" font-weight="700" fill="#8b949e">USER.md</text>
+  <text x="698" y="136" text-anchor="middle" font-size="8" fill="#8b949e">early riser</text>
+  <text x="698" y="148" text-anchor="middle" font-size="8" fill="#8b949e">prefers Hindi greetings</text>
 
   <!-- Profile: Personal only -->
-  <rect x="488" y="172" width="300" height="90" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
-  <text x="638" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#065F46">Profile: personal</text>
-  <rect x="498" y="200" width="280" height="20" rx="3" fill="#10B981"/>
-  <text x="638" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#FFFFFF">partner@gmail.com → MCP: google-partner</text>
-  <text x="638" y="240" text-anchor="middle" font-size="8" fill="#065F46">include_in_briefing: true</text>
-  <text x="638" y="252" text-anchor="middle" font-size="8" fill="#065F46">integrations: [gmail, calendar]</text>
+  <rect x="488" y="172" width="300" height="90" rx="6" fill="#1c3a2a" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="638" y="190" text-anchor="middle" font-size="10" font-weight="600" fill="#3fb950">Profile: personal</text>
+  <rect x="498" y="200" width="280" height="20" rx="3" fill="#56d364"/>
+  <text x="638" y="214" text-anchor="middle" font-size="8" font-weight="600" fill="#0d1117">partner@gmail.com → MCP: google-partner</text>
+  <text x="638" y="240" text-anchor="middle" font-size="8" fill="#3fb950">include_in_briefing: true</text>
+  <text x="638" y="252" text-anchor="middle" font-size="8" fill="#3fb950">integrations: [gmail, calendar]</text>
 
   <!-- Memory namespace -->
-  <rect x="488" y="274" width="402" height="38" rx="4" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
-  <text x="689" y="292" text-anchor="middle" font-size="9" font-weight="600" fill="#374151">Memory (namespaced: tenant_id=987654321)</text>
-  <text x="689" y="306" text-anchor="middle" font-size="8" fill="#6B7280">completely isolated from Tenant A</text>
+  <rect x="488" y="274" width="402" height="38" rx="4" fill="#161b22" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="689" y="292" text-anchor="middle" font-size="9" font-weight="600" fill="#8b949e">Memory (namespaced: tenant_id=987654321)</text>
+  <text x="689" y="306" text-anchor="middle" font-size="8" fill="#8b949e">completely isolated from Tenant A</text>
 
   <!-- No write trust -->
-  <rect x="798" y="100" width="90" height="60" rx="6" fill="#FEE2E2" stroke="#EF4444" stroke-width="1"/>
-  <text x="843" y="118" text-anchor="middle" font-size="9" font-weight="700" fill="#991B1B">Permissions</text>
-  <text x="843" y="134" text-anchor="middle" font-size="8" fill="#DC2626">gmail.read ✓</text>
-  <text x="843" y="146" text-anchor="middle" font-size="8" fill="#DC2626">gmail.write ✗</text>
-  <text x="843" y="156" text-anchor="middle" font-size="7" fill="#DC2626">calendar.* ✓</text>
+  <rect x="798" y="100" width="90" height="60" rx="6" fill="#3b1c1c" stroke="#f85149" stroke-width="1"/>
+  <text x="843" y="118" text-anchor="middle" font-size="9" font-weight="700" fill="#f85149">Permissions</text>
+  <text x="843" y="134" text-anchor="middle" font-size="8" fill="#f85149">gmail.read ✓</text>
+  <text x="843" y="146" text-anchor="middle" font-size="8" fill="#f85149">gmail.write ✗</text>
+  <text x="843" y="156" text-anchor="middle" font-size="7" fill="#f85149">calendar.* ✓</text>
 
   <!-- ═══ SHARED RESOURCES ═══ -->
-  <rect x="24" y="378" width="872" height="56" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5"/>
-  <text x="460" y="400" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">Shared Resources (accessible to all tenants)</text>
-  <text x="460" y="418" text-anchor="middle" font-size="9" fill="#6B7280">DashboardServer (GenServer :8080) · MCP server connections · LLM gateway · Homelab service status (future)</text>
+  <rect x="24" y="378" width="872" height="56" rx="8" fill="#161b22" stroke="#D1D5DB" stroke-width="1.5"/>
+  <text x="460" y="400" text-anchor="middle" font-size="11" font-weight="700" fill="#8b949e">Shared Resources (accessible to all tenants)</text>
+  <text x="460" y="418" text-anchor="middle" font-size="9" fill="#8b949e">DashboardServer (GenServer :8080) · MCP server connections · LLM gateway · Homelab service status (future)</text>
 
   <!-- ═══ DATA MODEL ═══ -->
-  <rect x="24" y="448" width="872" height="60" rx="8" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1"/>
-  <text x="40" y="468" font-size="10" font-weight="700" fill="#5B21B6">Data Model</text>
+  <rect x="24" y="448" width="872" height="60" rx="8" fill="#2a1c33" stroke="#bc8cff" stroke-width="1"/>
+  <text x="40" y="468" font-size="10" font-weight="700" fill="#bc8cff">Data Model</text>
 
-  <text x="40" y="488" font-size="9" fill="#374151"><tspan font-weight="600">Tenant</tspan> = user identity (resolved from transport user ID). Owns: persona selection, profiles, permissions, memory namespace, trust scores.</text>
-  <text x="40" y="502" font-size="9" fill="#374151"><tspan font-weight="600">Profile</tspan> = workspace context (personal/work). Owns: Google account, MCP server mapping, integration list, briefing inclusion.</text>
+  <text x="40" y="488" font-size="9" fill="#8b949e"><tspan font-weight="600">Tenant</tspan> = user identity (resolved from transport user ID). Owns: persona selection, profiles, permissions, memory namespace, trust scores.</text>
+  <text x="40" y="502" font-size="9" fill="#8b949e"><tspan font-weight="600">Profile</tspan> = workspace context (personal/work). Owns: Google account, MCP server mapping, integration list, briefing inclusion.</text>
 </svg>
