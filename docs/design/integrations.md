@@ -215,7 +215,7 @@ For services without MCP servers that need stateful connections or custom render
 ```python
 class IntegrationAgent(AgentProcess):
     """Base class for custom service integration agents.
-    
+
     Use ONLY when MCP doesn't cover the use case.
     """
 

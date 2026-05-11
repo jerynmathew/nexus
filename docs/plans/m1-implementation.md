@@ -329,7 +329,7 @@ Runtime.from_config(path, agent_classes=None)
 
 #### T1.6.1 — LLM client wrapper (`src/nexus/llm/client.py`)
 - [ ] `LLMClient` class — wraps httpx calls to AgentGateway (OpenAI-compatible API)
-- [ ] `__init__(base_url: str = "http://localhost:4000", api_key: str = "")` 
+- [ ] `__init__(base_url: str = "http://localhost:4000", api_key: str = "")`
 - [ ] `async chat(model: str, messages: list[dict], tools: list[dict] | None = None, system: str | None = None) -> LLMResponse`
 - [ ] `LLMResponse` dataclass: content (str), model (str), tokens_in (int), tokens_out (int), tool_calls (list[ToolCall] | None)
 - [ ] `ToolCall` dataclass: id (str), name (str), input (dict)
@@ -412,7 +412,7 @@ Runtime.from_config(path, agent_classes=None)
   ```yaml
   transport:
     type: in_process
-  
+
   supervision:
     name: root
     strategy: ONE_FOR_ALL

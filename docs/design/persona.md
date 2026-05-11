@@ -276,7 +276,7 @@ Nexus: "I'll update my persona. Here's what I'd change:
         - Remove casual humor
         Should I apply this? [Apply] [Preview Full] [Cancel]"
 User: [Apply]
-Nexus: "Updated. My persona file has been modified. 
+Nexus: "Updated. My persona file has been modified.
         This change is logged in your audit trail."
 ```
 
