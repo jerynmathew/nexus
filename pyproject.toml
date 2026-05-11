@@ -51,6 +51,12 @@ voice = [
 docs = [
     "pdfplumber~=0.11",
 ]
+discord = [
+    "discord.py~=2.3",
+]
+slack = [
+    "slack-bolt~=1.20",
+]
 
 [project.scripts]
 nexus = "nexus.cli:main"
@@ -114,6 +120,8 @@ module = [
     "croniter.*",
     "faster_whisper.*",
     "pdfplumber.*",
+    "discord.*",
+    "slack_bolt.*",
 ]
 ignore_missing_imports = true
 follow_untyped_imports = true
@@ -123,9 +131,11 @@ module = [
     "nexus.agents.*",
     "nexus.dashboard.server",
     "nexus.runtime",
+    "nexus.transport.discord",
+    "nexus.transport.slack",
 ]
 disallow_untyped_calls = false
-disable_error_code = ["misc", "attr-defined"]
+disable_error_code = ["misc", "attr-defined", "untyped-decorator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
