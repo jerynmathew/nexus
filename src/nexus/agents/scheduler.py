@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -85,6 +86,8 @@ class SchedulerAgent(AgentProcess):
             self._last_runs = {}
 
     async def _on_tick(self) -> None:
+        await self._check_mcp_health()
+
         manager = SkillManager(Path(self._skills_dir))
         scheduled_skills = manager.get_scheduled()
 
@@ -119,6 +122,10 @@ class SchedulerAgent(AgentProcess):
             return bool(croniter.match(cron_expr, now))
         except (ValueError, KeyError):
             return False
+
+    async def _check_mcp_health(self) -> None:
+        with contextlib.suppress(Exception):
+            await self.send("conversation_manager", {"action": "mcp_health_check"})
 
     async def _trigger_skill(self, skill_name: str) -> None:
         logger.info("[%s] Triggering skill '%s'", self.name, skill_name)

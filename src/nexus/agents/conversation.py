@@ -116,23 +116,38 @@ class ConversationManager(AgentProcess):
 
     async def handle(self, message: Message) -> Message | None:
         action = message.payload.get("action")
-
-        if action == "inbound_message":
-            return await self._handle_inbound(message)
-        if action == "execute_skill":
-            return await self._handle_skill_trigger(message)
-        if action == "callback":
-            return await self._handle_transport_callback(message)
-        if action == "status":
-            return self.reply(
-                {
-                    "status": "running",
-                    "active_sessions": len(self._sessions),
-                }
-            )
-
+        handler = self._get_action_handler(action)
+        if handler:
+            result: Message | None = await handler(message)
+            return result
         logger.warning("[%s] Unknown action: %s", self.name, action)
         return None
+
+    def _get_action_handler(
+        self,
+        action: str | None,
+    ) -> Any | None:
+        handlers: dict[str, Any] = {
+            "inbound_message": self._handle_inbound,
+            "execute_skill": self._handle_skill_trigger,
+            "callback": self._handle_transport_callback,
+            "command": self._handle_command,
+            "mcp_health_check": self._handle_mcp_health,
+            "status": self._handle_status,
+        }
+        return handlers.get(action or "")
+
+    async def _handle_mcp_health(self, message: Message) -> Message | None:
+        await self._report_mcp_health()
+        return None
+
+    async def _handle_status(self, message: Message) -> Message | None:
+        return self.reply(
+            {
+                "status": "running",
+                "active_sessions": len(self._sessions),
+            }
+        )
 
     async def _handle_inbound(self, message: Message) -> Message | None:
         payload = message.payload
@@ -316,7 +331,33 @@ class ConversationManager(AgentProcess):
             if summary:
                 parts.append("# Available Skills\n\n" + summary)
 
+        capabilities = self._build_capabilities_section()
+        if capabilities:
+            parts.append(capabilities)
+
         return "\n\n---\n\n".join(parts)
+
+    def _build_capabilities_section(self) -> str:
+        lines: list[str] = ["# Available Capabilities"]
+
+        if self._mcp:
+            tools = self._mcp.all_tool_schemas()
+            if tools:
+                lines.append(f"\nYou have {len(tools)} tools available via MCP.")
+            else:
+                lines.append("\nNo MCP tools currently connected.")
+        else:
+            lines.append(
+                "\nNo MCP connection. You cannot access email, calendar, or external services.",
+            )
+
+        if self._media_handler:
+            if self._media_handler.has_vision:
+                lines.append("You can analyze images sent by the user.")
+        else:
+            lines.append("Voice and image processing are not available.")
+
+        return "\n".join(lines)
 
     def _build_messages(self, session: Session, current_text: str) -> list[dict[str, Any]]:
         messages: list[dict[str, Any]] = []
@@ -585,6 +626,165 @@ class ConversationManager(AgentProcess):
 
         logger.warning("[%s] Unknown callback: %s", self.name, callback_data)
         return None
+
+    async def _handle_command(self, message: Message) -> Message | None:
+        payload = message.payload
+        command = payload.get("command", "")
+        args = payload.get("args", "")
+        tenant_id = payload.get("tenant_id", "")
+        channel_id = payload.get("channel_id", "")
+
+        if command == "status":
+            status_text = await self._build_status_report(tenant_id)
+            await self._send_reply(channel_id, status_text)
+            return None
+
+        if command == "checkpoint":
+            await self._handle_checkpoint(tenant_id, channel_id, args)
+            return None
+
+        if command == "rollback":
+            await self._handle_rollback(tenant_id, channel_id, args)
+            return None
+
+        await self._send_reply(channel_id, f"Unknown command: /{command}")
+        return None
+
+    async def _build_status_report(self, tenant_id: str) -> str:
+        lines: list[str] = ["**Nexus Status**\n"]
+
+        try:
+            health = await self.ask("dashboard", {"action": "get_health"})
+            h = health.payload
+            lines.append(f"Health: {h.get('status', 'unknown')}")
+            lines.append(f"Agents: {h.get('agent_count', 0)}")
+            lines.append(f"Uptime: {int(h.get('uptime_seconds', 0)) // 60}m")
+        except Exception:
+            lines.append("Health: unavailable")
+
+        if self._mcp:
+            mcp_health = await self._mcp.health_check()
+            for name, healthy in mcp_health.items():
+                status = "connected" if healthy else "disconnected"
+                lines.append(f"MCP {name}: {status}")
+            lines.append(f"Tools: {len(self._mcp.all_tool_schemas())}")
+
+        trust_scores = self._trust.get_all_scores(tenant_id)
+        if trust_scores:
+            lines.append("\n**Trust:**")
+            for cat, score in sorted(trust_scores.items()):
+                bar = "█" * int(score * 10) + "░" * (10 - int(score * 10))
+                lines.append(f"  {cat}: {bar} {score:.2f}")
+
+        lines.append(f"\nSessions: {len(self._sessions)}")
+        lines.append(f"STT: {'enabled' if self._media_handler else 'disabled'}")
+
+        return "\n".join(lines)
+
+    async def _handle_checkpoint(
+        self,
+        tenant_id: str,
+        channel_id: str,
+        label: str,
+    ) -> None:
+        session = self._sessions.get(tenant_id)
+        if not session:
+            await self._send_reply(channel_id, "No active session to checkpoint.")
+            return
+
+        checkpoint_label = label.strip() or f"checkpoint-{len(session.messages)}"
+        try:
+            await self.send(
+                "memory",
+                {
+                    "action": "config_set",
+                    "tenant_id": tenant_id,
+                    "namespace": "checkpoints",
+                    "key": checkpoint_label,
+                    "value": json.dumps(session.to_dict()),
+                },
+            )
+            await self._send_reply(
+                channel_id,
+                f"✅ Checkpoint saved: `{checkpoint_label}`",
+            )
+        except Exception:
+            await self._send_reply(channel_id, "Failed to save checkpoint.")
+        return
+
+    async def _handle_rollback(
+        self,
+        tenant_id: str,
+        channel_id: str,
+        label: str,
+    ) -> None:
+        label = label.strip()
+        if not label:
+            try:
+                result = await self.ask(
+                    "memory",
+                    {
+                        "action": "config_get_all",
+                        "tenant_id": tenant_id,
+                    },
+                )
+                checkpoints = result.payload.get("configs", {}).get("checkpoints", {})
+                if not checkpoints:
+                    await self._send_reply(channel_id, "No checkpoints available.")
+                    return
+                names = "\n".join(f"  `{k}`" for k in checkpoints)
+                await self._send_reply(
+                    channel_id,
+                    f"Available checkpoints:\n{names}\n\nUse: /rollback <name>",
+                )
+            except Exception:
+                await self._send_reply(channel_id, "Failed to list checkpoints.")
+            return
+
+        try:
+            result = await self.ask(
+                "memory",
+                {
+                    "action": "config_get",
+                    "tenant_id": tenant_id,
+                    "namespace": "checkpoints",
+                    "key": label,
+                },
+            )
+            value = result.payload.get("value")
+            if not value:
+                await self._send_reply(channel_id, f"Checkpoint `{label}` not found.")
+                return
+
+            from nexus.models.session import Session as SessionModel
+
+            session_data = json.loads(value)
+            restored = SessionModel.from_dict(session_data)
+            self._sessions[tenant_id] = restored
+            await self._checkpoint_session(restored)
+            await self._send_reply(
+                channel_id,
+                f"✅ Rolled back to: `{label}`",
+            )
+        except Exception:
+            await self._send_reply(channel_id, "Failed to rollback.")
+        return
+
+    async def _report_mcp_health(self) -> None:
+        if not self._mcp:
+            return
+        with contextlib.suppress(Exception):
+            health = await self._mcp.health_check()
+            for name, healthy in health.items():
+                await self.cast(
+                    "dashboard",
+                    {
+                        "action": "mcp_status",
+                        "server": name,
+                        "connected": healthy,
+                        "tool_count": len(self._mcp.filter_tools([name])),
+                    },
+                )
 
     async def _persist_message(self, session_id: str, role: str, content: str) -> None:
         try:
