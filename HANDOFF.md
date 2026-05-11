@@ -3,7 +3,7 @@ HANDOFF CONTEXT
 
 GOAL
 ----
-Continue Nexus development. M1 through M3 complete and pushed to GitHub. Next: M4 (breadth) or further polish.
+Continue Nexus development. M1 through M4 complete. Next: build extension system (M5.0) then nexus-work extension.
 
 WORK COMPLETED
 --------------
@@ -49,30 +49,41 @@ WORK COMPLETED
 - Dependencies pinned with ~= operator, uv.lock tracked
 - Pushed to https://github.com/jerynmathew/nexus — CI green
 
+### M4 — Breadth ✅
+- Discord + Slack transports (cross-transport continuity)
+- Resilience: /status command, dynamic system prompt, MCP health monitoring
+- Browser automation: Playwright MCP sidecar, SSRF protection
+- Session checkpoints: /checkpoint and /rollback commands
+
 CURRENT STATE
 -------------
-- 75+ commits on main, pushed to GitHub
+- 87 commits on main, pushed to GitHub
 - 179 tests, all passing in ~2 seconds
-- 40 source files, 27 test files
+- 42 source files, 27 test files
 - CI: lint ✅ typecheck ✅ test ✅ docker ✅
 
 PENDING TASKS
 -------------
-### M4 — Breadth (not started)
-- Discord, Slack transports
-- Homelab agents (Jellyfin, Paperless, etc.)
-- Financial tracking, browser automation (Playwright MCP)
-- Session checkpoints + rollback
+### M5 — Extensions + Work Intelligence (designed, not started)
+- Extension system: NexusExtension protocol, NexusContext API, discovery
+- nexus-work extension: action tracking, delegation, meeting prep, priority engine
+- See: docs/design/extensions.md, docs/design/work-assistant.md
 
-### M5 — Polish (not started)
+### M6 — Production (not started)
 - Full Presidium governance (when packages ship)
 - Production hardening, webhook mode, rate limiting
-- Documentation, quickstart guide, demo video
 
-### M6 — Presence (not started)
+### M7 — Presence (not started)
 - PWA web app, Android app
-- TTS implementation (Qwen3-TTS/CosyVoice, needs GPU)
+- TTS with voice cloning (Qwen3-TTS/CosyVoice, needs GPU)
 - Animated avatar, voice-first ("Dross mode")
+
+### Design Docs (completed, not yet implemented)
+- docs/design/extensions.md — composable plugin architecture
+- docs/design/work-assistant.md — chief of staff as software
+- docs/design/work-intelligence.md — cross-signal work awareness
+- docs/design/finance.md — gold/stocks analysis
+- docs/design/channel-monitoring.md — passive channel reading
 
 KEY FILES
 ---------
@@ -80,7 +91,7 @@ KEY FILES
 - README.md — product overview, quickstart, architecture SVG
 - CONTRIBUTING.md — code standards, PR checklist
 - LICENSE — Apache 2.0
-- docs/plans/ — M1, M2A, M2B, M3A, M3B implementation plans
+- docs/index.md — documentation walkthrough
+- docs/plans/ — M1, M2A, M2B, M3A, M3B, M4 implementation plans
+- docs/design/ — extension architecture, work assistant, finance, channel monitoring
 - docs/reviews/ — security + quality audit
-- config.example.yaml — documented config template
-- .env.template — credential scaffolding

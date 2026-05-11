@@ -225,13 +225,25 @@ nexus/
 | Milestone | Status | Description |
 |---|---|---|
 | M1 Foundation | ✅ Complete | Telegram bot, supervision tree, memory, crash recovery |
-| M2 Wave A | ✅ Complete | MCP tools, Google Workspace (Gmail/Calendar/Tasks), skills, governance |
-| M2 Wave B | ✅ Complete | Web dashboard (:8080), content viewer, context compression |
-| M3 Wave A | ✅ Complete | Trust-gated autonomy, proactive heartbeat, web search, persona builder |
-| M3 Wave B | ✅ Complete | Media support — STT (Whisper), vision (Claude), documents, video frames |
-| M4 Breadth | Planned | Discord, Slack, homelab agents, finance, browser automation |
-| M5 Polish | Planned | Production hardening, full Presidium governance, community docs |
-| M6 Presence | Planned | PWA web app, Android app, animated avatar, voice-first ("Dross mode") |
+| M2 Integrations | ✅ Complete | MCP tools, Google Workspace, skills, governance, dashboard, compression |
+| M3 Depth | ✅ Complete | Trust arc, heartbeat, web search, media (STT/vision), persona builder |
+| M4 Breadth | ✅ Complete | Discord, Slack, browser automation, /status, /checkpoint, SSRF protection |
+| M5 Extensions | Designed | [Extension architecture](docs/design/extensions.md) — composable plugin system |
+| M5 Work Intelligence | Designed | [Work assistant](docs/design/work-assistant.md) — action tracking, delegation, meeting prep (`nexus-work` extension) |
+| M6 Production | Planned | Presidium governance, production hardening, community docs |
+| M7 Presence | Planned | PWA web app, Android app, animated avatar, TTS voice cloning |
+
+## Extensions
+
+Nexus is a platform. Domain-specific intelligence ships as extensions:
+
+| Extension | Scope | Status |
+|---|---|---|
+| **nexus-work** | Action tracking, meeting prep, delegation, priority engine | [Designed](docs/design/work-assistant.md) |
+| **nexus-finance** | Gold/stocks, charts, buy/sell recommendations | [Designed](docs/design/finance.md) |
+| **nexus-homelab** | Service monitoring (Jellyfin, Paperless, etc.) | Planned (skills-only) |
+
+Extensions install via `pip install nexus-work` (code + skills) or by dropping skill folders into `~/.nexus/extensions/`. See [extension architecture](docs/design/extensions.md).
 
 ## Ecosystem
 
@@ -241,7 +253,8 @@ Nexus is part of the [civitas-io](https://github.com/civitas-io) ecosystem:
 |---|---|
 | [python-civitas](https://github.com/civitas-io/python-civitas) | Agent runtime — supervision trees, message passing, OTEL |
 | [presidium](https://github.com/civitas-io/presidium) | Governance — policy enforcement, trust scores, audit |
-| **nexus** | The reference application — proves the stack works |
+| **nexus** | The platform — personal AI assistant with extension system |
+| **nexus-work** | Extension — work intelligence for staff engineers + managers |
 
 ## License
 

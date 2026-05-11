@@ -298,74 +298,124 @@
 
 ---
 
-## M4 — Breadth: "It connects to everything you use"
+## M4 — Breadth: "It connects to everything you use" ✅
 
-**Goal:** Additional messaging integrations, homelab services, financial tracking, visual output, resilience.
+**Status: Complete** — 14 tasks. [Implementation plan](../plans/m4-implementation.md)
+
+**Goal:** Additional messaging integrations, browser automation, resilience, session management.
 
 ### M4.1 — Additional Messaging Integrations
 
-- [ ] WhatsApp (read-only via Matrix bridge or MCP)
-- [ ] Discord (monitor channels, summarize, respond to mentions)
-- [ ] Slack via MCP (work messaging)
-- [ ] Each as a separate transport or MCP integration, governed identically
+- [x] WhatsApp (read-only via Matrix bridge or MCP)
+- [x] Discord (monitor channels, summarize, respond to mentions)
+- [x] Slack via MCP (work messaging)
+- [x] Each as a separate transport or MCP integration, governed identically
 
 ### M4.2 — Homelab Integration Agents
 
-- [ ] `agents/homelab/base.py` — `IntegrationAgent` base class (httpx async client, auth, health checks)
-- [ ] Homelab agents configurable per user's stack (Jellyfin, Paperless, Immich, etc.)
-- [ ] Service health monitoring — periodic checks, alert on status transitions
-- [ ] Natural language queries routed via intent classifier
-- [ ] MCP servers used where available; custom `IntegrationAgent` where not
+- [x] `agents/homelab/base.py` — `IntegrationAgent` base class (httpx async client, auth, health checks)
+- [x] Homelab agents configurable per user's stack (Jellyfin, Paperless, Immich, etc.)
+- [x] Service health monitoring — periodic checks, alert on status transitions
+- [x] Natural language queries routed via intent classifier
+- [x] MCP servers used where available; custom `IntegrationAgent` where not
 
 ### M4.3 — Financial Tracking
 
-- [ ] Yahoo Finance MCP + Indian market MCP sidecars
-- [ ] Morning briefing finance section with configurable watchlist
-- [ ] "What's the gold price today?" → MCP tool call → current price
+- [x] Yahoo Finance MCP + Indian market MCP sidecars
+- [x] Morning briefing finance section with configurable watchlist
+- [x] "What's the gold price today?" → MCP tool call → current price
 
 ### M4.4 — Visual Output
 
-- [ ] Telegram photo sending (`send_photo`)
-- [ ] QuickChart.io integration for data charts (LLM builds Chart.js config → PNG)
-- [ ] Finance charts in briefing (optional)
-- [ ] Graceful fallback to text-only on chart service failure
+- [x] Telegram photo sending (`send_photo`)
+- [x] QuickChart.io integration for data charts (LLM builds Chart.js config → PNG)
+- [x] Finance charts in briefing (optional)
+- [x] Graceful fallback to text-only on chart service failure
 
 ### M4.5 — Resilience & Fallbacks
 
-- [ ] LLM failover: cloud → local, local → cloud
-- [ ] MCP auto-reconnect on server recovery
-- [ ] Per-tool-call timeout — individual MCP failures don't block the loop
-- [ ] System prompt dynamically reflects available capabilities
-- [ ] `/status` command shows service health
+- [x] LLM failover: cloud → local, local → cloud
+- [x] MCP auto-reconnect on server recovery
+- [x] Per-tool-call timeout — individual MCP failures don't block the loop
+- [x] System prompt dynamically reflects available capabilities
+- [x] `/status` command shows service health
 
 ### M4.6 — Browser Automation (via MCP)
 
-- [ ] Playwright MCP server as Docker sidecar (not custom browser implementation)
-- [ ] Web browsing: navigate, click, type, screenshot, extract text
-- [ ] Use case: fill forms, check status pages, interact with web UIs that have no API
-- [ ] SSRF policy: block private network navigation by default, opt-in allowlist
-- [ ] Governed: browser actions go through same policy check as all tool calls
+- [x] Playwright MCP server as Docker sidecar (not custom browser implementation)
+- [x] Web browsing: navigate, click, type, screenshot, extract text
+- [x] Use case: fill forms, check status pages, interact with web UIs that have no API
+- [x] SSRF policy: block private network navigation by default, opt-in allowlist
+- [x] Governed: browser actions go through same policy check as all tool calls
 
 ### M4.7 — Session Checkpoints + Rollback
 
-- [ ] Manual checkpoint: user says "checkpoint this" or `/checkpoint` → session snapshot saved
-- [ ] Rollback: `/rollback` restores to last checkpoint — undo for conversations
-- [ ] Checkpoint storage: alongside session messages in SQLite
-- [ ] Useful for complex multi-turn tasks where you want to try different approaches
+- [x] Manual checkpoint: user says "checkpoint this" or `/checkpoint` → session snapshot saved
+- [x] Rollback: `/rollback` restores to last checkpoint — undo for conversations
+- [x] Checkpoint storage: alongside session messages in SQLite
+- [x] Useful for complex multi-turn tasks where you want to try different approaches
 
 ### M4 Exit Criteria
 
-- [ ] Message Nexus on Discord → same persona, same memory as Telegram
-- [ ] Claude API revoked → Nexus responds via Ollama in same conversation turn
-- [ ] MCP server restarted → tools automatically restored within 5 minutes
-- [ ] Finance query → chart PNG sent to Telegram
-- [ ] WhatsApp conversation summary → delivered on Telegram
+- [x] Message Nexus on Discord → same persona, same memory as Telegram
+- [x] Claude API revoked → Nexus responds via Ollama in same conversation turn
+- [x] MCP server restarted → tools automatically restored within 5 minutes
+- [x] Finance query → chart PNG sent to Telegram
+- [x] WhatsApp conversation summary → delivered on Telegram
 
 ---
 
-## M5 — Polish: "It's ready for others to use"
+## M5 — Extensions + Work Intelligence: "It knows your job"
 
-**Goal:** Production hardening, documentation, community onboarding, full Presidium governance.
+**Status: Designed** — [Extension architecture](../design/extensions.md) · [Work assistant](../design/work-assistant.md) · [Work intelligence](../design/work-intelligence.md)
+
+**Goal:** Composable extension system + nexus-work extension (action tracking, delegation, meeting prep, priority engine). This is the milestone that makes Nexus a chief of staff, not just a chatbot.
+
+### M5.0 — Extension Architecture (core)
+
+- [ ] `NexusExtension` protocol and `NexusContext` API
+- [ ] Extension discovery (Python entry_points + directory scan)
+- [ ] Command registry in ConversationManager
+- [ ] Schema registration in MemoryAgent
+- [ ] Signal hooks for extensions
+- [ ] Extension config in NexusConfig
+
+### M5.1 — nexus-work: Action Item Tracking
+
+- [ ] `work_actions` table (title, status, priority, due_date, source, assigned_to)
+- [ ] Action extraction from emails and Slack messages (LLM scan)
+- [ ] Manual action creation: "remind me to review Sarah's PR by tomorrow"
+- [ ] `/actions` command: list open action items sorted by priority
+- [ ] Morning briefing includes action items section
+
+### M5.2 — nexus-work: Meeting Intelligence
+
+- [ ] `work_meetings` table linked to calendar events
+- [ ] Pre-meeting context brief (2 min before, uses calendar + signals)
+- [ ] Post-meeting action capture prompt
+- [ ] Enhanced 1:1 prep with last-meeting context
+
+### M5.3 — nexus-work: Delegation Tracking
+
+- [ ] `work_delegations` table
+- [ ] Delegation detection from outbound messages
+- [ ] Stale delegation alerts (heartbeat checks)
+- [ ] `/delegate` command, delegation status in morning briefing
+
+### M5.4 — nexus-work: Priority Engine + Day Orchestration
+
+- [ ] Multi-factor priority scoring (deadline, requester, blocking, overdue)
+- [ ] Auto-rerank on new signals
+- [ ] Structured morning briefing (triage, meetings, commitments, delegations)
+- [ ] Evening wrap with day summary
+
+### M5 Exit Criteria
+
+- [ ] Extension system works: pip install nexus-work adds capabilities
+- [ ] Morning briefing shows action items, delegations, meeting prep
+- [ ] "What should I do next?" returns prioritized action list
+- [ ] Delegation tracker alerts on stale items
+- [ ] Pre-meeting briefs arrive automatically
 
 ### M5.1 — Full Presidium Integration
 
@@ -402,7 +452,36 @@
 
 ---
 
-## M6 — Presence: "It lives where you are"
+## M6 — Production: "It's ready for others to use"
+
+**Status: Planned**
+
+**Goal:** Production hardening, Presidium governance, community onboarding. Original M5 scope moved here.
+
+### M6.1 — Presidium Governance Integration
+
+- [ ] Replace lightweight policy with Presidium PolicyEngine (when available)
+- [ ] GovernedModelProvider, GovernedToolProvider
+- [ ] Full audit ledger, behavioral contracts
+
+### M6.2 — Production Hardening
+
+- [ ] Rate limiting per tenant
+- [ ] Webhook mode for Telegram
+- [ ] Structured JSON logging, log rotation
+- [ ] Security audit: prompt injection defense, credential review
+
+### M6.3 — Documentation + Community
+
+- [ ] Quickstart guide (clone → running in 15 minutes)
+- [ ] Extension development guide
+- [ ] Demo video script
+
+---
+
+## M7 — Presence: "It lives where you are"
+
+**Status: Planned**
 
 **Goal:** Native apps, animated avatar, voice-first interaction. Low priority — Telegram + web dashboard covers core use cases. This milestone is about presence and personality.
 

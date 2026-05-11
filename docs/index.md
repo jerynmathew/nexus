@@ -37,6 +37,11 @@ Detailed design for each major component. Read these when you want to understand
 | [Persona System](design/persona.md) | `PersonaLoader` | SOUL.md, USER.md, prompt assembly, persona builder |
 | [Scheduler](design/scheduler.md) | `SchedulerAgent` | Cron engine, skill triggers, active hours |
 | [Integrations](design/integrations.md) | `MCPManager` | MCP-first model, tool filtering, custom agents (exception path) |
+| [Extensions](design/extensions.md) | `NexusExtension` | Composable plugin system, pip + directory distribution |
+| [Work Assistant](design/work-assistant.md) | `nexus-work` | Action tracking, delegation, meeting prep, priority engine |
+| [Work Intelligence](design/work-intelligence.md) | Signal layer | Cross-signal awareness, people resolution, synthesis |
+| [Finance](design/finance.md) | `nexus-finance` | Gold/stocks analysis, charts, buy/sell recommendations |
+| [Channel Monitoring](design/channel-monitoring.md) | Transports | Passive reading, summarization, proactive alerts |
 
 ## Implementation Plans
 
@@ -49,6 +54,7 @@ Detailed task breakdowns with progress tracking. These document every decision a
 | [M2 Wave B](plans/m2-wave-b-implementation.md) | Dashboard + Content Viewer + Compression | 8 tasks | ✅ Complete |
 | [M3 Wave A](plans/m3-wave-a-implementation.md) | Trust Arc + Heartbeat + Search + Persona | 13 tasks | ✅ Complete |
 | [M3 Wave B](plans/m3-wave-b-implementation.md) | STT + Vision + Documents + Video | 8 tasks | ✅ Complete |
+| [M4](plans/m4-implementation.md) | Resilience + Browser + Checkpoints + Discord + Slack | 14 tasks | ✅ Complete |
 
 ## Reviews
 
