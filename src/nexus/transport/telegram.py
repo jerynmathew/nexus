@@ -63,6 +63,10 @@ class TelegramTransport:
 
     async def start(self) -> None:
         self._app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
+        self._app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self._on_voice))
+        self._app.add_handler(MessageHandler(filters.PHOTO, self._on_photo))
+        self._app.add_handler(MessageHandler(filters.Document.ALL, self._on_document))
+        self._app.add_handler(MessageHandler(filters.VIDEO | filters.VIDEO_NOTE, self._on_video))
         self._app.add_handler(CallbackQueryHandler(self._on_callback))
 
         await self._app.initialize()
@@ -120,6 +124,133 @@ class TelegramTransport:
                 "tenant_id": tenant_id,
                 "channel_id": str(update.effective_chat.id),
                 "callback_data": query.data,
+            }
+        )
+
+    async def _on_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not update.effective_user or not update.message or not update.effective_chat:
+            return
+        user_id = str(update.effective_user.id)
+        tenant_id = self._resolve(user_id)
+        if tenant_id is None:
+            await update.message.reply_text("Sorry, you're not authorized.")
+            return
+
+        voice = update.message.voice or update.message.audio
+        if not voice:
+            return
+        file = await voice.get_file()
+        audio_bytes = bytes(await file.download_as_bytearray())
+
+        inbound = InboundMessage(
+            tenant_id=tenant_id,
+            text="",
+            channel_id=str(update.effective_chat.id),
+            reply_transport=self,
+            message_id=str(update.message.message_id),
+            media_type="voice",
+            media_bytes=audio_bytes,
+        )
+        await self._send_to_conv_manager(
+            {
+                "action": "inbound_message",
+                **inbound.to_payload(),
+            }
+        )
+
+    async def _on_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not update.effective_user or not update.message or not update.effective_chat:
+            return
+        user_id = str(update.effective_user.id)
+        tenant_id = self._resolve(user_id)
+        if tenant_id is None:
+            await update.message.reply_text("Sorry, you're not authorized.")
+            return
+
+        photo = update.message.photo[-1] if update.message.photo else None
+        if not photo:
+            return
+        file = await photo.get_file()
+        image_bytes = bytes(await file.download_as_bytearray())
+
+        inbound = InboundMessage(
+            tenant_id=tenant_id,
+            text=update.message.caption or "",
+            channel_id=str(update.effective_chat.id),
+            reply_transport=self,
+            message_id=str(update.message.message_id),
+            media_type="photo",
+            media_bytes=image_bytes,
+            media_caption=update.message.caption,
+        )
+        await self._send_to_conv_manager(
+            {
+                "action": "inbound_message",
+                **inbound.to_payload(),
+            }
+        )
+
+    async def _on_document(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not update.effective_user or not update.message or not update.effective_chat:
+            return
+        user_id = str(update.effective_user.id)
+        tenant_id = self._resolve(user_id)
+        if tenant_id is None:
+            await update.message.reply_text("Sorry, you're not authorized.")
+            return
+
+        doc = update.message.document
+        if not doc:
+            return
+        file = await doc.get_file()
+        doc_bytes = bytes(await file.download_as_bytearray())
+
+        inbound = InboundMessage(
+            tenant_id=tenant_id,
+            text=update.message.caption or "",
+            channel_id=str(update.effective_chat.id),
+            reply_transport=self,
+            message_id=str(update.message.message_id),
+            media_type="document",
+            media_bytes=doc_bytes,
+            metadata={"filename": doc.file_name or "document"},
+        )
+        await self._send_to_conv_manager(
+            {
+                "action": "inbound_message",
+                **inbound.to_payload(),
+            }
+        )
+
+    async def _on_video(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not update.effective_user or not update.message or not update.effective_chat:
+            return
+        user_id = str(update.effective_user.id)
+        tenant_id = self._resolve(user_id)
+        if tenant_id is None:
+            await update.message.reply_text("Sorry, you're not authorized.")
+            return
+
+        video = update.message.video or update.message.video_note
+        if not video:
+            return
+        file = await video.get_file()
+        video_bytes = bytes(await file.download_as_bytearray())
+
+        inbound = InboundMessage(
+            tenant_id=tenant_id,
+            text=update.message.caption or "",
+            channel_id=str(update.effective_chat.id),
+            reply_transport=self,
+            message_id=str(update.message.message_id),
+            media_type="video",
+            media_bytes=video_bytes,
+            media_caption=update.message.caption,
+        )
+        await self._send_to_conv_manager(
+            {
+                "action": "inbound_message",
+                **inbound.to_payload(),
             }
         )
 

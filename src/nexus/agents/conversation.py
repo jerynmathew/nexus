@@ -20,6 +20,7 @@ from nexus.governance.policy import PolicyDecision, PolicyEngine
 from nexus.governance.trust import TrustStore, tool_category
 from nexus.llm.client import LLMClient, LLMResponse
 from nexus.mcp.manager import MCPManager
+from nexus.media.handler import MediaHandler
 from nexus.models.session import Session
 from nexus.models.tenant import TenantContext
 from nexus.persona.loader import PersonaLoader
@@ -69,6 +70,7 @@ class ConversationManager(AgentProcess):
         self._compressor = ContextCompressor()
         self._content_store: ContentStore | None = None
         self._dashboard_config: DashboardConfig | None = None
+        self._media_handler: MediaHandler | None = None
         self._sessions: dict[str, Session] = {}
         self._pending_approvals: dict[str, dict[str, Any]] = {}
         self._transport: Any = None
@@ -109,6 +111,9 @@ class ConversationManager(AgentProcess):
         self._content_store = store
         self._dashboard_config = config
 
+    def set_media_handler(self, handler: MediaHandler) -> None:
+        self._media_handler = handler
+
     async def handle(self, message: Message) -> Message | None:
         action = message.payload.get("action")
 
@@ -134,6 +139,7 @@ class ConversationManager(AgentProcess):
         tenant_id = payload.get("tenant_id")
         text = payload.get("text", "")
         channel_id = payload.get("channel_id", "")
+        media_type = payload.get("media_type")
 
         if not tenant_id:
             return None
@@ -142,6 +148,9 @@ class ConversationManager(AgentProcess):
         if tenant is None:
             await self._send_reply(channel_id, "Sorry, you're not authorized.")
             return None
+
+        if media_type and self._media_handler:
+            text = await self._process_media(payload, text)
 
         intent = await self._classifier.classify(text, tenant)
         session = await self._get_or_create_session(tenant)
@@ -637,6 +646,41 @@ class ConversationManager(AgentProcess):
         if self._transport and hasattr(self._transport, "send_typing"):
             with contextlib.suppress(Exception):
                 await self._transport.send_typing(channel_id)
+
+    async def _process_media(self, payload: dict[str, Any], text: str) -> str:
+        if not self._media_handler:
+            return text
+
+        media_type = payload.get("media_type", "")
+        media_bytes = payload.get("_media_bytes", b"")
+
+        if media_type == "voice" and media_bytes:
+            transcription = await self._media_handler.process_voice(media_bytes)
+            logger.info("[%s] Voice transcribed: %s", self.name, transcription[:80])
+            return transcription
+
+        if media_type == "photo" and media_bytes:
+            caption = payload.get("media_caption", "") or text
+            description = await self._media_handler.process_image(media_bytes, caption)
+            return f"{caption}\n\n[Image analysis: {description}]" if caption else description
+
+        if media_type == "document" and media_bytes:
+            filename = payload.get("metadata", {}).get("filename", "document")
+            doc_text = await self._media_handler.process_document(media_bytes, filename)
+            prefix = text or f"Document: {filename}"
+            return f"{prefix}\n\n{doc_text[:10_000]}"
+
+        if media_type == "video" and media_bytes:
+            transcription, frames = await self._media_handler.process_video(media_bytes)
+            parts = [text] if text else []
+            if transcription:
+                parts.append(f"[Video audio: {transcription}]")
+            if frames and self._media_handler._vision:
+                desc = await self._media_handler.process_image(frames[0])
+                parts.append(f"[Video frame: {desc}]")
+            return "\n\n".join(parts) if parts else "[Video received]"
+
+        return text
 
     async def _report_activity(self, tenant_id: str, text: str) -> None:
         with contextlib.suppress(Exception):

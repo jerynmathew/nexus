@@ -129,6 +129,29 @@ async def _register_agents_with_dashboard(
         )
 
 
+def _setup_media_handler(conv: ConversationManager) -> None:
+    from nexus.media.handler import MediaHandler
+
+    stt = None
+    try:
+        from nexus.media.stt import WhisperSTT
+
+        stt = WhisperSTT()
+        logger.info("STT: faster-whisper enabled")
+    except Exception:
+        logger.info("STT: not available (install nexus[voice] for voice support)")
+
+    vision = None
+    if conv._llm:
+        from nexus.media.vision import ClaudeVision
+
+        vision = ClaudeVision(conv._llm)
+        logger.info("Vision: Claude enabled via AgentGateway")
+
+    handler = MediaHandler(stt=stt, vision=vision)
+    conv.set_media_handler(handler)
+
+
 async def _start_mcp(
     config: NexusConfig,
     conv: ConversationManager,
@@ -220,6 +243,7 @@ async def run_nexus(config: NexusConfig) -> None:
     assert isinstance(conv, ConversationManager)
 
     mcp_manager = await _start_mcp(config, conv)
+    _setup_media_handler(conv)
     dashboard_app = await _start_dashboard(config, runtime, agents, conv, mcp_manager)
     transport = await _start_telegram(config, runtime, conv)
 

@@ -46,7 +46,10 @@ otel = [
     "opentelemetry-exporter-otlp>=1.28",
 ]
 voice = [
-    "openai>=2.8.0",
+    "faster-whisper>=1.0",
+]
+docs = [
+    "pdfplumber>=0.11",
 ]
 
 [project.scripts]
@@ -109,6 +112,8 @@ module = [
     "civitas.*",
     "telegram.*",
     "croniter.*",
+    "faster_whisper.*",
+    "pdfplumber.*",
 ]
 ignore_missing_imports = true
 follow_untyped_imports = true
