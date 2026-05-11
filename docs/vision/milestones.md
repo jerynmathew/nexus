@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 1.0
-> Last updated: 2026-05-08
-> Status: Draft
+> Version: 2.0
+> Last updated: 2026-05-11
+> Status: M1–M3 complete, M4+ planned
 
 ---
 

@@ -224,13 +224,14 @@ nexus/
 
 | Milestone | Status | Description |
 |---|---|---|
-| M1 Foundation | ✅ Complete | Telegram bot, supervision, memory, crash recovery |
-| M2 Integrations | ✅ Complete | MCP tools, Google Workspace, skills, dashboard, compression |
-| M3 Depth | ✅ Wave A | Trust arc, heartbeat, web search, persona builder |
-| M3 Wave B | Planned | Voice/image (Whisper STT, TTS, vision LLM) |
-| M4 Breadth | Planned | Discord, Slack, homelab agents, browser automation |
-| M5 Polish | Planned | Production hardening, documentation, community |
-| M6 Presence | Planned | PWA web app, Android app, animated avatar |
+| M1 Foundation | ✅ Complete | Telegram bot, supervision tree, memory, crash recovery |
+| M2 Wave A | ✅ Complete | MCP tools, Google Workspace (Gmail/Calendar/Tasks), skills, governance |
+| M2 Wave B | ✅ Complete | Web dashboard (:8080), content viewer, context compression |
+| M3 Wave A | ✅ Complete | Trust-gated autonomy, proactive heartbeat, web search, persona builder |
+| M3 Wave B | ✅ Complete | Media support — STT (Whisper), vision (Claude), documents, video frames |
+| M4 Breadth | Planned | Discord, Slack, homelab agents, finance, browser automation |
+| M5 Polish | Planned | Production hardening, full Presidium governance, community docs |
+| M6 Presence | Planned | PWA web app, Android app, animated avatar, voice-first ("Dross mode") |
 
 ## Ecosystem
 
