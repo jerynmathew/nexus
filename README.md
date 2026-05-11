@@ -88,28 +88,7 @@ Now "check my email" and "what's on my calendar?" work.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────┐
-│  Civitas Supervision Tree (ONE_FOR_ALL)          │
-│                                                   │
-│  ┌──────────┐ ┌───────────────────┐ ┌──────────┐│
-│  │ Memory   │ │ Conversation      │ │Scheduler ││
-│  │ Agent    │ │ Manager           │ │ Agent    ││
-│  │          │ │                   │ │          ││
-│  │ SQLite   │ │ LLM + MCP + Gov  │ │ Cron     ││
-│  │ FTS5     │ │ Skills + Trust    │ │ Skills   ││
-│  └──────────┘ └───────────────────┘ └──────────┘│
-│  ┌──────────┐                                    │
-│  │Dashboard │  ← GenServer on :8080              │
-│  │ Server   │                                    │
-│  └──────────┘                                    │
-└─────────────────────────────────────────────────┘
-         │                │               │
-    ┌────┘          ┌─────┘          ┌────┘
-    ▼               ▼                ▼
-Telegram      AgentGateway      MCP Servers
- (polling)    :4000 (LLM)      (Docker sidecars)
-```
+![Nexus Architecture](docs/assets/readme-architecture.svg)
 
 - **ConversationManager** handles all user-facing I/O, LLM calls, tool execution, and governance
 - **MemoryAgent** persists everything to SQLite with FTS5 search
