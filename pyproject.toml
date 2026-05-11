@@ -6,7 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 authors = [
-    { name = "Jeryn Mathew Varghese", email = "jerynmathew@gmail.com" },
+    { name = "Jeryn Mathew Varghese", email = "1854382+jerynmathew@users.noreply.github.com" },
 ]
 keywords = ["ai", "agent", "personal-assistant", "civitas", "presidium"]
 classifiers = [
