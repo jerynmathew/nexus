@@ -17,8 +17,18 @@ from nexus.config import NexusConfig
 from nexus.dashboard.gateway import DashboardApp
 from nexus.dashboard.server import DashboardServer
 from nexus.dashboard.views import ContentStore
+from nexus.extensions import ExtensionLoader, NexusContext
 from nexus.mcp.manager import MCPManager
+from nexus.media.handler import MediaHandler
+from nexus.media.vision import ClaudeVision
 from nexus.transport.telegram import TelegramTransport
+
+try:
+    from nexus.media.stt import WhisperSTT
+
+    _HAS_STT = True
+except ImportError:
+    _HAS_STT = False
 
 logger = logging.getLogger(__name__)
 
@@ -130,21 +140,18 @@ async def _register_agents_with_dashboard(
 
 
 def _setup_media_handler(conv: ConversationManager) -> None:
-    from nexus.media.handler import MediaHandler
-
     stt = None
-    try:
-        from nexus.media.stt import WhisperSTT
-
-        stt = WhisperSTT()
-        logger.info("STT: faster-whisper enabled")
-    except Exception:
+    if _HAS_STT:
+        try:
+            stt = WhisperSTT()
+            logger.info("STT: faster-whisper enabled")
+        except Exception:
+            logger.info("STT: failed to initialize")
+    else:
         logger.info("STT: not available (install nexus[voice] for voice support)")
 
     vision = None
     if conv._llm:
-        from nexus.media.vision import ClaudeVision
-
         vision = ClaudeVision(conv._llm)
         logger.info("Vision: Claude enabled via AgentGateway")
 
@@ -229,6 +236,50 @@ async def _start_telegram(
     return transport
 
 
+async def _load_extensions(
+    config: NexusConfig,
+    runtime: Runtime,
+    agents: dict[str, AgentProcess],
+    conv: ConversationManager,
+) -> ExtensionLoader | None:
+    nexus_ctx = NexusContext(
+        runtime=runtime,
+        llm=conv._llm,
+        extensions_config=config.extensions,
+    )
+
+    ext_dirs = [Path(d) for d in config.extensions_dirs]
+    default_dir = Path.home() / ".nexus" / "extensions"
+    if default_dir.exists() and default_dir not in ext_dirs:
+        ext_dirs.append(default_dir)
+
+    loader = ExtensionLoader(nexus_ctx)
+    await loader.load_all(extension_dirs=ext_dirs if ext_dirs else None)
+
+    if not loader.extensions:
+        return loader
+
+    conv.register_ext_commands(nexus_ctx.commands)
+    conv.register_ext_signal_handlers(nexus_ctx.signal_handlers)
+
+    memory = agents.get("memory")
+    if isinstance(memory, MemoryAgent) and nexus_ctx.schemas:
+        memory.register_extension_schemas(nexus_ctx.schemas)
+
+    if conv._skill_manager and nexus_ctx.skill_dirs:
+        for skill_dir in nexus_ctx.skill_dirs:
+            conv._skill_manager.add_skill_dir(skill_dir)
+
+    logger.info(
+        "Extensions: %d loaded, %d commands, %d skill dirs, %d schemas",
+        len(loader.extensions),
+        len(nexus_ctx.commands),
+        len(nexus_ctx.skill_dirs),
+        len(nexus_ctx.schemas),
+    )
+    return loader
+
+
 async def run_nexus(config: NexusConfig) -> None:
     """Start and run Nexus until interrupted."""
     runtime, agents = build_runtime(config)
@@ -245,6 +296,7 @@ async def run_nexus(config: NexusConfig) -> None:
 
     mcp_manager = await _start_mcp(config, conv)
     _setup_media_handler(conv)
+    ext_loader = await _load_extensions(config, runtime, agents, conv)
     dashboard_app = await _start_dashboard(config, runtime, agents, conv, mcp_manager)
     transport = await _start_telegram(config, runtime, conv)
 
@@ -259,6 +311,7 @@ async def run_nexus(config: NexusConfig) -> None:
     logger.info("Shutting down...")
     for name, coro in [
         ("transport", transport.stop() if transport else None),
+        ("extensions", ext_loader.unload_all() if ext_loader else None),
         ("dashboard", dashboard_app.stop() if dashboard_app else None),
         ("runtime", runtime.stop()),
     ]:

@@ -37,6 +37,7 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "users_dir",
         "data_dir",
         "skills_dir",
+        "extensions",
     }
 )
 
@@ -124,6 +125,8 @@ class NexusConfig(BaseModel):
     users_dir: str = "data/users"
     data_dir: str = "data"
     skills_dir: str = "skills"
+    extensions: dict[str, dict[str, Any]] = {}
+    extensions_dirs: list[str] = []
 
     @field_validator("seed_users", mode="before")
     @classmethod

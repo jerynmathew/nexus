@@ -15,6 +15,7 @@ from nexus.agents.compressor import ContextCompressor
 from nexus.agents.intent import Intent, RegexClassifier
 from nexus.config import DashboardConfig
 from nexus.dashboard.views import ContentStore
+from nexus.extensions import CommandHandler, SignalHandler
 from nexus.governance.audit import AuditEntry, AuditSink
 from nexus.governance.policy import PolicyDecision, PolicyEngine
 from nexus.governance.trust import TrustStore, tool_category
@@ -74,6 +75,8 @@ class ConversationManager(AgentProcess):
         self._sessions: dict[str, Session] = {}
         self._pending_approvals: dict[str, dict[str, Any]] = {}
         self._transport: Any = None
+        self._ext_commands: dict[str, CommandHandler] = {}
+        self._ext_signal_handlers: dict[str, list[SignalHandler]] = {}
 
     async def on_start(self) -> None:
         self._llm = LLMClient(
@@ -113,6 +116,13 @@ class ConversationManager(AgentProcess):
 
     def set_media_handler(self, handler: MediaHandler) -> None:
         self._media_handler = handler
+
+    def register_ext_commands(self, commands: dict[str, CommandHandler]) -> None:
+        self._ext_commands.update(commands)
+
+    def register_ext_signal_handlers(self, handlers: dict[str, list[SignalHandler]]) -> None:
+        for event_type, handler_list in handlers.items():
+            self._ext_signal_handlers.setdefault(event_type, []).extend(handler_list)
 
     async def handle(self, message: Message) -> Message | None:
         action = message.payload.get("action")
@@ -195,6 +205,7 @@ class ConversationManager(AgentProcess):
         await self._checkpoint_session(session)
         await self._send_response_with_viewer(channel_id, response_text)
         await self._report_activity(tenant_id, text)
+        await self._fire_signal_handlers("inbound_message", payload)
         return None
 
     async def _resolve_tenant(self, tenant_id: str) -> TenantContext | None:
@@ -647,6 +658,17 @@ class ConversationManager(AgentProcess):
             await self._handle_rollback(tenant_id, channel_id, args)
             return None
 
+        ext_handler = self._ext_commands.get(command)
+        if ext_handler:
+            await ext_handler(
+                command=command,
+                args=args,
+                tenant_id=tenant_id,
+                channel_id=channel_id,
+                send_reply=self._send_reply,
+            )
+            return None
+
         await self._send_reply(channel_id, f"Unknown command: /{command}")
         return None
 
@@ -756,10 +778,8 @@ class ConversationManager(AgentProcess):
                 await self._send_reply(channel_id, f"Checkpoint `{label}` not found.")
                 return
 
-            from nexus.models.session import Session as SessionModel
-
             session_data = json.loads(value)
-            restored = SessionModel.from_dict(session_data)
+            restored = Session.from_dict(session_data)
             self._sessions[tenant_id] = restored
             await self._checkpoint_session(restored)
             await self._send_reply(
@@ -881,6 +901,14 @@ class ConversationManager(AgentProcess):
             return "\n\n".join(parts) if parts else "[Video received]"
 
         return text
+
+    async def _fire_signal_handlers(self, event_type: str, payload: dict[str, Any]) -> None:
+        handlers = self._ext_signal_handlers.get(event_type, [])
+        for handler in handlers:
+            try:
+                await handler(payload)
+            except Exception:
+                logger.debug("[%s] Signal handler failed for %s", self.name, event_type)
 
     async def _report_activity(self, tenant_id: str, text: str) -> None:
         with contextlib.suppress(Exception):

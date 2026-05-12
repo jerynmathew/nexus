@@ -113,6 +113,10 @@ class MemoryAgent(AgentProcess):
         super().__init__(name, **kwargs)
         self._db_path = db_path
         self._db: aiosqlite.Connection | None = None
+        self._extension_schemas: list[str] = []
+
+    def register_extension_schemas(self, schemas: list[str]) -> None:
+        self._extension_schemas.extend(schemas)
 
     async def on_start(self) -> None:
         if self._db:
@@ -123,6 +127,8 @@ class MemoryAgent(AgentProcess):
         await self._db.executescript(_SCHEMA)
         await self._db.executescript(_FTS_SCHEMA)
         await self._db.executescript(_FTS_TRIGGERS)
+        for ext_schema in self._extension_schemas:
+            await self._db.executescript(ext_schema)
         await self._db.commit()
 
     async def on_stop(self) -> None:
