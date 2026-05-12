@@ -143,12 +143,16 @@ def _extract_pdf_text(pdf_bytes: bytes) -> str:
             "[PDF received but pdfplumber is not installed. Install with: pip install nexus[docs]]"
         )
 
-    text_parts: list[str] = []
-    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-        for page in pdf.pages[:50]:
-            page_text = page.extract_text()
-            if page_text:
-                text_parts.append(page_text)
+    try:
+        text_parts: list[str] = []
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages[:50]:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
 
-    full_text = "\n\n".join(text_parts)
-    return full_text[:50_000]
+        full_text = "\n\n".join(text_parts)
+        return full_text[:50_000]
+    except Exception:
+        logger.warning("Failed to parse PDF (%d bytes)", len(pdf_bytes))
+        return "[PDF received but could not be parsed — file may be corrupted or encrypted]"
