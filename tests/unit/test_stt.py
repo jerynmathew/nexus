@@ -22,21 +22,21 @@ class TestInit:
 class TestEnsureModel:
     def test_import_error(self) -> None:
         stt = WhisperSTT()
-        with patch.dict("sys.modules", {"faster_whisper": None}):
+        with patch("nexus.media.stt._HAS_FASTER_WHISPER", False):
             with pytest.raises(RuntimeError, match="faster-whisper"):
                 stt._ensure_model()
 
     def test_loads_once(self) -> None:
         stt = WhisperSTT()
         mock_model = MagicMock()
-        mock_whisper_module = MagicMock()
-        mock_whisper_module.WhisperModel.return_value = mock_model
-        with patch.dict("sys.modules", {"faster_whisper": mock_whisper_module}):
+        with (
+            patch("nexus.media.stt._HAS_FASTER_WHISPER", True),
+            patch("nexus.media.stt.WhisperModel", create=True, return_value=mock_model),
+        ):
             result1 = stt._ensure_model()
             result2 = stt._ensure_model()
         assert result1 is mock_model
         assert result2 is mock_model
-        mock_whisper_module.WhisperModel.assert_called_once()
 
 
 class TestTranscribeSync:

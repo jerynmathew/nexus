@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable
 from typing import Any
+
+try:
+    import discord
+
+    _HAS_DISCORD = True
+except ImportError:
+    _HAS_DISCORD = False
 
 from nexus.transport.base import Button, InboundMessage
 
@@ -28,13 +36,11 @@ class DiscordTransport:
         return "discord"
 
     async def start(self) -> None:
-        try:
-            import discord
-        except ImportError as exc:
+        if not _HAS_DISCORD:
             raise RuntimeError(
                 "discord.py is required for Discord transport. "
                 "Install with: pip install 'nexus[discord]'"
-            ) from exc
+            )
 
         intents = discord.Intents.default()
         intents.message_content = True
@@ -97,8 +103,6 @@ class DiscordTransport:
                     **inbound.to_payload(),
                 }
             )
-
-        import asyncio
 
         self._task = asyncio.create_task(self._client.start(self._bot_token))
 

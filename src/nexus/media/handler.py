@@ -8,6 +8,13 @@ import tempfile
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+try:
+    import pdfplumber
+
+    _HAS_PDFPLUMBER = True
+except ImportError:
+    _HAS_PDFPLUMBER = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -136,9 +143,7 @@ def _run_ffmpeg(args: list[str]) -> bool:
 
 
 def _extract_pdf_text(pdf_bytes: bytes) -> str:
-    try:
-        import pdfplumber
-    except ImportError:
+    if not _HAS_PDFPLUMBER:
         return (
             "[PDF received but pdfplumber is not installed. Install with: pip install nexus[docs]]"
         )

@@ -78,30 +78,14 @@ class TestSendButtons:
 
 class TestStart:
     async def test_import_error(self) -> None:
-        t, _, _ = _make_transport()
-        import sys
+        from unittest.mock import patch
 
+        t, _, _ = _make_transport()
         import pytest
 
-        mods_to_hide = [
-            "slack_bolt",
-            "slack_bolt.async_app",
-            "slack_bolt.adapter",
-            "slack_bolt.adapter.socket_mode",
-            "slack_bolt.adapter.socket_mode.async_handler",
-        ]
-        saved = {m: sys.modules.get(m) for m in mods_to_hide}
-        for m in mods_to_hide:
-            sys.modules[m] = None
-        try:
+        with patch("nexus.transport.slack._HAS_SLACK", False):
             with pytest.raises(RuntimeError, match="slack-bolt"):
                 await t.start()
-        finally:
-            for m, v in saved.items():
-                if v is not None:
-                    sys.modules[m] = v
-                else:
-                    sys.modules.pop(m, None)
 
 
 class TestSendTyping:

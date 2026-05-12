@@ -4,6 +4,14 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+try:
+    from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+    from slack_bolt.async_app import AsyncApp
+
+    _HAS_SLACK = True
+except ImportError:
+    _HAS_SLACK = False
+
 from nexus.transport.base import Button, InboundMessage
 
 logger = logging.getLogger(__name__)
@@ -31,14 +39,11 @@ class SlackTransport:
         return "slack"
 
     async def start(self) -> None:
-        try:
-            from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
-            from slack_bolt.async_app import AsyncApp
-        except ImportError as exc:
+        if not _HAS_SLACK:
             raise RuntimeError(
                 "slack-bolt is required for Slack transport. "
                 "Install with: pip install 'nexus[slack]'"
-            ) from exc
+            )
 
         self._app = AsyncApp(
             token=self._bot_token,

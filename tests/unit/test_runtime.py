@@ -91,7 +91,7 @@ class TestSetupMediaHandler:
 
         conv = ConversationManager(name="test")
         conv._llm = MagicMock()
-        with patch("nexus.media.stt.WhisperSTT", side_effect=ImportError("no")):
+        with patch("nexus.runtime._HAS_STT", False):
             _setup_media_handler(conv)
         assert conv._media_handler is not None
 
@@ -100,7 +100,7 @@ class TestSetupMediaHandler:
 
         conv = ConversationManager(name="test")
         conv._llm = MagicMock()
-        with patch("nexus.media.stt.WhisperSTT", side_effect=ImportError("no")):
+        with patch("nexus.runtime._HAS_STT", False):
             _setup_media_handler(conv)
         assert conv._media_handler is not None
         assert conv._media_handler.has_vision

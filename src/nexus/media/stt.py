@@ -5,6 +5,13 @@ import logging
 import tempfile
 from typing import Any
 
+try:
+    from faster_whisper import WhisperModel
+
+    _HAS_FASTER_WHISPER = True
+except ImportError:
+    _HAS_FASTER_WHISPER = False
+
 logger = logging.getLogger(__name__)
 
 _DEFAULT_MODEL = "small"
@@ -19,12 +26,10 @@ class WhisperSTT:
         if self._model is not None:
             return self._model
 
-        try:
-            from faster_whisper import WhisperModel
-        except ImportError as exc:
+        if not _HAS_FASTER_WHISPER:
             raise RuntimeError(
                 "faster-whisper is required for STT. Install with: pip install 'nexus[voice]'"
-            ) from exc
+            )
 
         logger.info("Loading Whisper model '%s' (first load downloads ~244MB)...", self._model_size)
         self._model = WhisperModel(self._model_size, device="cpu", compute_type="int8")

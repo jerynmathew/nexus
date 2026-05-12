@@ -105,21 +105,14 @@ class TestSendTyping:
 
 class TestStart:
     async def test_import_error(self) -> None:
+        from unittest.mock import patch
+
         t, _, _ = _make_transport()
         import pytest
 
-        with pytest.raises(RuntimeError, match=r"discord\.py"):
-            import sys
-
-            discord_mod = sys.modules.get("discord")
-            sys.modules["discord"] = None
-            try:
+        with patch("nexus.transport.discord._HAS_DISCORD", False):
+            with pytest.raises(RuntimeError, match=r"discord\.py"):
                 await t.start()
-            finally:
-                if discord_mod is not None:
-                    sys.modules["discord"] = discord_mod
-                else:
-                    sys.modules.pop("discord", None)
 
 
 class TestSplitDiscord:

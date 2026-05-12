@@ -7,6 +7,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import uvicorn
+
 from nexus.dashboard.views import ContentStore
 
 logger = logging.getLogger(__name__)
@@ -146,8 +148,6 @@ class DashboardApp:
                 return
 
     async def start(self) -> None:
-        import uvicorn
-
         config = uvicorn.Config(
             app=self,
             host="0.0.0.0",
