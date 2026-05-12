@@ -1,7 +1,7 @@
 # AGENTS.md — Nexus
 
 > Machine-readable project reference for AI coding assistants.
-> Last updated: 2026-05-09
+> Last updated: 2026-05-12
 
 ## Project Identity
 
@@ -196,6 +196,7 @@ These are settled decisions. Do not revisit without discussion.
 | 12 | **AgentGateway sidecar for LLM routing** | [AgentGateway](https://github.com/agentgateway/agentgateway) (Rust single binary, ~50MB) runs as a Docker sidecar on port 4000. ConversationManager calls it directly via httpx using the OpenAI-compatible API. Provides native failover, rate limiting, cost tracking via OTEL, and MCP gateway — all without custom code. Task-based model routing (classify → cheap, converse → primary) deferred to M2 as a thin wrapper. Replaces the original ModelRouter(AgentProcess) design. |
 | 13 | **FTS5 for memory search** | Zero-dependency full-text search. Sufficient for personal assistant scale. Vector search as optional extra later. |
 | 14 | **Skills + MCP are the norm, custom agents are the exception** | Morning briefing, email triage, task management — all skills. Custom agents only for bespoke code (no MCP, custom rendering/UI, stateful API connections). Simplicity over infrastructure. |
+| 15 | **External tools run in containers, never on host** | Every MCP server and external binary runs in a Docker container with scoped credentials, network isolation, read-only rootfs, and non-root user. Nexus never spawns external processes on the host. Container sandbox + Presidium governance + audit trail = defense in depth. Security designed in from day one, not bolted on after a breach. |
 
 ---
 

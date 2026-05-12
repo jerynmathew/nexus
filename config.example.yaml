@@ -16,8 +16,9 @@ telegram:
 memory:
   db_path: "data/nexus.db"
 
-# MCP servers — each runs as a Docker sidecar
-# Enable Google Workspace: docker compose --profile google up
+# MCP servers — each runs as a Docker sidecar (container-isolated, scoped credentials)
+# All external tools run in containers. Never as bare host processes.
+# Enable profiles: docker compose --profile google --profile finance up
 mcp:
   servers:
     - name: google
@@ -25,6 +26,20 @@ mcp:
       url: "http://localhost:8000/mcp"
       tool_group: google
       enabled: false                     # Enable after OAuth setup
+
+    # Printing Press CLIs — containerized MCP sidecars
+    # See docs/design/printing-press.md for setup
+    # - name: yahoo-finance
+    #   transport: streamable-http
+    #   url: "http://pp-yahoo-finance:8080/mcp"
+    #   tool_group: finance
+    #   enabled: false                   # Enable after building container
+
+    # - name: weather
+    #   transport: streamable-http
+    #   url: "http://pp-weather-goat:8080/mcp"
+    #   tool_group: utility
+    #   enabled: false
 
 governance:
   audit_path: "data/audit.jsonl"

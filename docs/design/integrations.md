@@ -8,21 +8,50 @@
 
 ---
 
+## Sandbox-First: External Tools Run in Containers
+
+**Every external tool — MCP servers, Printing Press CLIs, custom integrations — runs in a separate Docker container.** This is an architectural invariant, not a deployment recommendation.
+
+Nexus never executes external binaries on the host. The reasons are foundational:
+
+1. **Blast radius containment** — a compromised tool cannot access host filesystem, credentials, or other services
+2. **Credential scoping** — each container receives only the API keys it needs (never Nexus's own secrets)
+3. **Network isolation** — containers communicate over `nexus-net`, cannot reach host services directly
+4. **Uniform governance** — containerized tools go through the same PolicyEngine, TrustStore, and audit pipeline as everything else
+5. **Reproducibility** — containers are versioned, scannable, and identical across dev/prod
+
+This is the same design philosophy as Presidium governance (AGENTS.md decision #10): security designed in from day one, not bolted on after a breach.
+
+| What runs on host | What runs in containers |
+|---|---|
+| Nexus application (supervision tree, agents) | All MCP servers (Google, search, browser, Printing Press) |
+| AgentGateway (LLM routing sidecar) | All external tool binaries |
+| SQLite database (local data) | Any community-contributed integration |
+
+---
+
 ## Integration Hierarchy
 
 When adding a new integration to Nexus, follow this decision tree:
 
 ```
 Does an MCP server exist for this service?
-├── YES → Use MCP. No custom code needed.
-│         Configure as Docker sidecar in docker-compose.yaml.
+├── YES → Use MCP in a Docker container.
+│         Configure as sidecar in docker-compose.yaml.
+│         Scoped credentials, network isolation, audit trail.
 │         LLM calls MCP tools directly via tool-use loop.
+│
+├── PRINTING PRESS has a CLI for it?
+│         → Build container image, expose as HTTP sidecar.
+│           Same sandbox, same governance, same config pattern.
+│           See: docs/design/printing-press.md
 │
 └── NO → Is the integration simple (REST API, stateless)?
     ├── YES → Write a skill (SKILL.md) that uses web_fetch or shell tools.
     │         No custom agent. ConversationManager executes the skill.
     │
     └── NO → Custom IntegrationAgent (exception).
+             Runs inside Nexus process (supervised by Civitas).
              Only for: stateful connections, custom rendering,
              proprietary protocols, or cases requiring dedicated
              process lifecycle.
@@ -34,11 +63,16 @@ Does an MCP server exist for this service?
 |---|---|---|
 | Gmail, Calendar, Drive | MCP (Google Workspace MCP server) | Mature MCP server exists |
 | Brave Search | MCP (Brave Search MCP server) | Mature MCP server exists |
-| Slack | MCP (Slack MCP server) | Mature MCP server exists |
+| Slack | MCP (Slack MCP server or `slack-pp-mcp`) | Mature MCP + Printing Press option |
+| Yahoo Finance | MCP (`yahoo-finance-pp-mcp` via Printing Press) | PP CLI provides full MCP server |
+| Linear | MCP (`linear-pp-mcp` via Printing Press) | PP CLI, ~28 tools |
+| Weather | MCP (`weather-goat-pp-mcp` via Printing Press) | PP CLI provides MCP server |
 | Jellyfin | Skill (SKILL.md with REST calls) or custom agent | No MCP, REST API, may need custom agent for complex queries |
 | Paperless | Skill (SKILL.md with REST calls) | No MCP, simple REST API |
 | Home Assistant | MCP (Home Assistant MCP server exists) | MCP server available |
 | Custom homelab service | Custom IntegrationAgent | No MCP, stateful, proprietary |
+
+> **Printing Press** ([design doc](printing-press.md)) provides 82 ready-made MCP servers generated from API specs. Each installs as a Go binary (`<api>-pp-mcp`) that speaks stdio MCP. MCPManager auto-discovers their tools — no Nexus code changes needed. See the [Printing Press integration design](printing-press.md) for full details.
 
 ---
 
@@ -260,15 +294,18 @@ class IntegrationAgent(AgentProcess):
 
 ## Governance
 
+Security and governance are not a downstream concern applied after the integration works — they are **why the architecture looks the way it does**. Container isolation, scoped credentials, and policy enforcement are designed in from day one.
+
 All integration paths — MCP tools, skills, and custom agents — are governed identically:
 
-| Integration path | Policy check point | Audit | Trust |
-|---|---|---|---|
-| MCP tool call | ConversationManager `_tool_use_loop`, before each call | Every call logged | Yes |
-| Skill execution | ConversationManager `_execute_skill`, before each tool call within skill | Every call logged | Yes |
-| Custom agent `ask()` | ConversationManager, before routing to custom agent | Response logged | Yes |
+| Integration path | Sandbox | Policy check point | Audit | Trust |
+|---|---|---|---|---|
+| MCP tool call (Docker sidecar) | Container with scoped creds | `_tool_use_loop`, before each call | Every call logged | Yes |
+| Printing Press CLI (Docker sidecar) | Container with scoped creds | `_tool_use_loop`, before each call | Every call logged | Yes |
+| Skill execution | N/A (runs in Nexus process) | `_execute_skill`, before each tool call within skill | Every call logged | Yes |
+| Custom agent `ask()` | N/A (runs in Nexus process) | Before routing to custom agent | Response logged | Yes |
 
-**No governance gap between paths.** A Gmail action via MCP and a Jellyfin action via custom agent go through the same policy check, same audit sink, same trust score update.
+**No governance gap between paths.** A Gmail action via MCP, a stock quote via Printing Press, and a Jellyfin action via custom agent go through the same container boundary (where applicable), same policy check, same audit sink, same trust score update.
 
 ---
 
@@ -318,6 +355,8 @@ Each MCP server is an independent Docker sidecar. Nexus connects via HTTP. Crash
 
 ## Adding a New MCP Integration
 
+### Path A: Docker Sidecar (HTTP transport)
+
 1. Find or build an MCP server for the service
 2. Add it as a sidecar in `docker-compose.yaml`
 3. Add the server URL to `config.yaml`:
@@ -331,4 +370,46 @@ Each MCP server is an independent Docker sidecar. Nexus connects via HTTP. Crash
 4. Optionally define tool groups for intent-based filtering
 5. No code changes to Nexus. Tools auto-discovered on next start.
 
-**This is the power of MCP-prioritized architecture:** adding Gmail, Calendar, Slack, web search — all config, zero code.
+### Path B: Printing Press CLI (containerized sidecar)
+
+1. Check the [Printing Press catalog](https://github.com/mvanhorn/printing-press-library) (82 CLIs)
+2. Build a container image:
+   ```dockerfile
+   # docker/pp-<name>.Dockerfile
+   FROM node:20-slim AS builder
+   RUN npx -y @mvanhorn/printing-press install <name>
+
+   FROM debian:bookworm-slim
+   RUN useradd --system --no-create-home ppuser
+   COPY --from=builder /root/.printing-press/bin/<name>-pp-mcp /usr/local/bin/
+   USER ppuser
+   ENTRYPOINT ["<name>-pp-mcp"]
+   ```
+3. Add to `docker-compose.yaml` with scoped credentials:
+   ```yaml
+   pp-<name>:
+     build:
+       context: .
+       dockerfile: docker/pp-<name>.Dockerfile
+     read_only: true
+     environment:
+       - API_KEY=${SERVICE_API_KEY}    # only this key, nothing else
+     networks: [nexus-net]
+     profiles: [<profile>]
+     restart: unless-stopped
+   ```
+4. Add to `config.yaml`:
+   ```yaml
+   mcp:
+     servers:
+       - name: <name>
+         transport: streamable-http
+         url: "http://pp-<name>:8080/mcp"
+         tool_group: <group>
+         enabled: true
+   ```
+5. No code changes to Nexus. Container sandbox + governance + audit apply automatically.
+
+See [Printing Press integration design](printing-press.md) for security model, governance, and rollout strategy.
+
+**This is the power of MCP-prioritized architecture:** adding Gmail, Calendar, Slack, web search, Linear, Yahoo Finance — all config, zero code.

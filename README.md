@@ -37,54 +37,141 @@ Nexus runs on Civitas supervision trees. Each component is an independent superv
 
 ### Prerequisites
 
-- Python ≥ 3.12
-- [uv](https://github.com/astral-sh/uv) package manager
-- Docker (for AgentGateway and MCP servers)
+- Docker and Docker Compose (all deployment modes)
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
 - An Anthropic API key
+- For development only: Python ≥ 3.12 + [uv](https://github.com/astral-sh/uv)
 
-### 1. Clone and install
+### 1. Clone and configure
 
 ```bash
 git clone https://github.com/jerynmathew/nexus.git
 cd nexus
-uv sync --all-extras
-```
 
-### 2. Configure
-
-```bash
 cp .env.template .env
-# Edit .env with your API keys and bot token
-
 cp config.example.yaml config.yaml
-# Edit config.yaml with your Telegram user ID and preferences
 ```
 
-### 3. Start AgentGateway
+Edit `.env` with your API keys. Edit `config.yaml` with your Telegram user ID.
+
+### 2. Choose a deployment mode
+
+| Mode | Nexus runs | MCP tools run | Best for |
+|---|---|---|---|
+| [Development](#development) | Host process (uv) | Docker containers | Hacking on Nexus itself |
+| [Docker Compose](#docker-compose) | Docker container | Docker containers | Homelab, always-on |
+| [Production](#production) | Docker (hardened) | Docker (hardened) | Exposed to network, multi-user |
+
+All modes run external tools in Docker containers. Nexus never executes third-party binaries on the host — see [Security Model](#security-model).
+
+---
+
+## Deployment
+
+### Development
+
+Nexus runs on your host for fast iteration. AgentGateway and MCP servers run in containers.
 
 ```bash
+uv sync --all-extras
+
 docker compose up agentgateway -d
-```
 
-### 4. Run Nexus
-
-```bash
 source .env
 uv run nexus run --config config.yaml
 ```
 
-Send a message to your bot on Telegram. Nexus responds with the Dross persona by default.
-
-### 5. Add Google Workspace (optional)
+Add Google Workspace (optional):
 
 ```bash
 uv run nexus setup-google
 docker compose --profile google up -d --build
-# Complete OAuth in your browser, then enable in config.yaml
 ```
 
-Now "check my email" and "what's on my calendar?" work.
+Add web search (optional):
+
+```bash
+docker compose --profile search up -d --build
+```
+
+Dashboard at `http://localhost:8080`. Send a message to your Telegram bot to verify.
+
+### Docker Compose
+
+Everything containerized. The recommended mode for homelab deployments.
+
+```bash
+docker compose --profile full up -d --build
+```
+
+This starts Nexus + AgentGateway. Add integrations with profiles:
+
+```bash
+docker compose --profile full --profile google --profile search up -d --build
+```
+
+| Profile | Service | What it adds |
+|---|---|---|
+| `full` | Nexus | The assistant itself |
+| `google` | mcp-google | Gmail, Calendar, Tasks via MCP |
+| `search` | mcp-search | Web search (DuckDuckGo, no API key) |
+| `browser` | mcp-browser | Playwright browser automation |
+
+Config is mounted read-only from the host. Data persists in Docker volumes (`nexus-data`, `mcp-google-creds`).
+
+### Production
+
+Docker Compose with security hardening. Use this when Nexus is exposed to a network or serves multiple users.
+
+```bash
+docker compose --profile full --profile google --profile search up -d --build
+```
+
+**Hardening checklist:**
+
+| Concern | Mitigation |
+|---|---|
+| Secrets in environment | Use Docker secrets or a `.env` file with `chmod 600`. Never commit `.env`. |
+| Container permissions | All containers run as non-root (`USER nexus` / `USER ppuser`). |
+| Filesystem | Mount config as read-only (`:ro`). Use `read_only: true` for MCP sidecars. |
+| Network | All containers communicate over the `nexus-net` bridge. Only expose ports you need (`:8080` for dashboard, `:4000` for AgentGateway if external). |
+| Credential scoping | Each MCP container receives only its own API keys. Nexus secrets (Anthropic key, bot token) are never exposed to MCP containers. |
+| Audit | Governance enabled by default. All tool calls logged to `data/audit.jsonl`. |
+| Updates | Pin image tags/digests. Rebuild periodically: `docker compose build --pull`. |
+| TLS | Put a reverse proxy (Caddy, Traefik, nginx) in front of `:8080` for HTTPS. |
+
+**Adding Printing Press tools** (finance, weather, project management):
+
+Each Printing Press CLI runs as a containerized MCP sidecar. See [docs/design/printing-press.md](docs/design/printing-press.md) for container setup, and [config.example.yaml](config.example.yaml) for config examples.
+
+```bash
+docker compose --profile full --profile finance --profile work up -d --build
+```
+
+### Verifying your deployment
+
+Regardless of mode, verify with:
+
+```bash
+docker compose ps
+curl -s http://localhost:8080/api/health | python -m json.tool
+```
+
+The dashboard at `http://localhost:8080` shows the supervision tree, agent health, and trust scores.
+
+---
+
+## Security Model
+
+Nexus treats security as foundational architecture, not an afterthought.
+
+**Sandbox isolation:** Every external tool (MCP servers, Printing Press CLIs, browser automation) runs in its own Docker container with scoped credentials, network isolation, and a read-only filesystem. Nexus never spawns third-party binaries on the host.
+
+**Governance:** All tool calls pass through the PolicyEngine before execution. Write actions require user approval until trust is earned. Every call is logged to an audit trail.
+
+**Defense in depth:** Container sandbox (infrastructure) + Presidium governance (application) + audit trail (forensic). A compromised tool cannot access host credentials, cannot execute unapproved actions, and its activity is fully recorded.
+
+See [Governance](#governance) for the trust model and [docs/design/integrations.md](docs/design/integrations.md) for the full security architecture.
 
 ## Architecture
 
@@ -170,7 +257,7 @@ Or manually create `personas/your-persona.md`. Each user can have different pers
 # Install with dev dependencies
 uv sync --all-extras
 
-# Run tests (167 tests, ~2 seconds)
+# Run tests (~2 seconds)
 OTEL_SDK_DISABLED=true uv run pytest tests/ -q
 
 # Lint
@@ -215,7 +302,7 @@ nexus/
 │   └── runtime.py       # Civitas runtime wiring
 ├── personas/            # SOUL.md personality files
 ├── skills/              # SKILL.md skill definitions
-├── tests/               # 167 unit + integration tests
+├── tests/               # Unit + integration tests
 ├── docs/                # Architecture, design, plans
 └── docker-compose.yaml  # AgentGateway + MCP sidecars
 ```
