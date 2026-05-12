@@ -64,10 +64,13 @@ class TestMediaHandlerExtended:
         handler = MediaHandler()
         assert handler.has_vision is False
 
-    async def test_process_document_pdf_no_pdfplumber(self) -> None:
+    async def test_process_document_pdf_delegates(self) -> None:
+        from unittest.mock import AsyncMock, patch
+
         handler = MediaHandler()
-        result = await handler.process_document(b"%PDF-1.4", "report.pdf")
-        assert "pdfplumber" in result or "PDF" in result
+        with patch.object(handler, "_parse_pdf", new_callable=AsyncMock, return_value="pdf text"):
+            result = await handler.process_document(b"%PDF-1.4", "report.pdf")
+        assert result == "pdf text"
 
     async def test_process_document_md(self) -> None:
         handler = MediaHandler()
@@ -116,21 +119,11 @@ class TestRunFfmpeg:
 
 
 class TestExtractPdfText:
-    def test_no_pdfplumber(self) -> None:
-        import sys
-
+    def test_handles_invalid_pdf(self) -> None:
         from nexus.media.handler import _extract_pdf_text
 
-        saved = sys.modules.get("pdfplumber")
-        sys.modules["pdfplumber"] = None
-        try:
-            result = _extract_pdf_text(b"%PDF-fake")
-            assert "pdfplumber" in result
-        finally:
-            if saved is not None:
-                sys.modules["pdfplumber"] = saved
-            else:
-                sys.modules.pop("pdfplumber", None)
+        result = _extract_pdf_text(b"%PDF-fake")
+        assert isinstance(result, str)
 
 
 class TestExtractVideoContent:

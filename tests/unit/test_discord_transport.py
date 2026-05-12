@@ -108,7 +108,7 @@ class TestStart:
         t, _, _ = _make_transport()
         import pytest
 
-        with pytest.raises(RuntimeError, match="discord.py"):
+        with pytest.raises(RuntimeError, match=r"discord\.py"):
             import sys
 
             discord_mod = sys.modules.get("discord")
