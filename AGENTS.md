@@ -1,7 +1,7 @@
 # AGENTS.md — Nexus
 
 > Machine-readable project reference for AI coding assistants.
-> Last updated: 2026-05-12
+> Last updated: 2026-05-13
 
 ## Project Identity
 
@@ -125,6 +125,7 @@ nexus/
 │       ├── __main__.py          # Entry point: python -m nexus
 │       ├── cli.py               # Typer CLI: nexus run, nexus setup, nexus dashboard
 │       ├── config.py            # Pydantic config models + YAML loading
+│       ├── extensions.py        # NexusExtension protocol, NexusContext API, ExtensionLoader
 │       │
 │       ├── agents/
 │       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM, skill execution

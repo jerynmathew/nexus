@@ -315,8 +315,9 @@ nexus/
 | M2 Integrations | ✅ Complete | MCP tools, Google Workspace, skills, governance, dashboard, compression |
 | M3 Depth | ✅ Complete | Trust arc, heartbeat, web search, media (STT/vision), persona builder |
 | M4 Breadth | ✅ Complete | Discord, Slack, browser automation, /status, /checkpoint, SSRF protection |
-| M5 Extensions | Designed | [Extension architecture](docs/design/extensions.md) — composable plugin system |
+| M5 Extension System | ✅ Complete | [NexusExtension protocol](docs/design/extensions.md) — entry_points + directory discovery, command registry, schema registration, signal hooks |
 | M5 Work Intelligence | Designed | [Work assistant](docs/design/work-assistant.md) — action tracking, delegation, meeting prep (`nexus-work` extension) |
+| M5 Finance Intelligence | Designed | [FIRE advisor](docs/design/finance.md) — portfolio tracking, MF research, gold, rebalancing (`nexus-finance` extension) |
 | M6 Production | Planned | Presidium governance, production hardening, community docs |
 | M7 Presence | Planned | PWA web app, Android app, animated avatar, TTS voice cloning |
 
@@ -327,7 +328,7 @@ Nexus is a platform. Domain-specific intelligence ships as extensions:
 | Extension | Scope | Status |
 |---|---|---|
 | **nexus-work** | Action tracking, meeting prep, delegation, priority engine | [Designed](docs/design/work-assistant.md) |
-| **nexus-finance** | Gold/stocks, charts, buy/sell recommendations | [Designed](docs/design/finance.md) |
+| **nexus-finance** | FIRE advisor — portfolio tracking (Zerodha), MF research, gold prices, rebalancing | [Designed](docs/design/finance.md) |
 | **nexus-homelab** | Service monitoring (Jellyfin, Paperless, etc.) | Planned (skills-only) |
 
 Extensions install via `pip install nexus-work` (code + skills) or by dropping skill folders into `~/.nexus/extensions/`. See [extension architecture](docs/design/extensions.md).

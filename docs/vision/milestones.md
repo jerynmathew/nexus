@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
 > Version: 2.0
-> Last updated: 2026-05-11
-> Status: M1–M3 complete, M4+ planned
+> Last updated: 2026-05-12
+> Status: M1–M4 complete, M5.0 (extension system) complete, M5.1+ in progress
 
 ---
 
@@ -367,18 +367,23 @@
 
 ## M5 — Extensions + Work Intelligence: "It knows your job"
 
-**Status: Designed** — [Extension architecture](../design/extensions.md) · [Work assistant](../design/work-assistant.md) · [Work intelligence](../design/work-intelligence.md)
+**Status: M5.0 Complete, M5.1+ Designed** — [Extension architecture](../design/extensions.md) · [Work assistant](../design/work-assistant.md) · [Work intelligence](../design/work-intelligence.md) · [Finance intelligence](../design/finance.md) · [Printing Press integration](../design/printing-press.md)
 
-**Goal:** Composable extension system + nexus-work extension (action tracking, delegation, meeting prep, priority engine). This is the milestone that makes Nexus a chief of staff, not just a chatbot.
+**Goal:** Composable extension system + domain-specific extensions (nexus-work for work intelligence, nexus-finance for FIRE-focused personal finance). This is the milestone that makes Nexus a platform.
 
-### M5.0 — Extension Architecture (core)
+### M5.0 — Extension Architecture (core) ✅
 
-- [ ] `NexusExtension` protocol and `NexusContext` API
-- [ ] Extension discovery (Python entry_points + directory scan)
-- [ ] Command registry in ConversationManager
-- [ ] Schema registration in MemoryAgent
-- [ ] Signal hooks for extensions
-- [ ] Extension config in NexusConfig
+- [x] `NexusExtension` protocol and `NexusContext` API (`src/nexus/extensions.py`)
+- [x] Extension discovery (Python entry_points + directory scan with `extension.yaml`)
+- [x] Command registry in ConversationManager (extension `/commands` dispatched automatically)
+- [x] Schema registration in MemoryAgent (`CREATE TABLE IF NOT EXISTS` from extensions)
+- [x] Dynamic skill directory registration in SkillManager
+- [x] Signal hooks for extensions (fire after inbound message processing)
+- [x] Lifecycle hooks (pre_message, post_message)
+- [x] Extension config in NexusConfig (`extensions:` key in config.yaml)
+- [x] Extension loading wired into `runtime.py` (after agents, before transports)
+- [x] Extension unloading on shutdown
+- [x] 37 unit tests for extension system
 
 ### M5.1 — nexus-work: Action Item Tracking
 
@@ -409,13 +414,27 @@
 - [ ] Structured morning briefing (triage, meetings, commitments, delegations)
 - [ ] Evening wrap with day summary
 
+### M5.5 — nexus-finance: FIRE-Focused Personal Finance
+
+- [ ] Zerodha Kite MCP server (containerized, portfolio sync)
+- [ ] MFapi.in MCP server (containerized, MF NAV data)
+- [ ] Portfolio tracking: holdings, snapshots, asset allocation, XIRR
+- [ ] Gold price scraping via Playwright (India 22K/24K city-wise)
+- [ ] Bank statement PDF/CSV upload and parsing (HDFC, SBI)
+- [ ] Monthly bank statement reminder scheduler
+- [ ] MF research skill (compare, recommend)
+- [ ] FIRE calculator (corpus projection, SIP calculator)
+- [ ] Chart generation (matplotlib → ContentStore)
+- [ ] `/portfolio`, `/fire`, `/rebalance`, `/research`, `/gold` commands
+- [ ] Finance alert skill (significant moves, FD maturity, quarterly rebalance)
+
 ### M5 Exit Criteria
 
-- [ ] Extension system works: pip install nexus-work adds capabilities
-- [ ] Morning briefing shows action items, delegations, meeting prep
-- [ ] "What should I do next?" returns prioritized action list
-- [ ] Delegation tracker alerts on stale items
-- [ ] Pre-meeting briefs arrive automatically
+- [x] Extension system works: pip install extension adds capabilities
+- [ ] nexus-work: Morning briefing shows action items, delegations, meeting prep
+- [ ] nexus-work: "What should I do next?" returns prioritized action list
+- [ ] nexus-finance: "How's my portfolio?" returns Zerodha-synced data with charts
+- [ ] nexus-finance: "Best flexi cap fund for FIRE?" returns researched comparison
 
 ### M5.1 — Full Presidium Integration
 
