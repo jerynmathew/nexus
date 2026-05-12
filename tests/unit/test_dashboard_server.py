@@ -88,3 +88,70 @@ class TestDashboardServer:
         nexus = result["nexus"]
         assert nexus["supervisor"] == "root"
         assert len(nexus["children"]) == 1
+
+    async def test_mcp_status_cast(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        await _cast(
+            server,
+            {
+                "action": "mcp_status",
+                "server": "google",
+                "connected": True,
+                "tool_count": 5,
+            },
+        )
+        topo = await _call(server, {"action": "get_topology"})
+        assert "google" in topo["external"]["mcp_servers"]
+        assert topo["external"]["mcp_servers"]["google"]["status"] == "connected"
+
+    async def test_trust_update(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        await _cast(
+            server,
+            {
+                "action": "trust_update",
+                "tenant_id": "t1",
+                "category": "gmail",
+                "score": 0.8,
+            },
+        )
+        result = await _call(server, {"action": "get_trust"})
+        assert result["trust"]["t1"]["gmail"] == 0.8
+
+    async def test_unknown_call(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        result = await _call(server, {"action": "bogus"})
+        assert "error" in result
+
+    async def test_tick_info(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        await _cast(server, {"action": "activity", "agent": "a", "type": "t"})
+        server.send_after = lambda *a, **kw: None
+        await server.handle_info({"action": "tick"})
+        assert len(server.state["activity"]) == 1
+
+    async def test_build_health_degraded(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        server.state["agents"] = {"mem": {"status": "stopped"}}
+        health = server._build_health()
+        assert health["status"] == "degraded"
+
+    async def test_mcp_disconnected_topology(self) -> None:
+        server = DashboardServer(name="dashboard")
+        await server.init()
+        await _cast(
+            server,
+            {
+                "action": "mcp_status",
+                "server": "search",
+                "connected": False,
+                "tool_count": 0,
+            },
+        )
+        topo = await _call(server, {"action": "get_topology"})
+        assert topo["external"]["mcp_servers"]["search"]["status"] == "disconnected"
