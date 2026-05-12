@@ -28,9 +28,14 @@ Inputs from every work surface, normalized into a common event stream.
 | Calendar | Google Calendar MCP | ✅ Have | event_created, event_updated, upcoming_event |
 | Tasks | Google Tasks MCP | ✅ Have | task_created, task_completed, task_overdue |
 | Slack | Slack transport + API | ✅ Transport built | channel_message, thread_reply, mention, reaction |
+| Slack (extended) | `slack-pp-mcp` ([Printing Press](printing-press.md)) | Available | channel_history, user_lookup, message_search |
 | Discord | Discord transport + API | ✅ Transport built | channel_message, mention, reaction |
 | Documents | Google Drive/Docs MCP | Available in MCP server | doc_shared, doc_edited, comment_added |
-| Code | GitHub MCP | Available as sidecar | pr_opened, pr_reviewed, issue_assigned, commit_pushed |
+| Issues (Linear) | `linear-pp-mcp` ([Printing Press](printing-press.md)) | Available | issue_created, issue_updated, sprint_status, assignment |
+| Issues (Jira) | Jira MCP (or `jira-pp-cli` when MCP ships) | Planned | issue_created, issue_updated, sprint_status |
+| Code | GitHub MCP / `github-pp-mcp` | Available | pr_opened, pr_reviewed, issue_assigned, commit_pushed |
+| Design | `figma-pp-mcp` ([Printing Press](printing-press.md)) | Available | comment_added, file_updated |
+| Docs (Notion) | `notion-pp-mcp` ([Printing Press](printing-press.md)) | Available | page_edited, comment_added, database_updated |
 | Web | open-websearch MCP | ✅ Have | search_result (on-demand only) |
 
 #### Signal Event Schema
@@ -298,7 +303,8 @@ CREATE TABLE work_people (
 
 | Component | Role in Work Intelligence |
 |---|---|
-| **MCPManager** | Fetches signals from email, calendar, docs, GitHub |
+| **MCPManager** | Fetches signals from email, calendar, docs, GitHub, Linear, Notion, Figma |
+| **Printing Press CLIs** | Supply MCP servers for Linear, Slack, GitHub, Notion, Figma — see [integration design](printing-press.md) |
 | **MemoryAgent** | Stores work_signals and work_people tables |
 | **SchedulerAgent** | Periodic signal collection (pull strategy) |
 | **ConversationManager** | Synthesis queries (meeting prep, catch-up, status) |
@@ -306,7 +312,7 @@ CREATE TABLE work_people (
 | **Heartbeat** | Enhanced with cross-signal priority detection |
 | **Trust system** | Governs what synthesis Nexus can do autonomously |
 
-No new agents needed. The existing architecture handles this through skills + MCP tools + MemoryAgent storage.
+No new agents needed. The existing architecture handles this through skills + MCP tools + MemoryAgent storage. Printing Press CLIs dramatically expand signal coverage with zero code changes — each `<api>-pp-mcp` binary is just another MCP server that MCPManager auto-discovers.
 
 ---
 
@@ -316,5 +322,5 @@ No new agents needed. The existing architecture handles this through skills + MC
 2. **LLM cost**: Cross-signal synthesis is token-heavy. Cache aggressively?
 3. **Privacy in multi-tenant**: Tenant A and Tenant B share a Slack workspace — how to handle?
 4. **Accuracy**: People resolution will have false positives. How to handle corrections?
-5. **GitHub integration**: Which GitHub MCP server? Personal repos vs org repos?
+5. **GitHub integration**: Use `github-pp-mcp` ([Printing Press](printing-press.md)) or a dedicated GitHub MCP server? PP provides broad coverage; dedicated may offer deeper webhook integration. Personal repos vs org repos scoping TBD.
 6. **Real-time vs batch**: Should synthesis be real-time or pre-computed on schedule?

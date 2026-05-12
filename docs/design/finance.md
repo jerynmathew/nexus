@@ -63,26 +63,35 @@ A `FinanceAgent(AgentProcess)` with structured workflow:
 
 ## Data Sources
 
-### Gold Prices (India)
+### Primary: Printing Press Yahoo Finance MCP
 
-| Source | Type | Coverage | Cost |
-|---|---|---|---|
-| GoldAPI.io | REST API | Global + India rates | Free tier: 50 req/month |
-| Metal Price API | REST API | Precious metals, INR | Free tier: 100 req/month |
-| MCX/NSE scraping | Web scrape | Indian commodity exchange | Free but fragile |
-| Gold Price India MCP | MCP server | India-specific, Bangalore/Kerala | To be found/built |
+The [`pp-yahoo-finance`](../design/printing-press.md) CLI provides Yahoo Finance data as an MCP server (stdio transport). This is the **recommended primary data source** for stocks and global commodities.
 
-### Stocks (India + Global)
+| Capability | Coverage | Notes |
+|---|---|---|
+| Real-time quotes | Global stocks, commodities, forex, crypto | `GC=F` for gold futures, `^NSEI` for Nifty 50 |
+| Historical data | Daily OHLCV, configurable time range | Enables trend charts and technical indicators |
+| Symbol search | Ticker lookup by name/keyword | "gold" → GC=F, GLD, IAU |
+| Watchlist | User-defined symbol lists | Track portfolio positions |
 
-| Source | Type | Coverage | Cost |
-|---|---|---|---|
-| Yahoo Finance | REST/scrape | Global + NSE/BSE | Free (via yfinance) |
-| Alpha Vantage | REST API | Global | Free: 25 req/day |
-| NSE India API | REST API | Indian stocks | Free |
+**Setup:** Build container image → add to `docker-compose.yaml` with scoped credentials → configure in `config.yaml` → MCPManager auto-connects via HTTP. See [Printing Press integration](../design/printing-press.md) for container setup and security model.
+
+**Local data mirroring:** SchedulerAgent fetches prices hourly → stores in SQLite → compound queries ("gold trend this week") hit local DB (50ms) instead of API (rate-limited).
+
+### Supplementary Sources
+
+| Source | Type | Coverage | Cost | Use Case |
+|---|---|---|---|---|
+| GoldAPI.io | REST API | Global + India rates | Free: 50 req/month | India-specific gold (Bangalore/Kerala, 22K/24K) |
+| Metal Price API | REST API | Precious metals, INR | Free: 100 req/month | Fallback for India rates |
+| NSE India API | REST API | Indian stocks | Free | NSE/BSE specific data (not covered by Yahoo) |
+| MCX/NSE scraping | Web scrape | Indian commodity exchange | Free but fragile | Last resort for MCX gold |
 
 ### Market Research
 
 Web search (open-websearch, already available) for analyst opinions, news sentiment, macro factors.
+
+> **Note on India gold prices:** Yahoo Finance covers gold futures (GC=F) and gold ETFs but not regional Indian prices (Bangalore/Kerala 22K/24K). For India-specific rates, a supplementary source (GoldAPI.io or Metal Price API) is still needed alongside `pp-yahoo-finance`.
 
 ---
 
@@ -144,17 +153,18 @@ Always disclose: "This is AI-generated analysis, not financial advice."
 
 ## Open Questions
 
-1. **Which gold price API works reliably for India-specific rates (Bangalore/Kerala)?**
-2. **Should we build a finance MCP server or use direct API calls in a utility class?**
-3. **How often should price data be cached? (avoid rate limits)**
-4. **Should recommendations be stored in memory for trend tracking?**
-5. **Is the regional gold price (Bangalore vs Kerala vs Mumbai) significantly different enough to track separately?**
+1. **Which gold price API works reliably for India-specific rates (Bangalore/Kerala)?** Yahoo Finance covers gold futures (GC=F) but not regional Indian rates. GoldAPI.io or Metal Price API needed as supplement.
+2. ~~**Should we build a finance MCP server or use direct API calls in a utility class?**~~ **Resolved:** Use Printing Press `yahoo-finance-pp-mcp` for global finance data. No custom MCP server or utility class needed. See [Printing Press integration](../design/printing-press.md).
+3. **How often should price data be cached? (avoid rate limits)** Printing Press CLIs include local SQLite data layer with sync operations. SchedulerAgent can trigger periodic syncs (e.g., hourly for quotes, daily for historical).
+4. **Should recommendations be stored in memory for trend tracking?** Yes — store in MemoryAgent's finance tables for historical comparison.
+5. **Is the regional gold price (Bangalore vs Kerala vs Mumbai) significantly different enough to track separately?** Typically 1-3% variance. Worth tracking if user is in the gold market.
 
 ---
 
 ## Next Steps
 
-1. Research and select a reliable India gold price API
-2. Prototype the chart generation pipeline
-3. Design the SKILL.md + FinanceService code split
-4. Add to a future milestone (M4.5 or M5)
+1. Install and validate `yahoo-finance-pp-mcp` end-to-end (gold futures, stock quotes, historical data)
+2. Research and select a reliable India gold price API for regional rates (Bangalore/Kerala 22K/24K)
+3. Prototype the chart generation pipeline (matplotlib → ContentStore)
+4. Design the SKILL.md + FinanceService code split
+5. Build as `nexus-finance` extension (M5+) — see [extensions architecture](../design/extensions.md)
