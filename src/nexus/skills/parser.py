@@ -22,6 +22,7 @@ class SkillSection:
 class Skill:
     name: str
     description: str = ""
+    model: str | None = None
     execution: str = "sequential"
     tool_groups: list[str] = field(default_factory=list)
     schedule: str | None = None
@@ -51,6 +52,7 @@ def parse_skill(path: Path) -> Skill:
     return Skill(
         name=meta["name"],
         description=meta.get("description", ""),
+        model=meta.get("model"),
         execution=meta.get("execution", "sequential"),
         tool_groups=meta.get("tool_groups", []),
         schedule=meta.get("schedule"),

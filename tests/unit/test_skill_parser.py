@@ -78,3 +78,20 @@ class TestParseSkill:
         assert skill.tool_groups == []
         assert skill.schedule is None
         assert skill.timeout_per_section == 30
+        assert skill.model is None
+
+    def test_model_field(self, tmp_path: Path) -> None:
+        path = _write_skill(
+            tmp_path,
+            "---\nname: with-model\nmodel: gpt-4o\n---\n\nContent.\n",
+        )
+        skill = parse_skill(path)
+        assert skill.model == "gpt-4o"
+
+    def test_model_field_absent(self, tmp_path: Path) -> None:
+        path = _write_skill(
+            tmp_path,
+            "---\nname: no-model\n---\n\nContent.\n",
+        )
+        skill = parse_skill(path)
+        assert skill.model is None

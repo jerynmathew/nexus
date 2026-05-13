@@ -532,7 +532,7 @@ class ConversationManager(AgentProcess):
         tools = self._get_tools_for_intent(
             Intent(tool_groups=skill.tool_groups, original_text=skill.name),
         )
-        model = self._llm.model_for_task("SKILL_EXEC")
+        model = self._llm.resolve_model(task="SKILL_EXEC", skill_model=skill.model)
 
         if skill.execution == "parallel" and skill.sections:
             await self._execute_skill_parallel(skill, tenant, channel_id, tools, model)

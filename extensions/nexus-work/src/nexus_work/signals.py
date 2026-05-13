@@ -81,9 +81,11 @@ async def extract_actions_from_signal(
 
     prompt = _EXTRACTION_PROMPT.format(message=message_text[:2000])
 
+    model = ctx.resolve_model(task="SKILL_EXEC")
     try:
         response = await ctx.llm.chat(
             messages=[{"role": "user", "content": prompt}],
+            model=model,
         )
     except Exception:
         logger.debug("LLM call failed for action extraction")

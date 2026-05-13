@@ -54,6 +54,7 @@ class NexusContext:
         content_store: ContentStore | None = None,
         dashboard_config: DashboardConfig | None = None,
         extensions_config: dict[str, dict[str, Any]] | None = None,
+        extension_name: str = "",
     ) -> None:
         self._runtime = runtime
         self._llm = llm
@@ -61,6 +62,7 @@ class NexusContext:
         self._content_store = content_store
         self._dashboard_config = dashboard_config
         self._extensions_config = extensions_config or {}
+        self._extension_name = extension_name
         self._commands: dict[str, CommandHandler] = {}
         self._schemas: list[str] = []
         self._skill_dirs: list[Path] = []
@@ -138,6 +140,35 @@ class NexusContext:
         port = self._dashboard_config.port
         return f"http://{host}:{port}{path}"
 
+    def resolve_model(self, task: str = "", skill_model: str | None = None) -> str:
+        if not self._llm:
+            return ""
+        runtime_override = self._llm.get_model_override(self._extension_name)
+        config_model = self._extensions_config.get(self._extension_name, {}).get("model")
+        ext_model = runtime_override or config_model
+        return self._llm.resolve_model(
+            task=task,
+            skill_model=skill_model,
+            extension_model=ext_model,
+        )
+
+    def scoped(self, extension_name: str) -> NexusContext:
+        ctx = NexusContext(
+            runtime=self._runtime,
+            llm=self._llm,
+            mcp=self._mcp,
+            content_store=self._content_store,
+            dashboard_config=self._dashboard_config,
+            extensions_config=self._extensions_config,
+            extension_name=extension_name,
+        )
+        ctx._commands = self._commands
+        ctx._schemas = self._schemas
+        ctx._skill_dirs = self._skill_dirs
+        ctx._signal_handlers = self._signal_handlers
+        ctx._hooks = self._hooks
+        return ctx
+
     @property
     def commands(self) -> dict[str, CommandHandler]:
         """All registered extension commands."""
@@ -204,7 +235,8 @@ class ExtensionLoader:
             try:
                 ext_cls = ep.load()
                 ext = ext_cls()
-                await ext.on_load(self._context)
+                scoped_ctx = self._context.scoped(extension_name=ext.name)
+                await ext.on_load(scoped_ctx)
                 self._extensions.append(ext)
                 logger.info(
                     "Loaded pip extension: %s v%s (entry_point: %s)",
@@ -225,7 +257,8 @@ class ExtensionLoader:
         for raw, ext_dir in manifests:
             try:
                 ext = _DirectoryExtension(raw, ext_dir)
-                await ext.on_load(self._context)
+                scoped_ctx = self._context.scoped(extension_name=ext.name)
+                await ext.on_load(scoped_ctx)
                 self._extensions.append(ext)
                 logger.info(
                     "Loaded directory extension: %s v%s from %s",

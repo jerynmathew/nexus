@@ -379,8 +379,10 @@ async def handle_research(
 
         if nexus_context.llm:
             fund_summary = "\n".join(nav_details) if nav_details else "No NAV data available"
+            research_model = nexus_context.resolve_model()
             try:
                 response = await nexus_context.llm.chat(
+                    model=research_model,
                     messages=[
                         {
                             "role": "system",

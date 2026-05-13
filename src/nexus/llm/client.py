@@ -41,6 +41,7 @@ class LLMClient:
         self._base_url = base_url.rstrip("/")
         self._default_model = default_model
         self._cheap_model = cheap_model
+        self._model_overrides: dict[str, str] = {}
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -50,10 +51,31 @@ class LLMClient:
             timeout=timeout,
         )
 
-    def model_for_task(self, task: str) -> str:
+    def resolve_model(
+        self,
+        task: str = "",
+        skill_model: str | None = None,
+        extension_model: str | None = None,
+    ) -> str:
+        if skill_model:
+            return skill_model
+        if extension_model:
+            return extension_model
         if task.upper() in _CHEAP_TASKS:
             return self._cheap_model
         return self._default_model
+
+    def model_for_task(self, task: str) -> str:
+        return self.resolve_model(task=task)
+
+    def set_model_override(self, scope: str, model: str) -> None:
+        self._model_overrides[scope] = model
+
+    def clear_model_override(self, scope: str) -> None:
+        self._model_overrides.pop(scope, None)
+
+    def get_model_override(self, scope: str) -> str | None:
+        return self._model_overrides.get(scope)
 
     async def chat(
         self,

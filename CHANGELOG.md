@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **M6.1.5 Hierarchical Model Routing**
+  - `LLMClient.resolve_model()`: resolution order skill.model → extension config model → cheap_model (if cheap task) → default
+  - `Skill.model` field in SKILL.md frontmatter for per-skill model override
+  - Scoped `NexusContext` per extension via `scoped()` — carries extension name for model resolution
+  - `LLMClient.set_model_override()`/`clear_model_override()`/`get_model_override()` for runtime mutation
+  - `NexusContext.resolve_model()` checks runtime override → extension config → task type → default
+  - Extension LLM calls updated: nexus-work signals.py and nexus-finance commands.py use `ctx.resolve_model()`
+  - ConversationManager skill execution passes `skill.model` to `resolve_model()`
+  - `model_for_task()` kept for backward compatibility (delegates to `resolve_model()`)
+  - 28 new tests covering full resolution chain, scoped contexts, runtime overrides
 - **M6.2 Production Hardening**
   - Rate limiting per tenant: `RateLimiter` with sliding window (30 req/60s default), wired into ConversationManager inbound handler
   - Webhook mode for Telegram: configurable `webhook_url` + `webhook_port` in TelegramConfig, alongside existing polling mode
