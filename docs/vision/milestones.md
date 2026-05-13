@@ -392,8 +392,8 @@
 - [x] `/actions` command: list open items sorted by priority score
 - [x] `/actions done <id>` to mark complete
 - [x] `/actions all` to include completed items
-- [ ] Action extraction from emails and Slack messages (LLM scan) — skill exists, needs signal wiring
-- [ ] Morning briefing includes action items section — skill exists, needs scheduler wiring
+- [x] Action extraction from signals via LLM (`work_action_extract` handler + `signals.py`)
+- [x] Morning briefing data assembly (`work_morning_briefing` handler + `briefing.py`)
 
 ### M5.2 — nexus-work: Meeting Intelligence ✅
 
@@ -401,8 +401,8 @@
 - [x] `/meetings` command: list recent meetings
 - [x] `/meetings add` with inline params (date, attendees)
 - [x] `/meetings notes <id> <text>` for post-meeting capture
-- [ ] Pre-meeting context brief (2 min before) — skill exists, needs scheduler trigger
-- [ ] Enhanced 1:1 prep with last-meeting context — needs LLM integration
+- [x] Pre-meeting context brief (`work_meeting_prep` handler with attendee context)
+- [x] Calendar sync from Google Calendar MCP (`work_calendar_sync` handler)
 
 ### M5.3 — nexus-work: Delegation Tracking ✅
 
@@ -411,7 +411,7 @@
 - [x] `/delegate add <person> <task>` with due date
 - [x] `/delegate done <id>` to mark complete
 - [x] Stale delegation check signal handler (`delegation_check`)
-- [ ] Delegation detection from outbound messages — needs LLM scan on signals
+- [x] Delegation detection from signals via LLM extraction (same `work_action_extract` handler)
 
 ### M5.4 — nexus-work: Priority Engine + Day Orchestration ✅
 
@@ -419,8 +419,10 @@
 - [x] `/next` command: returns highest-priority action item
 - [x] `work_people` table for cross-source identity resolution
 - [x] 5 work skills: morning-briefing, meeting-prep, evening-wrap, action-extract, delegation-check
-- [ ] Auto-rerank on new signals — needs signal wiring
-- [ ] Structured morning briefing with full context — needs scheduler + LLM integration
+- [x] Priority engine enhanced with blocking factor and requester seniority
+- [x] `/actions priority` and `/actions block` subcommands for manual override
+- [x] `work_signals` table with FTS5 for cross-signal storage
+- [x] Evening wrap data assembly (`work_evening_wrap` handler + `briefing.py`)
 
 ### M5.5 — nexus-finance: FIRE-Focused Personal Finance
 

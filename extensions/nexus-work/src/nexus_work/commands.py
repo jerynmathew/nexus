@@ -37,6 +37,10 @@ async def handle_actions(
         await _actions_add(nexus_context, tenant_id, channel_id, send_reply, rest)
     elif subcommand == "done":
         await _actions_done(nexus_context, tenant_id, channel_id, send_reply, rest)
+    elif subcommand == "priority":
+        await _actions_priority(nexus_context, tenant_id, channel_id, send_reply, rest)
+    elif subcommand == "block":
+        await _actions_block(nexus_context, tenant_id, channel_id, send_reply, rest)
     elif subcommand == "all":
         await _actions_list(nexus_context, tenant_id, channel_id, send_reply, include_done=True)
     else:
@@ -107,6 +111,65 @@ async def _actions_done(
     )
     if result.get("status") == "ok":
         await send_reply(channel_id, f"✅ Action #{action_id} marked done.")
+    else:
+        await send_reply(channel_id, f"Failed to update action #{action_id}.")
+
+
+async def _actions_priority(
+    ctx: NexusContext,
+    tenant_id: str,
+    channel_id: str,
+    send_reply: Callable[..., Awaitable[None]],
+    text: str,
+) -> None:
+    parts = text.strip().split(maxsplit=1)
+    if len(parts) < 2 or not parts[0].isdigit():
+        await send_reply(channel_id, "Usage: /actions priority <id> <critical|high|medium|low>")
+        return
+
+    action_id = int(parts[0])
+    new_priority = parts[1].lower()
+    if new_priority not in ("critical", "high", "medium", "low"):
+        await send_reply(channel_id, "Priority must be: critical, high, medium, or low")
+        return
+
+    result = await ctx.send_to_memory(
+        "ext_execute",
+        {
+            "sql": "UPDATE work_actions SET priority=? WHERE id=? AND tenant_id=?",
+            "params": [new_priority, action_id, tenant_id],
+        },
+    )
+    if result.get("status") == "ok":
+        await send_reply(channel_id, f"Priority for #{action_id} set to **{new_priority}**.")
+    else:
+        await send_reply(channel_id, f"Failed to update action #{action_id}.")
+
+
+async def _actions_block(
+    ctx: NexusContext,
+    tenant_id: str,
+    channel_id: str,
+    send_reply: Callable[..., Awaitable[None]],
+    text: str,
+) -> None:
+    parts = text.strip().split(maxsplit=1)
+    if not parts or not parts[0].isdigit():
+        await send_reply(channel_id, "Usage: /actions block <id> [who is blocked]")
+        return
+
+    action_id = int(parts[0])
+    blocking = parts[1] if len(parts) > 1 else "others"
+
+    result = await ctx.send_to_memory(
+        "ext_execute",
+        {
+            "sql": "UPDATE work_actions SET blocking=? WHERE id=? AND tenant_id=?",
+            "params": [blocking, action_id, tenant_id],
+        },
+    )
+    if result.get("status") == "ok":
+        await send_reply(channel_id, f"⚡ #{action_id} marked as blocking {blocking}.")
     else:
         await send_reply(channel_id, f"Failed to update action #{action_id}.")
 

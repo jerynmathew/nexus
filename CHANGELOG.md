@@ -23,6 +23,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - FD/RD maturity alert signal handler (`maturity_alert`) — checks holdings metadata for upcoming maturity dates
   - `/research` enhanced with NAV detail fetching (top 3 funds) and Claude-driven comparative analysis via LLMClient
   - 95 finance extension tests (up from 85)
+- **nexus-work integration wiring — signals, briefings, calendar sync, LLM extraction**
+  - `work_signals` table with FTS5 index for cross-signal storage and search
+  - Action extraction from signals via LLM: parses messages for commitments, creates work_actions (self) or work_delegations (others)
+  - Signal storage: `store_signal()` normalizes and persists signals from any source
+  - Morning briefing assembly: programmatic data query (urgent actions, meetings, commitments, delegations) formatted for structured output
+  - Evening wrap assembly: completed today, still open, overdue, stale delegations
+  - Meeting prep assembly: per-attendee context (actions, delegations involving them, previous notes)
+  - Calendar sync signal handler: pulls Google Calendar events via MCP, upserts into work_meetings with UNIQUE(tenant_id, event_id)
+  - Priority engine enhanced: blocking factor (+25), requester seniority (VP +30, director +25, manager +15)
+  - `/actions priority <id> <level>` for manual priority override
+  - `/actions block <id> [who]` to flag an action as blocking others
+  - `work_actions.blocking` column added to schema
+  - 6 signal handlers total: delegation_check, morning_briefing, evening_wrap, meeting_prep, action_extract, calendar_sync
+  - 67 work tests (up from 39)
 - **nexus-work M5.1–M5.4 — Work Intelligence Extension**
   - Scaffolded `extensions/nexus-work/` as monorepo extension with pyproject.toml, entry point, 4 DB tables, 5 skills
   - `/actions` command: list open items sorted by priority score, add with inline params, mark done, show all

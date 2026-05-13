@@ -5,6 +5,14 @@ from typing import Any
 
 _PRIORITY_SCORES = {"critical": 100, "high": 75, "medium": 50, "low": 25}
 
+_REQUESTER_WEIGHT = {
+    "vp": 30,
+    "director": 25,
+    "manager": 15,
+    "lead": 10,
+    "peer": 0,
+}
+
 
 def score_action(action: dict[str, Any]) -> int:
     score = _PRIORITY_SCORES.get(action.get("priority", "medium"), 50)
@@ -30,5 +38,14 @@ def score_action(action: dict[str, Any]) -> int:
 
     if action.get("assigned_to") == "self":
         score += 5
+
+    if action.get("blocking"):
+        score += 25
+
+    requester = (action.get("assigned_by") or "").lower()
+    for role, weight in _REQUESTER_WEIGHT.items():
+        if role in requester:
+            score += weight
+            break
 
     return score

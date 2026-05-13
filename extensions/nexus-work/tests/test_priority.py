@@ -51,3 +51,18 @@ class TestScoreAction:
     def test_missing_priority(self) -> None:
         score = score_action({})
         assert score == 50
+
+    def test_blocking_boosts(self) -> None:
+        blocking = score_action({"priority": "medium", "blocking": "Sarah's PR merge"})
+        normal = score_action({"priority": "medium"})
+        assert blocking > normal
+
+    def test_vp_requester_boosts(self) -> None:
+        vp_request = score_action({"priority": "medium", "assigned_by": "VP of Engineering"})
+        peer_request = score_action({"priority": "medium", "assigned_by": "colleague"})
+        assert vp_request > peer_request
+
+    def test_manager_requester(self) -> None:
+        mgr = score_action({"priority": "medium", "assigned_by": "my manager"})
+        base = score_action({"priority": "medium"})
+        assert mgr > base

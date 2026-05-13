@@ -136,6 +136,63 @@ class TestHandleActions:
         sent = reply.call_args[0][1]
         assert "Done task" in sent
 
+    async def test_priority_override(self) -> None:
+        reply = AsyncMock()
+        ctx = AsyncMock()
+        ctx.send_to_memory = AsyncMock(return_value={"status": "ok"})
+        await handle_actions(
+            command="actions",
+            args="priority 1 critical",
+            tenant_id="t1",
+            channel_id="c1",
+            send_reply=reply,
+            nexus_context=ctx,
+        )
+        sent = reply.call_args[0][1]
+        assert "critical" in sent
+
+    async def test_priority_invalid(self) -> None:
+        reply = AsyncMock()
+        ctx = AsyncMock()
+        await handle_actions(
+            command="actions",
+            args="priority 1 super",
+            tenant_id="t1",
+            channel_id="c1",
+            send_reply=reply,
+            nexus_context=ctx,
+        )
+        sent = reply.call_args[0][1]
+        assert "must be" in sent
+
+    async def test_block_action(self) -> None:
+        reply = AsyncMock()
+        ctx = AsyncMock()
+        ctx.send_to_memory = AsyncMock(return_value={"status": "ok"})
+        await handle_actions(
+            command="actions",
+            args="block 1 Sarah's PR merge",
+            tenant_id="t1",
+            channel_id="c1",
+            send_reply=reply,
+            nexus_context=ctx,
+        )
+        sent = reply.call_args[0][1]
+        assert "blocking" in sent
+
+    async def test_block_no_id(self) -> None:
+        reply = AsyncMock()
+        ctx = AsyncMock()
+        await handle_actions(
+            command="actions",
+            args="block",
+            tenant_id="t1",
+            channel_id="c1",
+            send_reply=reply,
+            nexus_context=ctx,
+        )
+        assert "Usage" in reply.call_args[0][1]
+
 
 class TestHandleDelegate:
     async def test_no_context(self) -> None:
