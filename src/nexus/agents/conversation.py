@@ -869,9 +869,11 @@ class ConversationManager(AgentProcess):
             and self._dashboard_config
         ):
             view_id = self._content_store.store(response_text)
-            host = self._dashboard_config.host
-            port = self._dashboard_config.port
-            view_url = f"http://{host}:{port}/view/{view_id}"
+            if self._dashboard_config.base_url:
+                base = self._dashboard_config.base_url.rstrip("/")
+            else:
+                base = f"http://{self._dashboard_config.host}:{self._dashboard_config.port}"
+            view_url = f"{base}/view/{view_id}"
             tldr = response_text[:300].rsplit(" ", 1)[0] + "..."
             await self._send_reply(
                 channel_id,

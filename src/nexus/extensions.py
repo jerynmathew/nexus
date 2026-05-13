@@ -127,18 +127,23 @@ class NexusContext:
         if not self._content_store:
             return None
         view_id = self._content_store.store(html_content, title=title)
-        if self._dashboard_config:
-            host = self._dashboard_config.host
-            port = self._dashboard_config.port
-            return f"http://{host}:{port}/view/{view_id}"
+        base = self._dashboard_base_url()
+        if base:
+            return f"{base}/view/{view_id}"
         return view_id
 
     def dashboard_url(self, path: str) -> str | None:
+        base = self._dashboard_base_url()
+        if not base:
+            return None
+        return f"{base}{path}"
+
+    def _dashboard_base_url(self) -> str | None:
         if not self._dashboard_config:
             return None
-        host = self._dashboard_config.host
-        port = self._dashboard_config.port
-        return f"http://{host}:{port}{path}"
+        if self._dashboard_config.base_url:
+            return self._dashboard_config.base_url.rstrip("/")
+        return f"http://{self._dashboard_config.host}:{self._dashboard_config.port}"
 
     def resolve_model(self, task: str = "", skill_model: str | None = None) -> str:
         if not self._llm:

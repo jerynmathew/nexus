@@ -43,6 +43,12 @@ mcp:
     #   tool_group: utility
     #   enabled: false
 
+dashboard:
+  enabled: true
+  port: 8080
+  host: "localhost"
+  # base_url: "https://nexus.tail1234.ts.net"  # Tailscale/reverse proxy: URLs sent to users use this
+
 governance:
   audit_path: "data/audit.jsonl"
   enabled: true

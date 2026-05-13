@@ -84,6 +84,7 @@ class DashboardConfig(BaseModel):
     enabled: bool = True
     port: int = 8080
     host: str = "localhost"
+    base_url: str = ""
     views_dir: str = "data/views"
 
 
