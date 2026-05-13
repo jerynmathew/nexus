@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import patch as _patch
 
 from nexus.extensions import (
     ExtensionLoader,
@@ -9,6 +10,8 @@ from nexus.extensions import (
     NexusExtension,
     _DirectoryExtension,
 )
+
+_NO_ENTRY_POINTS = _patch("nexus.extensions.entry_points", return_value=[])
 
 
 class _FakeExtension:
@@ -117,7 +120,8 @@ class TestNexusContext:
 
 
 class TestExtensionLoader:
-    async def test_load_no_extensions(self) -> None:
+    @_NO_ENTRY_POINTS
+    async def test_load_no_extensions(self, _mock_ep: MagicMock) -> None:
         ctx = NexusContext(runtime=MagicMock())
         loader = ExtensionLoader(ctx)
         result = await loader.load_all()
@@ -141,7 +145,8 @@ class TestExtensionLoader:
         await loader.unload_all()
         assert loader.extensions == []
 
-    async def test_load_directory_extension(self, tmp_path: Path) -> None:
+    @_NO_ENTRY_POINTS
+    async def test_load_directory_extension(self, _mock_ep: MagicMock, tmp_path: Path) -> None:
         ext_dir = tmp_path / "my-ext"
         ext_dir.mkdir()
         skills_dir = ext_dir / "skills"
@@ -156,7 +161,8 @@ class TestExtensionLoader:
         assert loader.extensions[0].name == "my-ext"
         assert skills_dir in ctx.skill_dirs
 
-    async def test_load_directory_no_manifest(self, tmp_path: Path) -> None:
+    @_NO_ENTRY_POINTS
+    async def test_load_directory_no_manifest(self, _mock_ep: MagicMock, tmp_path: Path) -> None:
         ext_dir = tmp_path / "no-manifest"
         ext_dir.mkdir()
         ctx = NexusContext(runtime=MagicMock())
@@ -164,7 +170,10 @@ class TestExtensionLoader:
         await loader.load_all(extension_dirs=[tmp_path])
         assert len(loader.extensions) == 0
 
-    async def test_load_directory_invalid_manifest(self, tmp_path: Path) -> None:
+    @_NO_ENTRY_POINTS
+    async def test_load_directory_invalid_manifest(
+        self, _mock_ep: MagicMock, tmp_path: Path
+    ) -> None:
         ext_dir = tmp_path / "bad-ext"
         ext_dir.mkdir()
         (ext_dir / "extension.yaml").write_text("not a mapping")
@@ -173,7 +182,8 @@ class TestExtensionLoader:
         await loader.load_all(extension_dirs=[tmp_path])
         assert len(loader.extensions) == 0
 
-    async def test_load_nonexistent_dir(self) -> None:
+    @_NO_ENTRY_POINTS
+    async def test_load_nonexistent_dir(self, _mock_ep: MagicMock) -> None:
         ctx = NexusContext(runtime=MagicMock())
         loader = ExtensionLoader(ctx)
         await loader.load_all(extension_dirs=[Path("/nonexistent")])

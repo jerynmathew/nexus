@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nexus-finance"
+version = "0.1.0"
+description = "FIRE-focused personal finance intelligence extension for Nexus"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+    "nexus>=0.1",
+    "matplotlib~=3.9",
+]
+
+[project.optional-dependencies]
+zerodha = ["kiteconnect~=5.0"]
+dev = [
+    "pytest~=8.4",
+    "pytest-asyncio~=0.25",
+    "pytest-cov~=5.0",
+]
+
+[project.entry-points."nexus.extensions"]
+finance = "nexus_finance.extension:FinanceExtension"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexus_finance"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
