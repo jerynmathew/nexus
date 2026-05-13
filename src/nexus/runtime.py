@@ -246,6 +246,8 @@ async def _load_extensions(
         runtime=runtime,
         llm=conv._llm,
         mcp=conv._mcp,
+        content_store=conv._content_store,
+        dashboard_config=conv._dashboard_config,
         extensions_config=config.extensions,
     )
 

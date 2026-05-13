@@ -37,9 +37,37 @@ class TestCalculateXirr:
     def test_insufficient_data(self) -> None:
         assert calculate_xirr([("2026-01-01", -10000)]) is None
 
-    def test_stub_returns_none(self) -> None:
+    def test_basic_positive_return(self) -> None:
         flows = [("2025-01-01", -10000), ("2026-01-01", 12000)]
+        result = calculate_xirr(flows)
+        assert result is not None
+        assert result > 0.15
+        assert result < 0.25
+
+    def test_negative_return(self) -> None:
+        flows = [("2025-01-01", -10000), ("2026-01-01", 8000)]
+        result = calculate_xirr(flows)
+        assert result is not None
+        assert result < 0
+
+    def test_all_same_sign_returns_none(self) -> None:
+        flows = [("2025-01-01", 10000), ("2026-01-01", 12000)]
         assert calculate_xirr(flows) is None
+
+    def test_invalid_date_returns_none(self) -> None:
+        flows = [("not-a-date", -10000), ("2026-01-01", 12000)]
+        assert calculate_xirr(flows) is None
+
+    def test_multiple_cashflows(self) -> None:
+        flows = [
+            ("2024-01-01", -10000),
+            ("2024-07-01", -5000),
+            ("2025-01-01", -5000),
+            ("2026-01-01", 25000),
+        ]
+        result = calculate_xirr(flows)
+        assert result is not None
+        assert result > 0
 
 
 class TestParseZerodhaHoldings:

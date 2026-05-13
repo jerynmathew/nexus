@@ -442,9 +442,9 @@
 - [x] `/gold` command with price data and 30-day trend
 - [x] `/holdings upload` command (HDFC/SBI CSV parsing)
 - [x] `/holdings banks` command (last upload dates)
-- [ ] Gold price scraping via Playwright (India 22K/24K city-wise) — skill exists, data collection pending
-- [ ] Chart generation wired into `/portfolio` and `/gold` — charts.py implemented, ContentStore wiring pending
-- [ ] Monthly bank statement reminder scheduler — skill exists, scheduler wiring pending
+- [x] Gold price scraping signal handler (`gold_price_collect` via Playwright MCP + gold.py parser)
+- [x] Chart generation wired into `/portfolio` (allocation pie) and `/gold` (price trend) via ContentStore
+- [x] Bank statement reminder signal handler (`bank_statement_reminder`)
 
 **Phase 3: Research + FIRE ✅**
 
@@ -452,13 +452,13 @@
 - [x] `/fire config` for setting FIRE parameters
 - [x] Rebalance logic wired into `/rebalance` command (allocation delta analysis)
 - [x] `/research` command with MFapi.in fund search
-- [ ] Deep MF research with Claude-driven analysis — requires LLM integration in command
+- [x] Deep MF research with Claude-driven analysis via LLMClient in `/research`
 
 **Phase 4: Alerts + Polish ✅**
 
 - [x] Finance alert signal handler (`finance_alert_check` for significant moves)
-- [ ] Dashboard finance panel — pending dashboard integration
-- [ ] FD/RD maturity alerts — pending scheduler wiring
+- [x] FD/RD maturity alert signal handler (`maturity_alert`)
+- [ ] Dashboard finance panel — pending DashboardServer panel integration
 
 ### M5 Exit Criteria
 
@@ -469,7 +469,7 @@
 - [x] nexus-finance: `/fire` shows FIRE progress with SIP projections (Phase 3)
 - [x] nexus-finance: `/research` searches MFapi.in fund database (Phase 3)
 - [x] nexus-finance: `/rebalance` shows allocation delta vs target (Phase 3)
-- [ ] nexus-finance: charts rendered in `/portfolio` and `/gold` (charts.py → ContentStore pending)
+- [x] nexus-finance: charts rendered in `/portfolio` and `/gold` via ContentStore
 
 ### M5.1 — Full Presidium Integration
 

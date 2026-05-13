@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from nexus.extensions import NexusContext
@@ -60,10 +61,44 @@ def calculate_allocation(holdings: list[Holding]) -> dict[str, float]:
 
 def calculate_xirr(
     cashflows: list[tuple[str, float]],
+    max_iterations: int = 100,
+    tolerance: float = 1e-7,
 ) -> float | None:
     if len(cashflows) < 2:
         return None
-    # TODO: implement Newton-Raphson XIRR
+
+    parsed: list[tuple[datetime, float]] = []
+    for date_str, amount in cashflows:
+        try:
+            parsed.append((datetime.strptime(date_str, "%Y-%m-%d"), amount))
+        except ValueError:
+            return None
+
+    parsed.sort(key=lambda x: x[0])
+    t0 = parsed[0][0]
+    years = [(d - t0).days / 365.25 for d, _ in parsed]
+    amounts = [a for _, a in parsed]
+
+    if all(a >= 0 for a in amounts) or all(a <= 0 for a in amounts):
+        return None
+
+    def _npv(rate: float) -> float:
+        return sum(a / (1 + rate) ** y for a, y in zip(amounts, years, strict=True))
+
+    def _dnpv(rate: float) -> float:
+        return sum(-y * a / (1 + rate) ** (y + 1) for a, y in zip(amounts, years, strict=True))
+
+    rate = 0.1
+    for _ in range(max_iterations):
+        npv = _npv(rate)
+        dnpv = _dnpv(rate)
+        if abs(dnpv) < 1e-14:
+            return None
+        new_rate = rate - npv / dnpv
+        if abs(new_rate - rate) < tolerance:
+            return round(new_rate, 6)
+        rate = new_rate
+
     return None
 
 

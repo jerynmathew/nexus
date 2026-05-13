@@ -7,6 +7,7 @@ from typing import Any
 
 from nexus.extensions import NexusContext
 
+from nexus_finance.charts import allocation_pie_chart, gold_price_chart
 from nexus_finance.parsers.hdfc import parse_hdfc_csv
 from nexus_finance.parsers.sbi import parse_sbi_csv
 from nexus_finance.portfolio import (
@@ -58,8 +59,22 @@ async def handle_portfolio(
         text = await _do_portfolio_sync(nexus_context, tenant_id)
     else:
         text = format_portfolio_summary(holdings)
+        text += _generate_portfolio_charts(nexus_context, holdings, tenant_id)
 
     await send_reply(channel_id, text + _DISCLAIMER)
+
+
+def _generate_portfolio_charts(ctx: NexusContext, holdings: list[Holding], tenant_id: str) -> str:
+    if not holdings:
+        return ""
+    lines: list[str] = []
+    allocation = calculate_allocation(holdings)
+    if allocation:
+        chart_html = allocation_pie_chart(allocation)
+        url = ctx.store_view(chart_html, title="Asset Allocation")
+        if url:
+            lines.append(f"\n📊 Allocation chart → {url}")
+    return "\n".join(lines)
 
 
 async def _do_portfolio_sync(ctx: NexusContext, tenant_id: str) -> str:
@@ -333,12 +348,59 @@ async def handle_research(
             code = fund.get("schemeCode", "")
             name = fund.get("schemeName", "")
             lines.append(f"  • {name} (Code: {code})")
-        lines.append(f"\n{len(funds)} funds found. Use scheme codes for detailed NAV data.")
+
+        nav_details: list[str] = []
+        for fund in funds[:3]:
+            code = fund.get("schemeCode", "")
+            if code:
+                nav_raw = await nexus_context.call_tool("get_latest_nav", {"scheme_code": code})
+                try:
+                    nav_data = json.loads(nav_raw)
+                    if isinstance(nav_data, dict) and nav_data.get("nav"):
+                        name = nav_data.get("scheme_name", code)
+                        category = nav_data.get("scheme_category", "")
+                        nav_val = nav_data.get("nav", "")
+                        nav_date = nav_data.get("date", "")
+                        nav_details.append(
+                            f"  **{name}**\n"
+                            f"    Category: {category}\n"
+                            f"    NAV: ₹{nav_val} ({nav_date})"
+                        )
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+        if nav_details:
+            lines.append("\n**NAV Details (top 3):**")
+            lines.extend(nav_details)
+
+        if nexus_context.llm:
+            fund_summary = "\n".join(nav_details) if nav_details else "No NAV data available"
+            try:
+                response = await nexus_context.llm.chat(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a SEBI-compliant mutual fund research analyst. "
+                                "Provide brief comparative analysis. Always include the disclaimer "
+                                "that this is not financial advice."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Query: {query}\n\nFund data:\n{fund_summary}\n\n"
+                            "Provide a brief (3-4 sentence) comparative analysis.",
+                        },
+                    ],
+                )
+                if response.content:
+                    lines.append(f"\n**Analysis:**\n{response.content}")
+            except Exception:
+                logger.debug("LLM analysis unavailable for research query")
+
+        lines.append(f"\n{len(funds)} funds found.")
     else:
         lines.append("No matching mutual funds found for this query.")
-
-    lines.append("\nFor deeper analysis, ask in natural language — e.g.,")
-    lines.append('"Compare top 5 flexi cap funds by 5-year returns"')
 
     await send_reply(channel_id, "\n".join(lines) + _DISCLAIMER)
 
@@ -387,12 +449,19 @@ async def handle_gold(
         lines.append(f"24K: ₹{float(latest[3]):,.2f}/gram")
 
     if len(rows) > 1:
+        dates_rev = [r[0] for r in reversed(rows) if r[2]]
         prices_22k = [float(r[2]) for r in reversed(rows) if r[2]]
         if len(prices_22k) >= 2:
             change = prices_22k[-1] - prices_22k[0]
             pct = (change / prices_22k[0] * 100) if prices_22k[0] > 0 else 0
             sign = "+" if change >= 0 else ""
             lines.append(f"\n30-day trend: {sign}₹{change:,.2f} ({sign}{pct:.2f}%)")
+
+        if len(prices_22k) >= 3:
+            chart_html = gold_price_chart(dates_rev, prices_22k)
+            url = nexus_context.store_view(chart_html, title="Gold Price Trend")
+            if url:
+                lines.append(f"📈 Gold chart → {url}")
 
     lines.append(f"\nData points: {len(rows)}")
     await send_reply(channel_id, "\n".join(lines) + _DISCLAIMER)

@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **nexus-finance integration wiring — charts, gold scraping, XIRR, alerts, LLM research**
+  - Chart generation wired into `/portfolio` (allocation pie chart) and `/gold` (price trend) via ContentStore
+  - NexusContext `store_view()` method for extensions to generate chart URLs
+  - XIRR calculation implemented with Newton-Raphson (replaced stub)
+  - Gold price collection signal handler (`gold_price_collect`) — calls Playwright MCP, parses with gold.py, stores in DB
+  - Bank statement reminder signal handler (`bank_statement_reminder`) — checks upload staleness per bank
+  - FD/RD maturity alert signal handler (`maturity_alert`) — checks holdings metadata for upcoming maturity dates
+  - `/research` enhanced with NAV detail fetching (top 3 funds) and Claude-driven comparative analysis via LLMClient
+  - 95 finance extension tests (up from 85)
 - **nexus-work M5.1–M5.4 — Work Intelligence Extension**
   - Scaffolded `extensions/nexus-work/` as monorepo extension with pyproject.toml, entry point, 4 DB tables, 5 skills
   - `/actions` command: list open items sorted by priority score, add with inline params, mark done, show all

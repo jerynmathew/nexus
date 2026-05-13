@@ -11,6 +11,8 @@ from typing import Any, Protocol, runtime_checkable
 
 import yaml
 
+from nexus.config import DashboardConfig
+from nexus.dashboard.views import ContentStore
 from nexus.llm.client import LLMClient
 from nexus.mcp.manager import MCPManager
 
@@ -49,11 +51,15 @@ class NexusContext:
         runtime: Any,
         llm: LLMClient | None = None,
         mcp: MCPManager | None = None,
+        content_store: ContentStore | None = None,
+        dashboard_config: DashboardConfig | None = None,
         extensions_config: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self._runtime = runtime
         self._llm = llm
         self._mcp = mcp
+        self._content_store = content_store
+        self._dashboard_config = dashboard_config
         self._extensions_config = extensions_config or {}
         self._commands: dict[str, CommandHandler] = {}
         self._schemas: list[str] = []
@@ -114,6 +120,16 @@ class NexusContext:
         if not self._mcp:
             return "MCP not available"
         return await self._mcp.call_tool(tool_name, arguments or {})
+
+    def store_view(self, html_content: str, title: str = "Nexus") -> str | None:
+        if not self._content_store:
+            return None
+        view_id = self._content_store.store(html_content, title=title)
+        if self._dashboard_config:
+            host = self._dashboard_config.host
+            port = self._dashboard_config.port
+            return f"http://{host}:{port}/view/{view_id}"
+        return view_id
 
     @property
     def commands(self) -> dict[str, CommandHandler]:
