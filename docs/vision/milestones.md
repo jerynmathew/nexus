@@ -489,6 +489,16 @@
 - [ ] GovernedModelProvider, GovernedToolProvider
 - [ ] Full audit ledger, behavioral contracts
 
+### M6.1.5 — Hierarchical Model Routing
+
+- [ ] `Skill.model` field in parser (optional override from SKILL.md frontmatter)
+- [ ] `LLMClient.resolve_model()` replacing `model_for_task()` (skill → extension → task → default)
+- [ ] `LLMClient.set_model_override()` / `clear_model_override()` for runtime mutation
+- [ ] Scoped `NexusContext` per extension (carries extension name for model resolution)
+- [ ] Extension LLM calls use `ctx.resolve_model()` instead of raw `ctx.llm.chat()`
+- [ ] Tests for full resolution chain
+- [ ] See [model-routing.md](../design/model-routing.md) for full design
+
 ### M6.2 — Production Hardening ✅
 
 - [x] Rate limiting per tenant (RateLimiter, sliding window, 30 req/60s default)

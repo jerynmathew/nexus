@@ -52,6 +52,14 @@ users_dir: "data/users"
 data_dir: "data"
 skills_dir: "skills"
 
+# Extension config — each extension reads its section via ctx.get_config()
+# Model override: set "model" key to use a different LLM for that extension's calls
+# extensions:
+#   nexus-finance:
+#     model: "gpt-4o"                  # Override: finance LLM calls use GPT-4o
+#   nexus-work:
+#     model: "claude-haiku-4-20250414" # Override: work uses cheap model
+
 seed_users:
   - name: "Jeryn"
     tenant_id: "jeryn"

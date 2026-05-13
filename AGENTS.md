@@ -216,7 +216,7 @@ These are settled decisions. Do not revisit without discussion.
 | 3 | **Multi-transport from day one** | `BaseTransport` protocol. Telegram first, but ConversationManager never sees Telegram objects. |
 | 4 | **Persona as first-class concept** | `SOUL.md` files, per-tenant persona selection, conversational builder. Not a config afterthought. |
 | 5 | **aiosqlite, not sqlite3** | All database access async. Learned from Vigil issue A1. |
-| 6 | **LLM calls in ConversationManager only** | Integration agents are stateless data fetchers. Single point for prompt engineering and cost control. |
+| 6 | **LLM calls centralized** | ConversationManager is the primary LLM caller. Extensions may call `ctx.llm.chat()` for lightweight extraction/analysis (e.g., action extraction from signals), but always via `ctx.resolve_model()` for model selection. Cost tracking through AgentGateway. |
 | 7 | **Session state checkpointed** | Multi-turn sessions survive agent restarts via MemoryAgent. Learned from Vigil risk R2. |
 | 8 | **IntentClassifier is a Protocol** | Swap regex → local LLM → hybrid without code changes. Learned from Vigil's M2.3 evolution. |
 | 9 | **Config: YAML for infra, SQLite for user** | Infrastructure (bot tokens, MCP URLs) in YAML. User config (persona, preferences) in DB. Learned from Vigil M4.0. |
@@ -226,6 +226,7 @@ These are settled decisions. Do not revisit without discussion.
 | 13 | **FTS5 for memory search** | Zero-dependency full-text search. Sufficient for personal assistant scale. Vector search as optional extra later. |
 | 14 | **Skills + MCP are the norm, custom agents are the exception** | Morning briefing, email triage, task management — all skills. Custom agents only for bespoke code (no MCP, custom rendering/UI, stateful API connections). Simplicity over infrastructure. |
 | 15 | **External tools run in containers, never on host** | Every MCP server and external binary runs in a Docker container with scoped credentials, network isolation, read-only rootfs, and non-root user. Nexus never spawns external processes on the host. Container sandbox + Presidium governance + audit trail = defense in depth. Security designed in from day one, not bolted on after a breach. |
+| 16 | **Hierarchical model routing** | Default model at top (`llm.model`), override locally at each scope. Resolution order: skill.model → extension config model → cheap_model (if cheap task) → default. Runtime overrides via `LLMClient.set_model_override()`. Conversations always use default model (consistent personality). Extensions get scoped `NexusContext` with `resolve_model()`. See [model-routing.md](docs/design/model-routing.md). |
 
 ---
 

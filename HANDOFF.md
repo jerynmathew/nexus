@@ -1,11 +1,11 @@
-# Handoff: M5 Complete (nexus-finance + nexus-work)
+# Handoff: M5 + M6.2/M6.3 Complete
 
 > Created: 2026-05-13
-> Session: M5.1–M5.5 implementation
+> Session: M5 extensions + M6 production hardening + documentation
 
 ## Goal
 
-M5 milestone complete. Two extensions built: nexus-finance (FIRE personal finance) and nexus-work (work intelligence). Remaining work is integration wiring (schedulers, LLM analysis, charts).
+M1–M5 complete. M6.2 (production hardening) and M6.3 (documentation) complete. Remaining: M6.1 (Presidium, blocked upstream), M6.1.5 (hierarchical model routing, designed), M7 (presence, planned).
 
 ## Work Completed
 
@@ -98,10 +98,26 @@ These items have code/skills written but need wiring to schedulers, LLM, or othe
 - `extensions/nexus-finance/src/nexus_finance/portfolio.py` — Sync, snapshot, formatting
 - `extensions/nexus-finance/docker/` — Zerodha + MFapi MCP servers
 
+## Pending: Hierarchical Model Routing (M6.1.5)
+
+Designed but not implemented. See `docs/design/model-routing.md` for full spec.
+
+Key implementation steps:
+1. Add `model` field to `Skill` dataclass in `src/nexus/skills/parser.py`
+2. Replace `model_for_task()` with `resolve_model()` on `LLMClient` — accepts skill_model, extension_model, task
+3. Add `set_model_override()`/`clear_model_override()` for runtime mutation on `LLMClient`
+4. Create scoped `NexusContext` per extension (via `nexus_ctx.scoped(extension_name=ext.name)`) — currently NexusContext is a singleton shared by all extensions
+5. Update extension LLM call sites to use `ctx.resolve_model()` instead of raw `ctx.llm.chat()`
+6. Update `_execute_skill()` in ConversationManager to pass `skill.model` to `resolve_model()`
+
+**Critical constraint:** NexusContext is currently shared. The `scoped()` method must be a shallow copy that shares runtime/llm/mcp but carries a unique extension_name.
+
+**What does NOT change:** Conversation model (always `llm.model`), AgentGateway config, frozen NexusConfig.
+
 ## Context for Continuation
 
 - Extension commands receive `nexus_context` kwarg for DB + MCP access
 - Push requires: `gh auth switch --user jerynmathew`, push, switch back to `jeryn-fiddler`
 - Sub-agents with "deep"/"oracle" fail — use "quick" or "unspecified-high"
 - Combined test runs have namespace collision — run core and extension tests separately
-- M6+ (Production, Presence) not started
+- M6.1 (Presidium) blocked on upstream. M6.1.5 (model routing) designed, ready to implement. M7 planned.

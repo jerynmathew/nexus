@@ -145,14 +145,39 @@ dash_url = ctx.dashboard_url("/dashboard/mypage")
 # In config.yaml
 extensions:
   my-extension:
+    model: "gpt-4o"            # Optional: override LLM model for this extension
     api_key: "..."
     refresh_interval: 300
 ```
 
 ```python
 config = ctx.get_config("my-extension")
-# {"api_key": "...", "refresh_interval": 300}
+# {"model": "gpt-4o", "api_key": "...", "refresh_interval": 300}
 ```
+
+### Model Selection
+
+Extensions can use different LLM models. Resolution order: skill model → extension model → default.
+
+```python
+# Use the model configured for this extension (or falls back to default)
+model = ctx.resolve_model()
+response = await ctx.llm.chat(messages=[...], model=model)
+
+# Or for a specific task type (uses cheap model for classify/summarize)
+model = ctx.resolve_model(task="SUMMARIZE")
+```
+
+Skills can also override models in their SKILL.md frontmatter:
+
+```yaml
+---
+name: my-skill
+model: "deepseek-coder-v2"    # This skill uses a specific model
+---
+```
+
+See [model-routing.md](design/model-routing.md) for the full design.
 
 ---
 
