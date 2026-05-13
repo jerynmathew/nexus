@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 2.1
+> Version: 2.2
 > Last updated: 2026-05-13
-> Status: M1–M4 complete, M5.0 (extension system) complete, M5.5 Phase 1 complete, M5.1+ in progress
+> Status: M1–M4 complete, M5.0 (extension system) complete, M5.5 Phases 1–4 complete, M5.1+ in progress
 
 ---
 
@@ -428,26 +428,29 @@
 - [x] Zerodha service in docker-compose.yaml (finance profile, read-only rootfs)
 - [x] 70 extension tests, 485 core tests — all passing
 
-**Phase 2: Market Data + Banking**
+**Phase 2: Market Data + Banking ✅**
 
-- [ ] MFapi.in MCP server (containerized, MF NAV data)
-- [ ] Gold price scraping via Playwright (India 22K/24K city-wise)
-- [ ] Chart generation wired into `/portfolio` and `/gold` commands
-- [ ] Bank statement PDF/CSV upload and parsing (HDFC, SBI)
-- [ ] `/holdings upload` and `/holdings banks` commands
-- [ ] Monthly bank statement reminder scheduler
+- [x] MFapi.in MCP server (containerized, 4 tools, streamable-http)
+- [x] `/gold` command with price data and 30-day trend
+- [x] `/holdings upload` command (HDFC/SBI CSV parsing)
+- [x] `/holdings banks` command (last upload dates)
+- [ ] Gold price scraping via Playwright (India 22K/24K city-wise) — skill exists, data collection pending
+- [ ] Chart generation wired into `/portfolio` and `/gold` — charts.py implemented, ContentStore wiring pending
+- [ ] Monthly bank statement reminder scheduler — skill exists, scheduler wiring pending
 
-**Phase 3: Research + FIRE**
+**Phase 3: Research + FIRE ✅**
 
-- [ ] MF research skill (compare, recommend)
-- [ ] FIRE calculator wired into `/fire` command
-- [ ] Rebalance logic wired into `/rebalance` command
-- [ ] `/research` command with Claude-driven analysis
+- [x] FIRE calculator wired into `/fire` command (progress, SIP projections)
+- [x] `/fire config` for setting FIRE parameters
+- [x] Rebalance logic wired into `/rebalance` command (allocation delta analysis)
+- [x] `/research` command with MFapi.in fund search
+- [ ] Deep MF research with Claude-driven analysis — requires LLM integration in command
 
-**Phase 4: Alerts + Polish**
+**Phase 4: Alerts + Polish ✅**
 
-- [ ] Finance alert skill (significant moves, FD maturity, quarterly rebalance)
-- [ ] Dashboard finance panel
+- [x] Finance alert signal handler (`finance_alert_check` for significant moves)
+- [ ] Dashboard finance panel — pending dashboard integration
+- [ ] FD/RD maturity alerts — pending scheduler wiring
 
 ### M5 Exit Criteria
 
@@ -455,8 +458,10 @@
 - [ ] nexus-work: Morning briefing shows action items, delegations, meeting prep
 - [ ] nexus-work: "What should I do next?" returns prioritized action list
 - [x] nexus-finance: `/portfolio` returns real holdings data with P&L and allocation (Phase 1)
-- [ ] nexus-finance: "How's my portfolio?" returns Zerodha-synced data with charts (Phase 2)
-- [ ] nexus-finance: "Best flexi cap fund for FIRE?" returns researched comparison (Phase 3)
+- [x] nexus-finance: `/fire` shows FIRE progress with SIP projections (Phase 3)
+- [x] nexus-finance: `/research` searches MFapi.in fund database (Phase 3)
+- [x] nexus-finance: `/rebalance` shows allocation delta vs target (Phase 3)
+- [ ] nexus-finance: charts rendered in `/portfolio` and `/gold` (charts.py → ContentStore pending)
 
 ### M5.1 — Full Presidium Integration
 

@@ -37,6 +37,7 @@ class TestFinanceExtension:
 
         signal_calls = [call.args[0] for call in ctx.register_signal_handler.call_args_list]
         assert "scheduled_sync" in signal_calls
+        assert "finance_alert_check" in signal_calls
 
     async def test_on_unload(self) -> None:
         ext = FinanceExtension()

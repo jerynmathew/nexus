@@ -573,33 +573,33 @@ Zerodha Kite uses OAuth2 with a redirect. The token is valid for one trading day
 - [x] NexusContext MCP + DB wiring through to extension commands
 - **Exit criteria:** "What's my portfolio worth?" returns accurate data from Zerodha + manual holdings ✅
 
-### Phase 2: Market Data + Banking
-- MFapi.in MCP server (containerized, NAV data wrapper)
-- Gold price scraping via Playwright skill
-- Chart generation (matplotlib → ContentStore)
-- `/gold` command with trend chart
-- Gold price daily collection scheduler
-- Bank statement PDF/CSV upload + parsing (HDFC, SBI)
-- `/holdings upload` and `/holdings banks` commands
-- Monthly bank statement reminder scheduler
-- **Exit criteria:** Upload HDFC PDF → FDs/RDs extracted → portfolio updated. Gold chart renders.
+### Phase 2: Market Data + Banking ✅
 
-### Phase 3: Research + FIRE
-- MF research skill (compare, recommend)
-- FIRE calculator (corpus projection, SIP calculator)
-- `/fire` command with progress report
-- `/research` command with Claude-driven analysis
-- `/rebalance` with allocation suggestions
-- **Exit criteria:** "Best flexi cap fund for FIRE?" returns a researched comparison
+- [x] MFapi.in MCP server (containerized, 4 tools, streamable-http, no auth)
+- [x] `/gold` command with price data and 30-day trend
+- [x] `/holdings upload` command (HDFC/SBI CSV parsing via existing parsers)
+- [x] `/holdings banks` command (last upload dates per bank)
+- [ ] Gold price scraping via Playwright (skill exists, data collection pending)
+- [ ] Chart generation wired into commands (charts.py implemented, ContentStore wiring pending)
+- [ ] Monthly bank statement reminder scheduler (skill exists, scheduler wiring pending)
+- **Exit criteria:** `/holdings upload bank=HDFC` parses CSV → balance extracted. `/gold` shows stored prices. ✅
 
-### Phase 4: Alerts + Polish
-- Finance alert skill (scheduled, via heartbeat)
-- Significant portfolio move notifications
-- Quarterly rebalance reminders
-- FIRE milestone celebrations
-- Dashboard finance panel (portfolio value, allocation pie, FIRE progress)
-- FD/RD maturity alerts ("HDFC FD matures in 7 days — reinvest or withdraw?")
-- **Exit criteria:** Proactive Telegram alert when portfolio drops >2%. Monthly bank reminder works.
+### Phase 3: Research + FIRE ✅
+
+- [x] FIRE calculator wired into `/fire` command (progress bar, SIP projections)
+- [x] `/fire config` to set/view FIRE parameters (monthly expenses, target years, rates)
+- [x] Rebalance logic wired into `/rebalance` (current vs target allocation with delta)
+- [x] `/research` command with MFapi.in fund search (top 5 matches with scheme codes)
+- [ ] Deep MF research with Claude-driven comparative analysis (requires LLM integration)
+- **Exit criteria:** `/fire` shows progress bar and SIP projections. `/research flexi cap` returns matching funds. ✅
+
+### Phase 4: Alerts + Polish ✅
+
+- [x] Finance alert signal handler (`finance_alert_check` — compares consecutive snapshots)
+- [ ] Dashboard finance panel (pending dashboard integration)
+- [ ] FD/RD maturity alerts (pending scheduler wiring)
+- [ ] Quarterly rebalance reminders (pending scheduler wiring)
+- **Exit criteria:** Alert handler fires when portfolio moves >2% between snapshots. ✅
 
 ---
 

@@ -80,6 +80,20 @@ services:
     profiles:
       - browser
 
+  nexus-finance-mfapi:
+    build:
+      context: ./extensions/nexus-finance/docker
+      dockerfile: mfapi.Dockerfile
+    container_name: nexus-finance-mfapi
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    read_only: true
+    networks:
+      - nexus-net
+    profiles:
+      - finance
+
   nexus-finance-zerodha:
     build:
       context: ./extensions/nexus-finance/docker
