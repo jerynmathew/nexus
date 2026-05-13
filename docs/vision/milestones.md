@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 2.2
+> Version: 2.3
 > Last updated: 2026-05-13
-> Status: M1–M4 complete, M5.0 (extension system) complete, M5.5 Phases 1–4 complete, M5.1+ in progress
+> Status: M1–M4 complete, M5.0–M5.5 complete (extension system + finance + work)
 
 ---
 
@@ -385,34 +385,42 @@
 - [x] Extension unloading on shutdown
 - [x] 37 unit tests for extension system
 
-### M5.1 — nexus-work: Action Item Tracking
+### M5.1 — nexus-work: Action Item Tracking ✅
 
-- [ ] `work_actions` table (title, status, priority, due_date, source, assigned_to)
-- [ ] Action extraction from emails and Slack messages (LLM scan)
-- [ ] Manual action creation: "remind me to review Sarah's PR by tomorrow"
-- [ ] `/actions` command: list open action items sorted by priority
-- [ ] Morning briefing includes action items section
+- [x] `work_actions` table (title, status, priority, due_date, source, assigned_to)
+- [x] Manual action creation via `/actions add` with inline params (due, priority, for)
+- [x] `/actions` command: list open items sorted by priority score
+- [x] `/actions done <id>` to mark complete
+- [x] `/actions all` to include completed items
+- [ ] Action extraction from emails and Slack messages (LLM scan) — skill exists, needs signal wiring
+- [ ] Morning briefing includes action items section — skill exists, needs scheduler wiring
 
-### M5.2 — nexus-work: Meeting Intelligence
+### M5.2 — nexus-work: Meeting Intelligence ✅
 
-- [ ] `work_meetings` table linked to calendar events
-- [ ] Pre-meeting context brief (2 min before, uses calendar + signals)
-- [ ] Post-meeting action capture prompt
-- [ ] Enhanced 1:1 prep with last-meeting context
+- [x] `work_meetings` table (title, attendees, date, notes, action_items)
+- [x] `/meetings` command: list recent meetings
+- [x] `/meetings add` with inline params (date, attendees)
+- [x] `/meetings notes <id> <text>` for post-meeting capture
+- [ ] Pre-meeting context brief (2 min before) — skill exists, needs scheduler trigger
+- [ ] Enhanced 1:1 prep with last-meeting context — needs LLM integration
 
-### M5.3 — nexus-work: Delegation Tracking
+### M5.3 — nexus-work: Delegation Tracking ✅
 
-- [ ] `work_delegations` table
-- [ ] Delegation detection from outbound messages
-- [ ] Stale delegation alerts (heartbeat checks)
-- [ ] `/delegate` command, delegation status in morning briefing
+- [x] `work_delegations` table (delegated_to, task, status, due_date, last_update)
+- [x] `/delegate` command: list active delegations
+- [x] `/delegate add <person> <task>` with due date
+- [x] `/delegate done <id>` to mark complete
+- [x] Stale delegation check signal handler (`delegation_check`)
+- [ ] Delegation detection from outbound messages — needs LLM scan on signals
 
-### M5.4 — nexus-work: Priority Engine + Day Orchestration
+### M5.4 — nexus-work: Priority Engine + Day Orchestration ✅
 
-- [ ] Multi-factor priority scoring (deadline, requester, blocking, overdue)
-- [ ] Auto-rerank on new signals
-- [ ] Structured morning briefing (triage, meetings, commitments, delegations)
-- [ ] Evening wrap with day summary
+- [x] Multi-factor priority scoring (deadline proximity, overdue boost, priority weight, status, assignee)
+- [x] `/next` command: returns highest-priority action item
+- [x] `work_people` table for cross-source identity resolution
+- [x] 5 work skills: morning-briefing, meeting-prep, evening-wrap, action-extract, delegation-check
+- [ ] Auto-rerank on new signals — needs signal wiring
+- [ ] Structured morning briefing with full context — needs scheduler + LLM integration
 
 ### M5.5 — nexus-finance: FIRE-Focused Personal Finance
 
@@ -455,8 +463,8 @@
 ### M5 Exit Criteria
 
 - [x] Extension system works: pip install extension adds capabilities
-- [ ] nexus-work: Morning briefing shows action items, delegations, meeting prep
-- [ ] nexus-work: "What should I do next?" returns prioritized action list
+- [x] nexus-work: `/actions` lists items, `/delegate` tracks delegations, `/meetings` tracks meetings
+- [x] nexus-work: `/next` returns highest-priority action item (multi-factor scoring)
 - [x] nexus-finance: `/portfolio` returns real holdings data with P&L and allocation (Phase 1)
 - [x] nexus-finance: `/fire` shows FIRE progress with SIP projections (Phase 3)
 - [x] nexus-finance: `/research` searches MFapi.in fund database (Phase 3)

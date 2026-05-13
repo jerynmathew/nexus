@@ -168,6 +168,15 @@ nexus/
 │   └── default.md              # Default persona
 │
 ├── extensions/                  # Monorepo extensions (pip-installable)
+│   ├── nexus-work/
+│   │   ├── pyproject.toml       # hatchling, entry_points for nexus.extensions
+│   │   ├── src/nexus_work/
+│   │   │   ├── extension.py     # WorkExtension — commands/skills/schema/signals
+│   │   │   ├── commands.py      # /actions, /delegate, /meetings, /next
+│   │   │   ├── priority.py      # Multi-factor priority scoring
+│   │   │   ├── schema.py        # 4 tables (work_actions, delegations, meetings, people)
+│   │   │   └── skills/          # 5 SKILL.md files
+│   │   └── tests/
 │   └── nexus-finance/
 │       ├── pyproject.toml       # hatchling, entry_points for nexus.extensions
 │       ├── docker/

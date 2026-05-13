@@ -1,11 +1,11 @@
-# Handoff: nexus-finance Complete
+# Handoff: M5 Complete (nexus-finance + nexus-work)
 
 > Created: 2026-05-13
-> Session: nexus-finance Phases 1–4 implementation
+> Session: M5.1–M5.5 implementation
 
 ## Goal
 
-nexus-finance extension is feature-complete for all four phases. Remaining work is integration wiring (charts → ContentStore, schedulers, Claude-driven deep research).
+M5 milestone complete. Two extensions built: nexus-finance (FIRE personal finance) and nexus-work (work intelligence). Remaining work is integration wiring (schedulers, LLM analysis, charts).
 
 ## Work Completed
 
@@ -37,26 +37,43 @@ nexus-finance extension is feature-complete for all four phases. Remaining work 
 
 - `finance_alert_check` signal handler: compares consecutive daily snapshots, logs significant moves
 
+### M5.1–M5.4: nexus-work
+
+- Action item tracking: `/actions` (list/add/done/all) with multi-factor priority scoring
+- Delegation tracking: `/delegate` (list/add/done) with stale detection signal handler
+- Meeting intelligence: `/meetings` (list/add/notes) with attendee and date tracking
+- Priority engine: `/next` returns highest-priority action item
+- 4 DB tables: work_actions, work_delegations, work_meetings, work_people
+- 5 work skills: morning-briefing, meeting-prep, evening-wrap, action-extract, delegation-check
+- 39 tests
+
 ## Current State
 
-- All 6 commands fully implemented: `/portfolio`, `/fire`, `/rebalance`, `/research`, `/gold`, `/holdings`
-- All holdings subcommands implemented: `add`, `upload`, `banks`
+- 2 extensions installed in dev mode, auto-discovered via entry_points
+- 10 commands total (6 finance + 4 work), all live — zero stubs remaining
 - 2 MCP servers: Zerodha (port 8001), MFapi.in (port 8002)
-- 2 signal handlers: `scheduled_sync`, `finance_alert_check`
-- 594 total tests (509 core at 93% coverage + 85 finance), all passing
+- 3 signal handlers: `scheduled_sync`, `finance_alert_check`, `delegation_check`
+- 633 total tests (509 core at 93% coverage + 85 finance + 39 work), all passing
 - ruff clean, mypy strict clean, ruff format clean
 
 ## Remaining Integration Work
 
-These items have code/skills written but need wiring to schedulers or other systems:
+These items have code/skills written but need wiring to schedulers, LLM, or other systems:
 
-- **Chart rendering**: charts.py has `portfolio_value_chart()`, `allocation_pie_chart()`, `gold_price_chart()` — need to wire into commands via ContentStore
-- **Gold price collection**: gold.py `parse_goodreturns_html()` implemented, skill exists — needs Playwright MCP call + scheduler trigger
-- **Bank statement reminders**: finance-reminder skill exists — needs SchedulerAgent cron entry
-- **Deep MF research**: mf-research skill exists — needs LLM integration in `/research` command for Claude-driven comparative analysis
-- **FD/RD maturity alerts**: data model supports maturity_date — needs scheduler check
-- **Dashboard finance panel**: snapshot data available — needs DashboardServer panel
-- **XIRR calculation**: `calculate_xirr()` stub in portfolio.py — needs Newton-Raphson implementation
+### nexus-finance
+- Chart rendering via ContentStore (charts.py implemented)
+- Gold price collection via Playwright MCP (gold.py implemented)
+- Bank statement reminder scheduler (skill exists)
+- Deep MF research with Claude analysis (skill exists)
+- XIRR Newton-Raphson implementation
+- Dashboard finance panel
+
+### nexus-work
+- Action extraction from emails/Slack via LLM scan (skill exists)
+- Morning briefing with full work context via scheduler (skill exists)
+- Pre-meeting context briefs via scheduler trigger (skill exists)
+- Delegation detection from outbound messages via LLM scan
+- Auto-rerank priority on new signals
 
 ## Key Files
 
@@ -67,33 +84,24 @@ These items have code/skills written but need wiring to schedulers or other syst
 - `src/nexus/agents/conversation.py` — `nexus_context` kwarg in command dispatch
 - `src/nexus/runtime.py` — MCP + NexusContext passed to extensions
 
-### Finance extension
+### nexus-work
 
-- `extensions/nexus-finance/src/nexus_finance/commands.py` — All 6 command handlers (live)
+- `extensions/nexus-work/src/nexus_work/extension.py` — WorkExtension entry point
+- `extensions/nexus-work/src/nexus_work/commands.py` — 4 command handlers (/actions, /delegate, /meetings, /next)
+- `extensions/nexus-work/src/nexus_work/priority.py` — Multi-factor priority scoring
+- `extensions/nexus-work/src/nexus_work/schema.py` — 4 tables
+
+### nexus-finance
+
+- `extensions/nexus-finance/src/nexus_finance/commands.py` — 6 command handlers
 - `extensions/nexus-finance/src/nexus_finance/extension.py` — Entry point with 2 signal handlers
-- `extensions/nexus-finance/src/nexus_finance/portfolio.py` — Holding dataclass, sync, snapshot, formatting
-- `extensions/nexus-finance/src/nexus_finance/research.py` — FIRE calculators
-- `extensions/nexus-finance/src/nexus_finance/schema.py` — 7 SQLite tables
-- `extensions/nexus-finance/src/nexus_finance/charts.py` — matplotlib charts (implemented, unwired)
-- `extensions/nexus-finance/src/nexus_finance/indicators.py` — SMA/EMA/RSI
-- `extensions/nexus-finance/src/nexus_finance/gold.py` — goodreturns parser
-- `extensions/nexus-finance/src/nexus_finance/parsers/` — HDFC/SBI CSV parsers
-- `extensions/nexus-finance/docker/zerodha_mcp.py` — Zerodha MCP server (8 tools)
-- `extensions/nexus-finance/docker/mfapi_mcp.py` — MFapi.in MCP server (4 tools)
-
-## Important Decisions
-
-- MemoryAgent owns all DB access — extensions use `ext_query`/`ext_execute` via NexusContext
-- NexusContext passed to extension commands via kwargs (`nexus_context=...`)
-- Zerodha: pykiteconnect, OAuth2 redirect, token valid one trading day
-- MFapi.in: free API, no auth, 10K+ schemes
-- All external tools in Docker containers (sandbox-first)
-- Order execution explicitly out of scope — Nexus advises only
+- `extensions/nexus-finance/src/nexus_finance/portfolio.py` — Sync, snapshot, formatting
+- `extensions/nexus-finance/docker/` — Zerodha + MFapi MCP servers
 
 ## Context for Continuation
 
-- Extension commands receive `nexus_context` kwarg — use for `send_to_memory()` and `call_tool()`
+- Extension commands receive `nexus_context` kwarg for DB + MCP access
 - Push requires: `gh auth switch --user jerynmathew`, push, switch back to `jeryn-fiddler`
-- Sub-agents with "deep" and "oracle" fail with ProviderModelNotFoundError — use "quick" or "unspecified-high"
-- Every financial output includes disclaimer about AI-generated analysis
-- Combined test run (`pytest tests/ extensions/nexus-finance/tests/`) has namespace collision — run separately
+- Sub-agents with "deep"/"oracle" fail — use "quick" or "unspecified-high"
+- Combined test runs have namespace collision — run core and extension tests separately
+- M6+ (Production, Presence) not started

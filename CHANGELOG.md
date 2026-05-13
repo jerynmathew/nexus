@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **nexus-work M5.1–M5.4 — Work Intelligence Extension**
+  - Scaffolded `extensions/nexus-work/` as monorepo extension with pyproject.toml, entry point, 4 DB tables, 5 skills
+  - `/actions` command: list open items sorted by priority score, add with inline params, mark done, show all
+  - `/delegate` command: track delegations to people with due dates, mark done, stale detection signal handler
+  - `/meetings` command: list recent meetings, add with attendees/date, capture post-meeting notes
+  - `/next` command: returns highest-priority action item using multi-factor scoring (deadline proximity, overdue boost, priority weight, in-progress status, self-assignment)
+  - Priority engine: `score_action()` with weighted factors — overdue items escalate, due-today items boost, deadline proximity matters
+  - 4 DB tables: work_actions, work_delegations, work_meetings, work_people
+  - 5 work skills: morning-briefing, meeting-prep, evening-wrap, action-extract, delegation-check
+  - Stale delegation signal handler: marks delegations stale after configurable days without update
+  - 39 tests, all passing
 - **nexus-finance Phases 2–4 — Market Data, FIRE, Alerts**
   - MFapi.in MCP server: containerized httpx wrapper with 4 tools (search_funds, get_nav, get_latest_nav, get_scheme_details), streamable-http on port 8002, no auth required
   - `/gold` command: queries finance_gold_prices table, 30-day trend with percentage change
