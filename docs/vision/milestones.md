@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 2.3
+> Version: 3.0
 > Last updated: 2026-05-13
-> Status: M1–M4 complete, M5.0–M5.5 complete (extension system + finance + work)
+> Status: M1–M5 complete. M6 (production) and M7 (presence) planned.
 
 ---
 
@@ -365,9 +365,9 @@
 
 ---
 
-## M5 — Extensions + Work Intelligence: "It knows your job"
+## M5 — Extensions + Work Intelligence: "It knows your job" ✅
 
-**Status: M5.0 Complete, M5.1+ Designed** — [Extension architecture](../design/extensions.md) · [Work assistant](../design/work-assistant.md) · [Work intelligence](../design/work-intelligence.md) · [Finance intelligence](../design/finance.md) · [Printing Press integration](../design/printing-press.md)
+**Status: Complete** — Extension system + nexus-finance (4 phases) + nexus-work (4 phases + integration wiring). [Extension architecture](../design/extensions.md) · [Work assistant](../design/work-assistant.md) · [Work intelligence](../design/work-intelligence.md) · [Finance intelligence](../design/finance.md) · [Printing Press integration](../design/printing-press.md)
 
 **Goal:** Composable extension system + domain-specific extensions (nexus-work for work intelligence, nexus-finance for FIRE-focused personal finance). This is the milestone that makes Nexus a platform.
 
@@ -475,39 +475,6 @@
 - [x] nexus-finance: `/rebalance` shows allocation delta vs target (Phase 3)
 - [x] nexus-finance: charts rendered in `/portfolio` and `/gold` via ContentStore
 
-### M5.1 — Full Presidium Integration
-
-- [ ] Replace all lightweight governance with Presidium packages (when shipped)
-- [ ] `GovernedModelProvider` wrapping LLM calls
-- [ ] `GovernedToolProvider` wrapping MCP tool calls
-- [ ] Full audit ledger with compliance-exportable records
-- [ ] Behavioral contracts (CONSTITUTION.md per agent)
-
-### M5.2 — Production Hardening
-
-- [ ] Rate limiting per tenant
-- [ ] Webhook mode for Telegram (alternative to polling)
-- [ ] Graceful shutdown with session persistence
-- [ ] Log rotation and structured JSON logging
-- [ ] Security audit: prompt injection defense, credential handling review
-
-### M5.3 — Documentation + Community
-
-- [ ] Quickstart guide (git clone → working assistant in 15 minutes)
-- [ ] Adding integrations guide
-- [ ] Adding transports guide
-- [ ] Creating personas guide
-- [ ] Demo video script covering all five demo scenarios
-- [ ] CONTRIBUTING.md
-
-### M5 Exit Criteria
-
-- [ ] All five demo scenarios work reliably (crash recovery, governance, trust arc, multi-tenant, persona)
-- [ ] New user: clone → running in 15 minutes
-- [ ] Full Presidium governance active (if Presidium packages available)
-- [ ] Autonomous skill creation with governance approval
-- [ ] Community contribution possible (clear docs, tests, CI)
-
 ---
 
 ## M6 — Production: "It's ready for others to use"
@@ -543,7 +510,7 @@
 
 **Goal:** Native apps, animated avatar, voice-first interaction. Low priority — Telegram + web dashboard covers core use cases. This milestone is about presence and personality.
 
-### M6.1 — Web App (PWA)
+### M7.1 — Web App (PWA)
 
 - [ ] Progressive Web App — installable on any device, works offline for cached data
 - [ ] Chat interface: full conversation UI (alternative to Telegram for users who prefer browser)
@@ -551,7 +518,7 @@
 - [ ] Push notifications via service worker
 - [ ] Builds on M2.5 HTTPGateway — same backend, richer frontend
 
-### M6.2 — Android App
+### M7.2 — Android App
 
 - [ ] Companion app — connects to Nexus instance via WebSocket (LAN or Tailscale)
 - [ ] Chat interface + push notifications
@@ -559,15 +526,15 @@
 - [ ] Device pairing: approval flow before first connection
 - [ ] Foreground service for persistent connection
 
-### M6.3 — Animated Avatar + Voice-First Mode
+### M7.3 — Animated Avatar + Voice-First Mode
 
 - [ ] Animated persona representation — simple avatar with idle/speaking/thinking animations
 - [ ] Voice-first interaction: wake word or push-to-talk → STT → process → TTS → animated response
-- [ ] Avatar rendered in web app (M6.1) and optionally in Android app (M6.2)
+- [ ] Avatar rendered in web app (M7.1) and optionally in Android app (M7.2)
 - [ ] Persona-driven: avatar style, voice, and animations tied to SOUL.md selection
 - [ ] "Dross mode": the assistant has a visual presence, not just text in a chat window
 
-### M6 Exit Criteria
+### M7 Exit Criteria
 
 - [ ] Open `http://nexus:8080/chat` — full conversation UI with animated avatar
 - [ ] Android app installed, paired, push notifications working
@@ -579,51 +546,37 @@
 ## Dependency Graph
 
 ```
-M1 Foundation
-├── M1.1 Scaffolding
-├── M1.2 Transport + Telegram
-├── M1.3 Multi-Tenant
-├── M1.4 Persona
-├── M1.5 Memory
-├── M1.6 Conversation + LLM
-├── M1.7 Supervision + Crash Recovery  ← THE DEMO
-└── M1.8 Docker + First Boot
-     │
-     ├── M2.1 MCP Infrastructure
-     ├── M2.2 Google Workspace (MCP)
-     ├── M2.3 LLM Gateway / Router      ← local + cloud + fallback
-     ├── M2.4 Scheduler + Briefing       ← skill-driven, not hardcoded agents
-     ├── M2.5 Web Dashboard              ← GenServer + HTTPGateway
-     ├── M2.6 Context Compression        ← essential for daily-driver use
-     └── M2.7 Lightweight Governance     ← risk-based tool approval
-          │
-          ├── M3.1 Presidium Governance
-          ├── M3.2 Trust-Gated Autonomy  ← THE GOVERNANCE DEMO
-          ├── M3.3 Web Search (MCP)
-          ├── M3.4 Media (voice/image/video)
-          ├── M3.5 Persona Builder + Identity Evolution
-          ├── M3.6 Autonomous Skills     ← agent writes its own procedures
-          └── M3.7 Proactive Heartbeat   ← agent decides when to notify
-               │
-               ├── M4.1 More Messaging
-               ├── M4.2 Homelab Agents
-               ├── M4.3 Finance
-               ├── M4.4 Visual Output
-               ├── M4.5 Resilience
-               ├── M4.6 Browser (MCP)
-               └── M4.7 Session Checkpoints
-                    │
-                    ├── M5.1 Full Presidium
-                    ├── M5.2 Hardening
-                    └── M5.3 Docs + Community
-                         │
-                         ├── M6.1 Web App (PWA)
-                         ├── M6.2 Android App
-                         └── M6.3 Animated Avatar + Voice-First  ← "Dross mode"
+M1 Foundation ✅
+├── M1.1–M1.8 (scaffolding → docker)
+│
+├── M2 Integrations ✅
+│   ├── M2.1–M2.7 (MCP, Gmail, LLM router, scheduler, dashboard, governance)
+│
+├── M3 Depth ✅
+│   ├── M3.1–M3.7 (trust, voice, skills, heartbeat)
+│
+├── M4 Breadth ✅
+│   ├── M4.1–M4.7 (Discord, Slack, browser, checkpoints)
+│
+├── M5 Extensions ✅
+│   ├── M5.0 Extension architecture (NexusExtension, NexusContext, ExtensionLoader)
+│   ├── M5.1–M5.4 nexus-work (actions, meetings, delegation, priority, signals, briefings)
+│   └── M5.5 nexus-finance (Zerodha, MFapi, portfolio, FIRE, charts, alerts)
+│
+├── M6 Production (planned)
+│   ├── M6.1 Presidium governance
+│   ├── M6.2 Production hardening
+│   └── M6.3 Documentation + community
+│
+└── M7 Presence (planned)
+    ├── M7.1 Web App (PWA)
+    ├── M7.2 Android App
+    └── M7.3 Animated Avatar + Voice-First  ← "Dross mode"
 ```
 
 M1 sub-tasks are sequential (each builds on the previous).
-M2-M5 sub-tasks within each milestone are largely independent and can be parallelized.
+M2–M5 sub-tasks within each milestone are largely independent and can be parallelized.
+M6 and M7 are independent of each other.
 
 ---
 
