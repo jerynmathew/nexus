@@ -80,6 +80,24 @@ services:
     profiles:
       - browser
 
+  nexus-finance-zerodha:
+    build:
+      context: ./extensions/nexus-finance/docker
+      dockerfile: zerodha.Dockerfile
+    container_name: nexus-finance-zerodha
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - KITE_API_KEY=${KITE_API_KEY}
+      - KITE_API_SECRET=${KITE_API_SECRET}
+      - KITE_ACCESS_TOKEN=${KITE_ACCESS_TOKEN}
+    read_only: true
+    networks:
+      - nexus-net
+    profiles:
+      - finance
+
 volumes:
   nexus-data:
   mcp-google-creds:

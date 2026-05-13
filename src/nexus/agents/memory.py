@@ -480,3 +480,48 @@ class MemoryAgent(AgentProcess):
             row = await cursor.fetchone()
 
         return {"persona_name": row[0] if row else "default"}
+
+    async def _action_ext_query(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Execute a parameterized SELECT on extension tables."""
+        sql = payload.get("sql")
+        params = payload.get("params", [])
+        if not sql:
+            return {"error": "ext_query requires: sql"}
+        if not self._db:
+            return {"error": "database not initialized"}
+
+        normalized = sql.strip().upper()
+        if not normalized.startswith("SELECT"):
+            return {"error": "ext_query only allows SELECT statements"}
+
+        try:
+            async with self._db.execute(sql, params) as cursor:
+                columns = [d[0] for d in cursor.description] if cursor.description else []
+                rows = await cursor.fetchall()
+            return {"columns": columns, "rows": [list(r) for r in rows]}
+        except Exception as exc:
+            return {"error": f"ext_query failed: {exc}"}
+
+    async def _action_ext_execute(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Execute a parameterized INSERT/UPDATE/DELETE on extension tables."""
+        sql = payload.get("sql")
+        params = payload.get("params", [])
+        if not sql:
+            return {"error": "ext_execute requires: sql"}
+        if not self._db:
+            return {"error": "database not initialized"}
+
+        normalized = sql.strip().upper()
+        if normalized.startswith("SELECT"):
+            return {"error": "ext_execute does not allow SELECT — use ext_query"}
+        forbidden = {"DROP", "ALTER", "CREATE", "PRAGMA"}
+        first_word = normalized.split()[0] if normalized else ""
+        if first_word in forbidden:
+            return {"error": f"ext_execute does not allow {first_word} statements"}
+
+        try:
+            await self._db.execute(sql, params)
+            await self._db.commit()
+            return {"status": "ok"}
+        except Exception as exc:
+            return {"error": f"ext_execute failed: {exc}"}

@@ -12,6 +12,7 @@ from typing import Any, Protocol, runtime_checkable
 import yaml
 
 from nexus.llm.client import LLMClient
+from nexus.mcp.manager import MCPManager
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +48,12 @@ class NexusContext:
         self,
         runtime: Any,
         llm: LLMClient | None = None,
+        mcp: MCPManager | None = None,
         extensions_config: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self._runtime = runtime
         self._llm = llm
+        self._mcp = mcp
         self._extensions_config = extensions_config or {}
         self._commands: dict[str, CommandHandler] = {}
         self._schemas: list[str] = []
@@ -101,8 +104,16 @@ class NexusContext:
 
     @property
     def llm(self) -> LLMClient | None:
-        """Access the LLM client for lightweight calls."""
         return self._llm
+
+    @property
+    def mcp(self) -> MCPManager | None:
+        return self._mcp
+
+    async def call_tool(self, tool_name: str, arguments: dict[str, Any] | None = None) -> str:
+        if not self._mcp:
+            return "MCP not available"
+        return await self._mcp.call_tool(tool_name, arguments or {})
 
     @property
     def commands(self) -> dict[str, CommandHandler]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from civitas.messages import Message
 
 from nexus.agents.memory import MemoryAgent
 
@@ -17,8 +18,6 @@ async def memory_agent(tmp_path):
 
 
 def _make_msg(payload):
-    from civitas.messages import Message
-
     return Message(sender="test", recipient="memory", payload=payload, reply_to="test")
 
 
@@ -436,5 +435,62 @@ class TestValidation:
 
     async def test_missing_fields(self, memory_agent):
         result = await _handle(memory_agent, _make_msg({"action": "store", "tenant_id": "t1"}))
+        assert result is not None
+        assert "error" in result.payload
+
+
+class TestExtQuery:
+    async def test_select(self, memory_agent):
+        memory_agent.register_extension_schemas(
+            ["CREATE TABLE IF NOT EXISTS test_ext (id INTEGER PRIMARY KEY, val TEXT);"]
+        )
+        await memory_agent.on_start()
+        await _handle(
+            memory_agent,
+            _make_msg(
+                {
+                    "action": "ext_execute",
+                    "sql": "INSERT INTO test_ext (val) VALUES (?)",
+                    "params": ["hello"],
+                }
+            ),
+        )
+        result = await _handle(
+            memory_agent,
+            _make_msg({"action": "ext_query", "sql": "SELECT val FROM test_ext", "params": []}),
+        )
+        assert result is not None
+        assert result.payload["rows"] == [["hello"]]
+        assert result.payload["columns"] == ["val"]
+
+    async def test_query_rejects_non_select(self, memory_agent):
+        result = await _handle(
+            memory_agent,
+            _make_msg({"action": "ext_query", "sql": "DELETE FROM tenants"}),
+        )
+        assert result is not None
+        assert "error" in result.payload
+
+    async def test_execute_rejects_select(self, memory_agent):
+        result = await _handle(
+            memory_agent,
+            _make_msg({"action": "ext_execute", "sql": "SELECT 1"}),
+        )
+        assert result is not None
+        assert "error" in result.payload
+
+    async def test_execute_rejects_drop(self, memory_agent):
+        result = await _handle(
+            memory_agent,
+            _make_msg({"action": "ext_execute", "sql": "DROP TABLE tenants"}),
+        )
+        assert result is not None
+        assert "DROP" in result.payload["error"]
+
+    async def test_missing_sql(self, memory_agent):
+        result = await _handle(
+            memory_agent,
+            _make_msg({"action": "ext_query"}),
+        )
         assert result is not None
         assert "error" in result.payload

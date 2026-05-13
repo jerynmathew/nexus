@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 2.0
-> Last updated: 2026-05-12
-> Status: M1–M4 complete, M5.0 (extension system) complete, M5.1+ in progress
+> Version: 2.1
+> Last updated: 2026-05-13
+> Status: M1–M4 complete, M5.0 (extension system) complete, M5.5 Phase 1 complete, M5.1+ in progress
 
 ---
 
@@ -416,25 +416,47 @@
 
 ### M5.5 — nexus-finance: FIRE-Focused Personal Finance
 
-- [ ] Zerodha Kite MCP server (containerized, portfolio sync)
+**Phase 1: Portfolio Foundation ✅**
+
+- [x] Zerodha Kite MCP server (containerized, pykiteconnect wrapper, 8 tools, streamable-http)
+- [x] MemoryAgent `ext_query`/`ext_execute` actions for extension table access
+- [x] NexusContext MCP access + command dispatch wiring
+- [x] Portfolio sync: parse Zerodha holdings → upsert finance_holdings → daily snapshot
+- [x] `/portfolio` command: real data with value, P&L, allocation (summary + detail + sync)
+- [x] `/holdings add` command: manual entry for FD/RD/PPF/SGB/gold/loan
+- [x] Extension signal handler for `scheduled_sync` event
+- [x] Zerodha service in docker-compose.yaml (finance profile, read-only rootfs)
+- [x] 70 extension tests, 485 core tests — all passing
+
+**Phase 2: Market Data + Banking**
+
 - [ ] MFapi.in MCP server (containerized, MF NAV data)
-- [ ] Portfolio tracking: holdings, snapshots, asset allocation, XIRR
 - [ ] Gold price scraping via Playwright (India 22K/24K city-wise)
+- [ ] Chart generation wired into `/portfolio` and `/gold` commands
 - [ ] Bank statement PDF/CSV upload and parsing (HDFC, SBI)
+- [ ] `/holdings upload` and `/holdings banks` commands
 - [ ] Monthly bank statement reminder scheduler
+
+**Phase 3: Research + FIRE**
+
 - [ ] MF research skill (compare, recommend)
-- [ ] FIRE calculator (corpus projection, SIP calculator)
-- [ ] Chart generation (matplotlib → ContentStore)
-- [ ] `/portfolio`, `/fire`, `/rebalance`, `/research`, `/gold` commands
+- [ ] FIRE calculator wired into `/fire` command
+- [ ] Rebalance logic wired into `/rebalance` command
+- [ ] `/research` command with Claude-driven analysis
+
+**Phase 4: Alerts + Polish**
+
 - [ ] Finance alert skill (significant moves, FD maturity, quarterly rebalance)
+- [ ] Dashboard finance panel
 
 ### M5 Exit Criteria
 
 - [x] Extension system works: pip install extension adds capabilities
 - [ ] nexus-work: Morning briefing shows action items, delegations, meeting prep
 - [ ] nexus-work: "What should I do next?" returns prioritized action list
-- [ ] nexus-finance: "How's my portfolio?" returns Zerodha-synced data with charts
-- [ ] nexus-finance: "Best flexi cap fund for FIRE?" returns researched comparison
+- [x] nexus-finance: `/portfolio` returns real holdings data with P&L and allocation (Phase 1)
+- [ ] nexus-finance: "How's my portfolio?" returns Zerodha-synced data with charts (Phase 2)
+- [ ] nexus-finance: "Best flexi cap fund for FIRE?" returns researched comparison (Phase 3)
 
 ### M5.1 — Full Presidium Integration
 

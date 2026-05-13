@@ -125,11 +125,11 @@ nexus/
 │       ├── __main__.py          # Entry point: python -m nexus
 │       ├── cli.py               # Typer CLI: nexus run, nexus setup, nexus dashboard
 │       ├── config.py            # Pydantic config models + YAML loading
-│       ├── extensions.py        # NexusExtension protocol, NexusContext API, ExtensionLoader
+│       ├── extensions.py        # NexusExtension protocol, NexusContext API (MCP + DB), ExtensionLoader
 │       │
 │       ├── agents/
 │       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM, skill execution
-│       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences, skills backup
+│       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences, ext_query/ext_execute
 │       │   ├── scheduler.py     # SchedulerAgent — cron tasks, triggers skills
 │       │   ├── intent.py        # IntentClassifier protocol + implementations
 │       │   └── dashboard.py     # DashboardServer(GenServer) — live topology + health state
@@ -166,6 +166,25 @@ nexus/
 │
 ├── personas/                    # Persona definitions (SOUL.md files)
 │   └── default.md              # Default persona
+│
+├── extensions/                  # Monorepo extensions (pip-installable)
+│   └── nexus-finance/
+│       ├── pyproject.toml       # hatchling, entry_points for nexus.extensions
+│       ├── docker/
+│       │   ├── zerodha.Dockerfile   # Zerodha Kite MCP server container
+│       │   └── zerodha_mcp.py       # MCP server wrapping pykiteconnect
+│       ├── src/nexus_finance/
+│       │   ├── extension.py     # FinanceExtension — registers commands/skills/schema/signals
+│       │   ├── commands.py      # /portfolio, /fire, /rebalance, /research, /gold, /holdings
+│       │   ├── portfolio.py     # Holding dataclass, sync, snapshot, formatting
+│       │   ├── schema.py        # 7 SQLite tables (finance_holdings, etc.)
+│       │   ├── research.py      # FIRE calculators (implemented)
+│       │   ├── charts.py        # matplotlib chart generation (implemented)
+│       │   ├── indicators.py    # SMA/EMA/RSI (implemented)
+│       │   ├── gold.py          # goodreturns parser (implemented)
+│       │   ├── parsers/         # HDFC/SBI CSV parsers (implemented)
+│       │   └── skills/          # 8 SKILL.md files
+│       └── tests/
 │
 └── tests/
     ├── unit/

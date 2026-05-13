@@ -562,13 +562,16 @@ Zerodha Kite uses OAuth2 with a redirect. The token is valid for one trading day
 
 ## Implementation Phases
 
-### Phase 1: Portfolio Foundation
-- Zerodha MCP server (containerized, Kite API wrapper)
-- Portfolio sync: holdings → SQLite
-- `/portfolio` command: basic summary (value, P&L, allocation)
-- Daily snapshot scheduler
-- Manual holdings entry for SGB/PPF/FD/RD/loans via `/holdings add`
-- **Exit criteria:** "What's my portfolio worth?" returns accurate data from Zerodha + manual holdings
+### Phase 1: Portfolio Foundation ✅
+
+- [x] Zerodha MCP server (containerized, pykiteconnect wrapper, 8 tools, streamable-http)
+- [x] Portfolio sync: parse Zerodha holdings → upsert finance_holdings → daily snapshot
+- [x] `/portfolio` command: real data with value, P&L, allocation (summary + detail + sync)
+- [x] Daily snapshot via `scheduled_sync` signal handler
+- [x] Manual holdings entry for SGB/PPF/FD/RD/gold/loan via `/holdings add`
+- [x] MemoryAgent `ext_query`/`ext_execute` for extension DB access
+- [x] NexusContext MCP + DB wiring through to extension commands
+- **Exit criteria:** "What's my portfolio worth?" returns accurate data from Zerodha + manual holdings ✅
 
 ### Phase 2: Market Data + Banking
 - MFapi.in MCP server (containerized, NAV data wrapper)

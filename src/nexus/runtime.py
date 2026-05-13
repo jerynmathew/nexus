@@ -245,6 +245,7 @@ async def _load_extensions(
     nexus_ctx = NexusContext(
         runtime=runtime,
         llm=conv._llm,
+        mcp=conv._mcp,
         extensions_config=config.extensions,
     )
 
@@ -259,7 +260,7 @@ async def _load_extensions(
     if not loader.extensions:
         return loader
 
-    conv.register_ext_commands(nexus_ctx.commands)
+    conv.register_ext_commands(nexus_ctx.commands, nexus_context=nexus_ctx)
     conv.register_ext_signal_handlers(nexus_ctx.signal_handlers)
 
     memory = agents.get("memory")

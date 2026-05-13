@@ -77,6 +77,7 @@ class ConversationManager(AgentProcess):
         self._transport: Any = None
         self._ext_commands: dict[str, CommandHandler] = {}
         self._ext_signal_handlers: dict[str, list[SignalHandler]] = {}
+        self._nexus_context: Any = None
 
     async def on_start(self) -> None:
         self._llm = LLMClient(
@@ -117,8 +118,14 @@ class ConversationManager(AgentProcess):
     def set_media_handler(self, handler: MediaHandler) -> None:
         self._media_handler = handler
 
-    def register_ext_commands(self, commands: dict[str, CommandHandler]) -> None:
+    def register_ext_commands(
+        self,
+        commands: dict[str, CommandHandler],
+        nexus_context: Any = None,
+    ) -> None:
         self._ext_commands.update(commands)
+        if nexus_context is not None:
+            self._nexus_context = nexus_context
 
     def register_ext_signal_handlers(self, handlers: dict[str, list[SignalHandler]]) -> None:
         for event_type, handler_list in handlers.items():
@@ -666,6 +673,7 @@ class ConversationManager(AgentProcess):
                 tenant_id=tenant_id,
                 channel_id=channel_id,
                 send_reply=self._send_reply,
+                nexus_context=self._nexus_context,
             )
             return None
 
