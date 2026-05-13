@@ -61,6 +61,10 @@ async def handle_portfolio(
         text = format_portfolio_summary(holdings)
         text += _generate_portfolio_charts(nexus_context, holdings, tenant_id)
 
+    dash_url = nexus_context.dashboard_url("/dashboard/finance")
+    if dash_url:
+        text += f"\n\n📊 Full dashboard → {dash_url}"
+
     await send_reply(channel_id, text + _DISCLAIMER)
 
 

@@ -127,6 +127,56 @@ class TestSendHtml:
         assert b"Hello" in responses[1]["body"]
 
 
+class TestDashboardRoutes:
+    async def test_finance_route(self) -> None:
+        app = _make_app()
+        responses = await _collect_response(app, "/dashboard/finance")
+        assert responses[0]["status"] == 200
+
+    async def test_work_route(self) -> None:
+        app = _make_app()
+        responses = await _collect_response(app, "/dashboard/work")
+        assert responses[0]["status"] == 200
+
+
+class TestFinanceApi:
+    async def test_returns_data(self) -> None:
+        runtime = AsyncMock()
+        runtime.call = AsyncMock(return_value={"rows": [], "columns": []})
+        app = _make_app(runtime=runtime)
+        responses = await _collect_response(app, "/api/finance")
+        assert responses[0]["status"] == 200
+        body = json.loads(responses[1]["body"])
+        assert "holdings" in body
+        assert "snapshot" in body
+
+    async def test_handles_error(self) -> None:
+        runtime = AsyncMock()
+        runtime.call = AsyncMock(side_effect=Exception("db down"))
+        app = _make_app(runtime=runtime)
+        responses = await _collect_response(app, "/api/finance")
+        assert responses[0]["status"] == 500
+
+
+class TestWorkApi:
+    async def test_returns_data(self) -> None:
+        runtime = AsyncMock()
+        runtime.call = AsyncMock(return_value={"rows": [], "columns": []})
+        app = _make_app(runtime=runtime)
+        responses = await _collect_response(app, "/api/work")
+        assert responses[0]["status"] == 200
+        body = json.loads(responses[1]["body"])
+        assert "actions" in body
+        assert "delegations" in body
+
+    async def test_handles_error(self) -> None:
+        runtime = AsyncMock()
+        runtime.call = AsyncMock(side_effect=Exception("db down"))
+        app = _make_app(runtime=runtime)
+        responses = await _collect_response(app, "/api/work")
+        assert responses[0]["status"] == 500
+
+
 class TestLifespan:
     async def test_startup_shutdown(self) -> None:
         messages = [

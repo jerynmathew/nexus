@@ -131,6 +131,13 @@ class NexusContext:
             return f"http://{host}:{port}/view/{view_id}"
         return view_id
 
+    def dashboard_url(self, path: str) -> str | None:
+        if not self._dashboard_config:
+            return None
+        host = self._dashboard_config.host
+        port = self._dashboard_config.port
+        return f"http://{host}:{port}{path}"
+
     @property
     def commands(self) -> dict[str, CommandHandler]:
         """All registered extension commands."""

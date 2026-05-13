@@ -158,6 +158,9 @@ async def _actions_list(
         lines.append(f"{icon} #{a['id']} **{a['title']}** [{a['priority']}]{due}{assignee}")
 
     lines.append(f"\n{len(scored)} item(s). `/actions done <id>` to complete.")
+    dash_url = ctx.dashboard_url("/dashboard/work")
+    if dash_url:
+        lines.append(f"📋 Full dashboard → {dash_url}")
     await send_reply(channel_id, "\n".join(lines))
 
 

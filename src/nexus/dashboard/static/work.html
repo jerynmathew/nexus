@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Work — Nexus</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.wrap{max-width:1060px;margin:0 auto;padding:20px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+h1{font-size:20px;font-weight:700;color:#f1f5f9}
+h2{font-size:15px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px}
+.meta{font-size:12px;color:#64748b}
+.topbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155}
+.kpi-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:700;color:#f1f5f9}
+.panel{background:#1e293b;border-radius:12px;border:1px solid #334155;padding:20px;margin-bottom:20px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;color:#94a3b8;font-weight:600;border-bottom:1px solid #334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+td{padding:8px 10px;border-bottom:1px solid #1e293b}
+tr:hover td{background:#162032}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-critical{background:#7f1d1d;color:#fca5a5}
+.badge-high{background:#7c2d12;color:#fed7aa}
+.badge-medium{background:#1e3a5f;color:#93c5fd}
+.badge-low{background:#1e293b;color:#94a3b8}
+.badge-open{background:#1e3a5f;color:#93c5fd}
+.badge-done{background:#14532d;color:#86efac}
+.badge-overdue{background:#7f1d1d;color:#fca5a5}
+.badge-assigned{background:#1e293b;color:#c4b5fd}
+.badge-stale{background:#78350f;color:#fde68a}
+.badge-in_progress{background:#1e3a5f;color:#93c5fd}
+.next-box{background:linear-gradient(135deg,#1e3a5f,#1e293b);border:2px solid #3b82f6;border-radius:12px;padding:20px;margin-bottom:20px}
+.next-title{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.next-meta{font-size:12px;color:#94a3b8}
+.empty{text-align:center;padding:32px;color:#475569;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Work Dashboard</h1>
+    <span class="meta" id="lastUpdated">loading...</span>
+  </header>
+
+  <div class="topbar" id="kpis"><div class="empty">Loading...</div></div>
+
+  <h2>Do Next</h2>
+  <div id="next"><div class="empty">Loading...</div></div>
+
+  <h2>Action Items</h2>
+  <div class="panel" id="actions"><div class="empty">Loading...</div></div>
+
+  <h2>Delegations</h2>
+  <div class="panel" id="delegations"><div class="empty">Loading...</div></div>
+
+  <h2>Recent Meetings</h2>
+  <div class="panel" id="meetings"><div class="empty">Loading...</div></div>
+</div>
+<script>
+var ICONS={open:"⏳",in_progress:"🔄",done:"✅",overdue:"❌",assigned:"📋",stale:"⚠️",review:"👀"};
+
+function renderKPIs(d){
+  var el=document.getElementById("kpis");
+  el.innerHTML=
+    '<div class="kpi"><div class="kpi-label">Open Actions</div><div class="kpi-value">'+(d.open_actions||0)+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#ef4444">'+(d.overdue_count||0)+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Delegations</div><div class="kpi-value">'+(d.active_delegations||0)+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Stale</div><div class="kpi-value" style="color:#f59e0b">'+(d.stale_delegations||0)+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Meetings</div><div class="kpi-value">'+(d.upcoming_meetings||0)+'</div></div>';
+}
+
+function renderNext(d){
+  var el=document.getElementById("next");
+  if(!d.next_action){el.innerHTML='<div class="next-box"><div class="next-title">All clear! 🎉</div><div class="next-meta">No open action items.</div></div>';return}
+  var a=d.next_action;
+  el.innerHTML='<div class="next-box"><div class="next-title">'+(ICONS[a.status]||"•")+' '+a.title+'</div><div class="next-meta">Priority: '+a.priority+(a.due_date?' · Due: '+a.due_date:'')+ ' · Score: '+a.score+'</div></div>';
+}
+
+function renderActions(d){
+  var el=document.getElementById("actions");
+  var items=d.actions||[];
+  if(!items.length){el.innerHTML='<div class="empty">No action items. Use /actions add in Telegram.</div>';return}
+  var html='<table><thead><tr><th>#</th><th>Title</th><th>Status</th><th>Priority</th><th>Due</th><th>Assigned</th></tr></thead><tbody>';
+  items.forEach(function(a){
+    html+='<tr><td>'+a.id+'</td><td><strong>'+a.title+'</strong></td><td><span class="badge badge-'+a.status+'">'+(ICONS[a.status]||"")+' '+a.status+'</span></td><td><span class="badge badge-'+a.priority+'">'+a.priority+'</span></td><td>'+(a.due_date||"—")+'</td><td>'+(a.assigned_to||"self")+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function renderDelegations(d){
+  var el=document.getElementById("delegations");
+  var items=d.delegations||[];
+  if(!items.length){el.innerHTML='<div class="empty">No active delegations.</div>';return}
+  var html='<table><thead><tr><th>#</th><th>To</th><th>Task</th><th>Status</th><th>Due</th><th>Last Update</th></tr></thead><tbody>';
+  items.forEach(function(a){
+    html+='<tr><td>'+a.id+'</td><td><strong>'+a.delegated_to+'</strong></td><td>'+a.task+'</td><td><span class="badge badge-'+a.status+'">'+(ICONS[a.status]||"")+' '+a.status+'</span></td><td>'+(a.due_date||"—")+'</td><td>'+(a.last_update||"none")+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function renderMeetings(d){
+  var el=document.getElementById("meetings");
+  var items=d.meetings||[];
+  if(!items.length){el.innerHTML='<div class="empty">No meetings tracked.</div>';return}
+  var html='<table><thead><tr><th>#</th><th>Title</th><th>Date</th><th>Attendees</th><th>Notes</th></tr></thead><tbody>';
+  items.forEach(function(m){
+    var att=m.attendees?JSON.parse(m.attendees).join(", "):"—";
+    html+='<tr><td>'+m.id+'</td><td><strong>'+m.title+'</strong></td><td>'+(m.meeting_date||"—")+'</td><td>'+att+'</td><td>'+(m.notes?"📝":"—")+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+async function poll(){
+  try{
+    var r=await fetch("/api/work");var d=await r.json();
+    renderKPIs(d);renderNext(d);renderActions(d);renderDelegations(d);renderMeetings(d);
+    document.getElementById("lastUpdated").textContent="Updated: "+new Date().toLocaleTimeString();
+  }catch(e){document.getElementById("lastUpdated").textContent="disconnected"}
+}
+poll();setInterval(poll,30000);
+</script>
+</body>
+</html>

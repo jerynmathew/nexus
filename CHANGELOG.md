@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **User-facing dashboards — `/dashboard/finance` and `/dashboard/work`**
+  - Finance dashboard: portfolio KPIs (value, P&L, holdings count), allocation bars, FIRE progress bar, holdings table, snapshot history table. Dark theme, auto-refreshes every 30s.
+  - Work dashboard: action item KPIs (open, overdue, delegations, stale), "Do Next" box with priority score, actions table with status/priority badges, delegations table, meetings table.
+  - API endpoints: `/api/finance` and `/api/work` query extension tables via MemoryAgent, serve JSON for dashboard JS
+  - Dashboard URLs wired into commands: `/portfolio` includes `📊 Full dashboard → url`, `/actions` includes `📋 Full dashboard → url`
+  - `NexusContext.dashboard_url()` method for extensions to generate persistent dashboard URLs
+  - Gateway routes: `/dashboard/finance` and `/dashboard/work` serve static HTML dashboards
 - **nexus-finance integration wiring — charts, gold scraping, XIRR, alerts, LLM research**
   - Chart generation wired into `/portfolio` (allocation pie chart) and `/gold` (price trend) via ContentStore
   - NexusContext `store_view()` method for extensions to generate chart URLs

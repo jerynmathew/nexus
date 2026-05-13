@@ -122,6 +122,8 @@ module = [
     "pdfplumber.*",
     "discord.*",
     "slack_bolt.*",
+    "nexus_work.*",
+    "nexus_finance.*",
 ]
 ignore_missing_imports = true
 follow_untyped_imports = true

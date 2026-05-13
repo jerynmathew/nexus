@@ -458,7 +458,9 @@
 
 - [x] Finance alert signal handler (`finance_alert_check` for significant moves)
 - [x] FD/RD maturity alert signal handler (`maturity_alert`)
-- [ ] Dashboard finance panel — pending DashboardServer panel integration
+- [x] Finance dashboard at `/dashboard/finance` with portfolio, allocation, FIRE, holdings, history
+- [x] Work dashboard at `/dashboard/work` with actions, delegations, meetings, priority queue
+- [x] Dashboard URLs returned by `/portfolio` and `/actions` commands
 
 ### M5 Exit Criteria
 
