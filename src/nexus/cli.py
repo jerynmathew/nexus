@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 import sys
 from pathlib import Path
@@ -12,6 +11,7 @@ from rich.console import Console
 
 from nexus import __version__
 from nexus.config import load_config
+from nexus.logging_config import setup_logging
 from nexus.runtime import run_nexus
 
 app = typer.Typer(name="nexus", no_args_is_help=True)
@@ -42,18 +42,9 @@ def run(
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-    for noisy_logger in (
-        "opentelemetry",
-        "httpx",
-        "httpcore",
-        "aiosqlite",
-        "telegram",
-    ):
-        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+    json_logs = os.environ.get("NEXUS_JSON_LOGS", "").lower() in ("1", "true", "yes")
+    log_file = os.environ.get("NEXUS_LOG_FILE", "data/logs/nexus.log")
+    setup_logging(json_output=json_logs, log_file=log_file)
 
     os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 

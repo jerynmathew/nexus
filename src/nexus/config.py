@@ -92,6 +92,8 @@ class TelegramConfig(BaseModel):
 
     bot_token: str
     allowed_user_ids: list[int] = []
+    webhook_url: str | None = None
+    webhook_port: int = 8443
 
 
 class MemoryConfig(BaseModel):

@@ -25,6 +25,7 @@ from nexus.media.handler import MediaHandler
 from nexus.models.session import Session
 from nexus.models.tenant import TenantContext
 from nexus.persona.loader import PersonaLoader
+from nexus.ratelimit import RateLimiter
 from nexus.skills.manager import SkillManager
 from nexus.skills.parser import Skill
 
@@ -78,6 +79,7 @@ class ConversationManager(AgentProcess):
         self._ext_commands: dict[str, CommandHandler] = {}
         self._ext_signal_handlers: dict[str, list[SignalHandler]] = {}
         self._nexus_context: Any = None
+        self._rate_limiter = RateLimiter()
 
     async def on_start(self) -> None:
         self._llm = LLMClient(
@@ -174,6 +176,14 @@ class ConversationManager(AgentProcess):
         media_type = payload.get("media_type")
 
         if not tenant_id:
+            return None
+
+        if not self._rate_limiter.check(tenant_id):
+            remaining = self._rate_limiter.remaining(tenant_id)
+            logger.warning("Rate limited tenant %s (%d remaining)", tenant_id, remaining)
+            await self._send_reply(
+                channel_id, "You're sending messages too fast. Please wait a moment."
+            )
             return None
 
         tenant = await self._resolve_tenant(tenant_id)

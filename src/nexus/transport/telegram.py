@@ -44,10 +44,14 @@ class TelegramTransport:
         bot_token: str,
         conversation_manager_send: Callable[..., Any],
         tenant_resolver: Callable[[str], str | None],
+        webhook_url: str | None = None,
+        webhook_port: int = 8443,
     ) -> None:
         self._bot_token = bot_token
         self._send_to_conv_manager = conversation_manager_send
         self._resolve = tenant_resolver
+        self._webhook_url = webhook_url
+        self._webhook_port = webhook_port
         self._app = (
             ApplicationBuilder()
             .token(bot_token)
@@ -75,9 +79,17 @@ class TelegramTransport:
 
         await self._app.initialize()
         await self._app.start()
-        if self._app.updater:
+        if self._webhook_url and self._app.updater:
+            await self._app.updater.start_webhook(
+                listen="0.0.0.0",
+                port=self._webhook_port,
+                url_path=self._bot_token,
+                webhook_url=f"{self._webhook_url}/{self._bot_token}",
+            )
+            logger.info("Telegram transport started (webhook on port %d)", self._webhook_port)
+        elif self._app.updater:
             await self._app.updater.start_polling()
-        logger.info("Telegram transport started (polling)")
+            logger.info("Telegram transport started (polling)")
 
     async def stop(self) -> None:
         if self._app:

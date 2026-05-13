@@ -229,6 +229,8 @@ async def _start_telegram(
         bot_token=config.telegram.bot_token,
         conversation_manager_send=send_to_conv,
         tenant_resolver=resolve_tenant,
+        webhook_url=config.telegram.webhook_url,
+        webhook_port=config.telegram.webhook_port,
     )
     conv.set_transport(transport)
     await transport.start()

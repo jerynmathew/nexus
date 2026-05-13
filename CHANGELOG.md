@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **M6.2 Production Hardening**
+  - Rate limiting per tenant: `RateLimiter` with sliding window (30 req/60s default), wired into ConversationManager inbound handler
+  - Webhook mode for Telegram: configurable `webhook_url` + `webhook_port` in TelegramConfig, alongside existing polling mode
+  - Structured JSON logging: `JSONFormatter` with JSON output, `RotatingFileHandler` (10MB, 5 backups), `NEXUS_JSON_LOGS=true` env var
+  - Security audit document: prompt injection defense, credential handling review, transport security, deployment recommendations
+- **M6.3 Documentation + Community**
+  - Quickstart guide: clone → running in 15 minutes with Telegram + LLM
+  - Extension development guide: NexusContext API, commands, signals, schema, skills, testing patterns
+  - Demo video script: 5 scenarios (crash recovery, governance, finance, work, multi-transport), 12 min total
 - **User-facing dashboards — `/dashboard/finance` and `/dashboard/work`**
   - Finance dashboard: portfolio KPIs (value, P&L, holdings count), allocation bars, FIRE progress bar, holdings table, snapshot history table. Dark theme, auto-refreshes every 30s.
   - Work dashboard: action item KPIs (open, overdue, delegations, stale), "Do Next" box with priority score, actions table with status/priority badges, delegations table, meetings table.

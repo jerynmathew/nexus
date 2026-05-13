@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 3.0
+> Version: 3.1
 > Last updated: 2026-05-13
-> Status: M1–M5 complete. M6 (production) and M7 (presence) planned.
+> Status: M1–M5 complete. M6.2–M6.3 complete. M6.1 blocked (Presidium). M7 planned.
 
 ---
 
@@ -479,7 +479,7 @@
 
 ## M6 — Production: "It's ready for others to use"
 
-**Status: Planned**
+**Status: M6.2–M6.3 Complete, M6.1 blocked on upstream**
 
 **Goal:** Production hardening, Presidium governance, community onboarding. Original M5 scope moved here.
 
@@ -489,18 +489,18 @@
 - [ ] GovernedModelProvider, GovernedToolProvider
 - [ ] Full audit ledger, behavioral contracts
 
-### M6.2 — Production Hardening
+### M6.2 — Production Hardening ✅
 
-- [ ] Rate limiting per tenant
-- [ ] Webhook mode for Telegram
-- [ ] Structured JSON logging, log rotation
-- [ ] Security audit: prompt injection defense, credential review
+- [x] Rate limiting per tenant (RateLimiter, sliding window, 30 req/60s default)
+- [x] Webhook mode for Telegram (configurable `webhook_url` + `webhook_port`)
+- [x] Structured JSON logging + log rotation (`NEXUS_JSON_LOGS=true`, RotatingFileHandler)
+- [x] Security audit: prompt injection defense, credential review ([security.md](../design/security.md))
 
-### M6.3 — Documentation + Community
+### M6.3 — Documentation + Community ✅
 
-- [ ] Quickstart guide (clone → running in 15 minutes)
-- [ ] Extension development guide
-- [ ] Demo video script
+- [x] Quickstart guide ([quickstart.md](../quickstart.md)) — clone → running in 15 minutes
+- [x] Extension development guide ([extension-development.md](../extension-development.md))
+- [x] Demo video script ([demo-script.md](../demo-script.md)) — 5 scenarios, 12 min total
 
 ---
 

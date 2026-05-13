@@ -12,6 +12,8 @@ llm:
 telegram:
   bot_token: "${TELEGRAM_BOT_TOKEN}"
   allowed_user_ids: []                 # Telegram user IDs allowed to interact
+  # webhook_url: "https://your-domain.com/telegram"  # Optional: use webhook instead of polling
+  # webhook_port: 8443                               # Port for webhook listener
 
 memory:
   db_path: "data/nexus.db"
