@@ -18,6 +18,10 @@ Nexus is a self-hosted AI assistant that connects to your email, calendar, and s
 - **Trust-gated governance** — write actions require approval until trust is earned
 - **Web dashboard** at `:8080` with live topology, agent health, and activity feed
 - **Multi-tenant, multi-persona** — different users, different personalities, different trust levels
+- **Finance intelligence** — portfolio tracking (Zerodha), FIRE planning, MF research, rebalancing
+- **Work intelligence** — action items, delegation tracking, meeting prep, priority engine
+- **Extension system** — build your own extensions with commands, skills, and signal handlers
+- **Multi-model routing** — different LLMs per skill, extension, or use case
 
 ## What Makes It Different
 
@@ -116,6 +120,7 @@ docker compose --profile full --profile google --profile search up -d --build
 | `google` | mcp-google | Gmail, Calendar, Tasks via MCP |
 | `search` | mcp-search | Web search (DuckDuckGo, no API key) |
 | `browser` | mcp-browser | Playwright browser automation |
+| `finance` | nexus-finance-zerodha, nexus-finance-mfapi | Zerodha portfolio sync, MF NAV data |
 
 Config is mounted read-only from the host. Data persists in Docker volumes (`nexus-data`, `mcp-google-creds`).
 
@@ -184,16 +189,19 @@ See [Governance](#governance) for the trust model and [docs/design/integrations.
 - **AgentGateway** (Rust sidecar) proxies LLM calls to Anthropic
 - **MCP servers** (Docker sidecars) provide tool access to Gmail, Calendar, web search
 
-## Dashboard
+## Dashboards
 
-The web dashboard at `http://localhost:8080` shows:
+**Homelab dashboard** at `http://localhost:8080`:
+- Supervision tree topology, agent health, MCP status, activity feed, trust scores
+- Embeddable in Homepage, Heimdall, Homarr via iframe
 
-- **Topology** — supervision tree with health dots for every agent and external service
-- **Agent cards** — status, type, restart count, last active
-- **Activity feed** — recent messages and tool calls
-- **Trust scores** — per-category trust levels (gmail, calendar, etc.)
+**Finance dashboard** at `http://localhost:8080/dashboard/finance`:
+- Portfolio KPIs (value, P&L, holdings count), allocation bars, FIRE progress, holdings table, snapshot history
 
-Embeddable in homelab dashboards (Homepage, Heimdall, Homarr) via iframe.
+**Work dashboard** at `http://localhost:8080/dashboard/work`:
+- Action items with priority badges, "Do Next" box, delegations with stale flags, meetings table
+
+Dashboard URLs are returned by commands — `/portfolio` includes the finance dashboard link, `/actions` includes the work dashboard link.
 
 ## Governance
 
@@ -224,6 +232,7 @@ description: What this skill does
 execution: parallel  # or sequential
 tool_groups: [google]
 schedule: "0 9 * * *"  # optional cron
+model: "gpt-4o"        # optional model override
 ---
 
 Instructions for the LLM...
@@ -256,15 +265,15 @@ Or manually create `personas/your-persona.md`. Each user can have different pers
 ```bash
 # Install with dev dependencies
 uv sync --all-extras
+pip install -e ./extensions/nexus-finance -e ./extensions/nexus-work
 
-# Run tests (~2 seconds)
-OTEL_SDK_DISABLED=true uv run pytest tests/ -q
+# Run tests (718 tests, ~5 seconds)
+uv run pytest tests/                          # 556 core tests
+uv run pytest extensions/nexus-finance/tests/ # 95 finance tests
+uv run pytest extensions/nexus-work/tests/    # 67 work tests
 
-# Lint
-uv run ruff check .
-
-# Type check
-uv run mypy src/nexus/
+# Lint + format + type check
+uv run ruff check . && uv run ruff format --check . && uv run mypy src/nexus/
 
 # Pre-commit hooks (installed automatically)
 uv run pre-commit install
@@ -285,25 +294,24 @@ uv run pre-commit install
 nexus/
 ├── src/nexus/
 │   ├── agents/          # Civitas AgentProcess subclasses
-│   │   ├── conversation.py  # Central routing agent
-│   │   ├── memory.py        # SQLite + FTS5 persistence
-│   │   ├── scheduler.py     # Cron-based skill triggers
-│   │   ├── compressor.py    # Context compression
-│   │   └── intent.py        # Intent classification
-│   ├── llm/             # LLM client (httpx → AgentGateway)
+│   ├── llm/             # LLM client with hierarchical model routing
 │   ├── mcp/             # MCP server management
-│   ├── transport/       # Telegram, CLI transports
+│   ├── transport/       # Telegram, Discord, Slack, CLI
 │   ├── persona/         # SOUL.md / USER.md loading
 │   ├── skills/          # SKILL.md parser + manager
 │   ├── governance/      # Policy engine, audit, trust scores
-│   ├── dashboard/       # Web dashboard + content viewer
-│   ├── config.py        # Pydantic config models
-│   ├── cli.py           # Typer CLI
+│   ├── dashboard/       # Web dashboards (homelab, finance, work)
+│   ├── ratelimit.py     # Per-tenant rate limiting
+│   ├── logging_config.py # JSON logging + rotation
+│   ├── extensions.py    # NexusExtension protocol, scoped NexusContext
 │   └── runtime.py       # Civitas runtime wiring
+├── extensions/
+│   ├── nexus-finance/   # FIRE advisor — portfolio, MF research, gold, rebalancing
+│   └── nexus-work/      # Chief of staff — actions, meetings, delegations, priority
 ├── personas/            # SOUL.md personality files
 ├── skills/              # SKILL.md skill definitions
-├── tests/               # Unit + integration tests
-├── docs/                # Architecture, design, plans
+├── tests/               # 718 tests, 92% coverage
+├── docs/                # Architecture, design, guides
 └── docker-compose.yaml  # AgentGateway + MCP sidecars
 ```
 
@@ -314,24 +322,29 @@ nexus/
 | M1 Foundation | ✅ Complete | Telegram bot, supervision tree, memory, crash recovery |
 | M2 Integrations | ✅ Complete | MCP tools, Google Workspace, skills, governance, dashboard, compression |
 | M3 Depth | ✅ Complete | Trust arc, heartbeat, web search, media (STT/vision), persona builder |
-| M4 Breadth | ✅ Complete | Discord, Slack, browser automation, /status, /checkpoint, SSRF protection |
-| M5 Extension System | ✅ Complete | [NexusExtension protocol](docs/design/extensions.md) — entry_points + directory discovery, command registry, schema registration, signal hooks |
-| M5 Work Intelligence | Designed | [Work assistant](docs/design/work-assistant.md) — action tracking, delegation, meeting prep (`nexus-work` extension) |
-| M5 Finance Intelligence | Designed | [FIRE advisor](docs/design/finance.md) — portfolio tracking, MF research, gold, rebalancing (`nexus-finance` extension) |
-| M6 Production | Planned | Presidium governance, production hardening, community docs |
-| M7 Presence | Planned | PWA web app, Android app, animated avatar, TTS voice cloning |
+| M4 Breadth | ✅ Complete | Discord, Slack, browser automation, session checkpoints |
+| M5 Extensions | ✅ Complete | Extension system, nexus-finance (portfolio, FIRE, MF research), nexus-work (actions, meetings, delegations, priority), dashboards |
+| M6 Production | ✅ Mostly done | Rate limiting, webhook Telegram, JSON logging, security audit, quickstart guide, extension dev guide. Presidium governance blocked on upstream. |
+| M6.1.5 Model Routing | ✅ Complete | [Hierarchical model routing](docs/design/model-routing.md) — skill/extension/runtime model overrides |
+| M7 Presence | Planned | PWA web app, Android app, animated avatar ("Dross mode") |
+
+**283 of 305 milestone items complete.** See [milestones.md](docs/vision/milestones.md) for full details.
 
 ## Extensions
 
-Nexus is a platform. Domain-specific intelligence ships as extensions:
+Nexus is a platform. Domain-specific intelligence ships as pip-installable extensions:
 
-| Extension | Scope | Status |
+| Extension | Commands | What it does |
 |---|---|---|
-| **nexus-work** | Action tracking, meeting prep, delegation, priority engine | [Designed](docs/design/work-assistant.md) |
-| **nexus-finance** | FIRE advisor — portfolio tracking (Zerodha), MF research, gold prices, rebalancing | [Designed](docs/design/finance.md) |
-| **nexus-homelab** | Service monitoring (Jellyfin, Paperless, etc.) | Planned (skills-only) |
+| **[nexus-finance](extensions/nexus-finance/)** | `/portfolio`, `/fire`, `/rebalance`, `/research`, `/gold`, `/holdings` | FIRE advisor — Zerodha portfolio sync, MF research via MFapi.in, gold prices, asset allocation, XIRR, charts |
+| **[nexus-work](extensions/nexus-work/)** | `/actions`, `/delegate`, `/meetings`, `/next` | Chief of staff — action items with priority scoring, delegation tracking, meeting prep, calendar sync, LLM-powered signal extraction |
 
-Extensions install via `pip install nexus-work` (code + skills) or by dropping skill folders into `~/.nexus/extensions/`. See [extension architecture](docs/design/extensions.md).
+```bash
+pip install -e ./extensions/nexus-finance
+pip install -e ./extensions/nexus-work
+```
+
+Extensions are auto-discovered via Python entry_points. Each brings its own commands, database tables, skills, signal handlers, and MCP servers. See the [extension development guide](docs/extension-development.md) to build your own.
 
 ## Ecosystem
 
