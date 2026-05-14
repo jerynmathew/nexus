@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 3.2
+> Version: 3.3
 > Last updated: 2026-05-14
-> Status: M1–M5 complete. M6.1.5–M6.3 complete. M6.1 blocked (Presidium). M6.2.1 pending audit. M7 planned. Deployed on Docker with multi-model AgentGateway (Anthropic + Ollama).
+> Status: M1–M6 complete. M7 (Presence) planned. Deployed on Docker with multi-model AgentGateway.
 
 ---
 
@@ -479,15 +479,17 @@
 
 ## M6 — Production: "It's ready for others to use"
 
-**Status: M6.2–M6.3 Complete, M6.1 blocked on upstream**
+**Status: Complete** — M6.1 governance deferred (Presidium not yet shipped, lightweight governance sufficient). M6.1.5, M6.2, M6.2.1, M6.3 all complete.
 
 **Goal:** Production hardening, Presidium governance, community onboarding. Original M5 scope moved here.
 
-### M6.1 — Presidium Governance Integration
+### M6.1 — Presidium Governance Integration (N/A — deferred)
 
-- [ ] Replace lightweight policy with Presidium PolicyEngine (when available)
-- [ ] GovernedModelProvider, GovernedToolProvider
-- [ ] Full audit ledger, behavioral contracts
+Nexus's lightweight governance (PolicyEngine, TrustStore, AuditSink from M2.7/M3.1) is the production governance layer. Presidium integration deferred until `civitas-io/presidium` ships packages. Current governance covers: risk-based tool approval, trust-gated autonomy, JSONL audit trail, policy violations → trust decay.
+
+- [x] ~~Replace lightweight policy with Presidium PolicyEngine~~ — current PolicyEngine is sufficient
+- [x] ~~GovernedModelProvider, GovernedToolProvider~~ — deferred to Presidium project
+- [x] ~~Full audit ledger, behavioral contracts~~ — JSONL audit trail + trust scores serve this role
 
 ### M6.1.5 — Hierarchical Model Routing ✅
 
