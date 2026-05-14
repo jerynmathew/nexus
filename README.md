@@ -21,7 +21,8 @@ Nexus is a self-hosted AI assistant that connects to your email, calendar, and s
 - **Finance intelligence** — portfolio tracking (Zerodha), FIRE planning, MF research, rebalancing
 - **Work intelligence** — action items, delegation tracking, meeting prep, priority engine
 - **Extension system** — build your own extensions with commands, skills, and signal handlers
-- **Multi-model routing** — different LLMs per skill, extension, or use case
+- **Multi-model routing** — different LLMs per skill, extension, or use case (Anthropic + Ollama via AgentGateway)
+- **`/help` command** — lists all available commands grouped by category
 
 ## What Makes It Different
 
@@ -186,7 +187,7 @@ See [Governance](#governance) for the trust model and [docs/design/integrations.
 - **MemoryAgent** persists everything to SQLite with FTS5 search
 - **SchedulerAgent** runs cron-based skills (morning briefing, heartbeat)
 - **DashboardServer** (GenServer) maintains live health state for the web UI
-- **AgentGateway** (Rust sidecar) proxies LLM calls to Anthropic
+- **AgentGateway** (Rust sidecar, v1.1.0) routes LLM calls to Anthropic, Ollama, or any OpenAI-compatible provider via model-name routing
 - **MCP servers** (Docker sidecars) provide tool access to Gmail, Calendar, web search
 
 ## Dashboards
@@ -253,6 +254,7 @@ Or manually create `personas/your-persona.md`. Each user can have different pers
 | Command | Description |
 |---|---|
 | `nexus run --config config.yaml` | Start the assistant |
+| `/help` | List all available commands (in Telegram) |
 | `nexus setup` | First-boot setup wizard |
 | `nexus setup-google` | Configure Google Workspace MCP |
 | `nexus setup-persona` | Create a new persona interactively |
@@ -310,7 +312,7 @@ nexus/
 │   └── nexus-work/      # Chief of staff — actions, meetings, delegations, priority
 ├── personas/            # SOUL.md personality files
 ├── skills/              # SKILL.md skill definitions
-├── tests/               # 718 tests, 92% coverage
+├── tests/               # 556 core + 95 finance + 67 work tests
 ├── docs/                # Architecture, design, guides
 └── docker-compose.yaml  # AgentGateway + MCP sidecars
 ```
@@ -324,8 +326,8 @@ nexus/
 | M3 Depth | ✅ Complete | Trust arc, heartbeat, web search, media (STT/vision), persona builder |
 | M4 Breadth | ✅ Complete | Discord, Slack, browser automation, session checkpoints |
 | M5 Extensions | ✅ Complete | Extension system, nexus-finance (portfolio, FIRE, MF research), nexus-work (actions, meetings, delegations, priority), dashboards |
-| M6 Production | ✅ Mostly done | Rate limiting, webhook Telegram, JSON logging, security audit, quickstart guide, extension dev guide. Presidium governance blocked on upstream. |
-| M6.1.5 Model Routing | ✅ Complete | [Hierarchical model routing](docs/design/model-routing.md) — skill/extension/runtime model overrides |
+| M6 Production | ✅ Mostly done | Rate limiting, webhook Telegram, JSON logging, security audit, docs. Multi-model AgentGateway (Anthropic + Ollama). Presidium blocked on upstream. |
+| M6.1.5 Model Routing | ✅ Complete | [Hierarchical model routing](docs/design/model-routing.md) — skill/extension/runtime overrides, multi-provider AgentGateway v1.1.0 |
 | M7 Presence | Planned | PWA web app, Android app, animated avatar ("Dross mode") |
 
 **283 of 305 milestone items complete.** See [milestones.md](docs/vision/milestones.md) for full details.

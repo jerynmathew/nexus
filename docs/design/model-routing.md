@@ -34,7 +34,7 @@ skill.model → extension config model → cheap_model (if cheap task) → llm.m
 # Top-level defaults
 llm:
   model: "claude-sonnet-4-20250514"          # default for everything
-  cheap_model: "claude-haiku-4-20250414"     # default for cheap tasks (classify, summarize)
+  cheap_model: "claude-haiku-4-5-20251001"   # default for cheap tasks (classify, summarize)
 
 # Extension-level overrides (in their own config section)
 extensions:
@@ -234,7 +234,7 @@ llm:
   base_url: "http://localhost:4000"
   api_key: "${ANTHROPIC_API_KEY}"
   model: "claude-sonnet-4-20250514"
-  cheap_model: "claude-haiku-4-20250414"
+  cheap_model: "claude-haiku-4-5-20251001"
 
 extensions:
   nexus-finance:

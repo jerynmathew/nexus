@@ -1,58 +1,101 @@
-# Handoff: M1–M6 Complete
+# Handoff: M1–M6 Complete + First Deployment
 
-> Created: 2026-05-13
-> Session: Full M5 + M6 implementation
+> Created: 2026-05-14
+> Session: M5 extensions + M6 production + Docker deployment + multi-model routing
 
 ## Status
 
-M1–M6 complete (except M6.1 Presidium — blocked on upstream). M7 (Presence) planned.
+M1–M6 complete (except M6.1 Presidium — blocked on upstream). First Docker deployment done and tested. M7 (Presence) planned.
 
 - 718 total tests (556 core + 95 finance + 67 work), 92% core coverage
 - 283 of 305 milestone items complete
-- 12 commits this session, all pre-commit hooks passing
+- Deployed on Docker with AgentGateway v1.1.0 (Anthropic + Ollama multi-provider)
 
-## What's Built
+## What's Running
 
-### Core (M1–M4, prior sessions)
-Telegram bot, supervision trees, crash recovery, MCP tools, Google Workspace, LLM routing, morning briefing, web dashboard, trust-gated governance, voice/vision media, Discord/Slack transports, browser automation, session checkpoints.
+| Service | Container | Port | Provider |
+|---|---|---|---|
+| Nexus | nexus | 8080 (dashboard) | — |
+| AgentGateway v1.1.0 | agentgateway | 4000 | Anthropic (claude-*) + Ollama (*) |
+| Google MCP | mcp-google | 8000 | Gmail/Calendar/Tasks (OAuth complete) |
+| Ollama | host process | 11434 | qwen3:8b (local) |
 
-### M5: Extensions
-- **Extension system**: NexusExtension protocol, scoped NexusContext per extension, entry_points discovery, command registry, schema registration, signal hooks
-- **nexus-finance**: 6 commands, 2 MCP servers (Zerodha + MFapi.in), 7 DB tables, 8 signal handlers, charts via ContentStore, XIRR, LLM-driven research
-- **nexus-work**: 4 commands, 5 DB tables, 6 signal handlers, priority engine (blocking + requester seniority), briefing assembly, LLM action extraction, calendar sync
-- **User dashboards**: `/dashboard/finance` and `/dashboard/work` with API endpoints
+## Deployment Fixes Applied
 
-### M6: Production
-- **Rate limiting**: RateLimiter with sliding window per tenant
-- **Webhook Telegram**: configurable `webhook_url` + `webhook_port`
-- **JSON logging**: JSONFormatter + RotatingFileHandler, `NEXUS_JSON_LOGS=true`
-- **Security audit**: docs/design/security.md
-- **Hierarchical model routing**: skill.model → extension config → cheap_model → default. Scoped NexusContext, runtime overrides.
-- **Documentation**: quickstart guide, extension dev guide, demo video script
+Commit f78162d + subsequent commits fixed 13 bugs found during first Docker deployment:
+
+1. Wrong Anthropic model name (claude-haiku-4-20250414 → claude-haiku-4-5-20251001)
+2. Empty content blocks rejected by Anthropic — omit content field when empty
+3. Stale session replay — filter empty messages from history
+4. Tool loop exhaustion — fallback extracts last tool result
+5. Telegram link rendering — extract links before html.escape
+6. ANSI escape codes in MCP errors — stripped
+7. Auth URL passthrough — captured from tool results
+8. LLM error logging — 400/500 responses log body
+9. Dockerfile — extensions + skills included
+10. Extension schema timing — apply_extension_schemas() after load
+11. Catch-all command handler — forwards all /commands to extensions
+12. Think tag stripping — Qwen3 `<think>` tags removed from responses
+13. Markdown headings/lists — ## → bold, - → bullet in Telegram
+
+## Architecture Decisions Added
+
+- **#17 Adopt, don't invent** — use OSS libraries, build only the intelligence layer
+- **#18 Local-first, sync-optional** — works with zero external accounts
+
+## Pending: M6.2.1 Deployment Fix Audit
+
+Verify the 13 fixes against upstream docs (Anthropic, MCP SDK, Telegram, AgentGateway, Google MCP). See milestones.md M6.2.1 for checklist.
 
 ## What Remains
 
-### M6.1 — Presidium Governance (3 items, blocked)
-Depends on upstream `civitas-io/presidium` package. GovernedModelProvider, GovernedToolProvider, behavioral contracts.
+| Category | Items | Status |
+|---|---|---|
+| M6.1 Presidium | 3 | Blocked on upstream |
+| M6.2.1 Fix Audit | 6 | Pending — verify fixes against upstream docs |
+| M7.1 PWA | 5 | Planned — frontend |
+| M7.2 Android | 5 | Planned — mobile |
+| M7.3 Avatar | 5 | Planned — frontend |
+| M7 Exit | 4 | Planned — verification |
 
-### M7 — Presence (19 items, planned)
-- M7.1: PWA web app (chat UI, push notifications)
-- M7.2: Android app (WebSocket, voice, device pairing)
-- M7.3: Animated avatar + voice-first ("Dross mode")
+## Key Configuration
 
-## Pending: Deployment Fix Audit (M6.2.1)
+### Multi-model routing (agentgateway.yaml)
+```yaml
+llm:
+  port: 4000
+  models:
+    - name: "claude-*"           # Cloud models → Anthropic
+      provider: anthropic
+      params:
+        apiKey: "$ANTHROPIC_API_KEY"
+    - name: "*"                  # Everything else → Ollama
+      provider: openAI
+      params:
+        hostOverride: "host.docker.internal:11434"
+```
 
-Commit f78162d fixed 11 bugs during first Docker deployment. Several fixes need verification against upstream documentation to ensure we're conforming to APIs rather than hacking around issues. See milestones.md M6.2.1 for the full checklist. Key concerns:
-- AgentGateway passthrough config vs documented patterns
-- Anthropic empty content block handling — is this our bug or AgentGateway's translation issue?
-- MCP tool error handling — exception path vs isError flag
-- Telegram HTML link rendering approach
-- Google OAuth URL passthrough vs MCP server's intended flow
+### Current config.yaml (Ollama for testing)
+```yaml
+llm:
+  base_url: "http://agentgateway:4000"
+  model: "qwen3:8b"             # Local via Ollama
+  cheap_model: "qwen3:8b"
+```
+
+### To switch to Anthropic for conversations
+```yaml
+llm:
+  base_url: "http://agentgateway:4000"
+  model: "claude-sonnet-4-20250514"    # Cloud conversations
+  cheap_model: "qwen3:8b"              # Local for cheap tasks
+```
 
 ## Context for Continuation
 
 - Push: `gh auth switch --user jerynmathew`, push, switch back to `jeryn-fiddler`
 - Sub-agents with "deep"/"oracle" fail — use "quick" or "unspecified-high"
 - Test namespaces collide — run core and extension tests separately
-- NexusContext is now scoped per extension (carries `_extension_name`)
-- Model routing: `ctx.resolve_model()` for extensions, `skill.model` in SKILL.md frontmatter
+- config.yaml is gitignored — user-specific
+- Google OAuth complete for jerynmathew@gmail.com — creds in mcp-google-creds volume
+- AgentGateway pinned to v1.1.0 (not :latest which is v0.12.0)

@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- **Multi-provider AgentGateway (v1.1.0)**
+  - Upgraded from v0.12.0 to v1.1.0 for `llm:` config format support
+  - Model-name routing: `claude-*` → Anthropic, `*` → Ollama (local)
+  - Enables mixing cloud + local models through single gateway
+- **Docker deployment fixes (13 bugs)**
+  - Anthropic API compat: correct model names, empty content blocks, ANSI stripping
+  - Telegram: link rendering, markdown headings/lists, catch-all command handler
+  - Extensions: schema application timing, Dockerfile with extensions + skills
+  - LLM: think tag stripping for Qwen3, tool loop fallback, error logging
+- **`/help` command** — model-agnostic command listing grouped by Work/Finance/System
+- **Architecture decisions #17 (adopt don't invent) and #18 (local-first, sync-optional)**
+- **`dashboard.base_url` config** — for Tailscale/reverse proxy deployments
 - **M6.1.5 Hierarchical Model Routing**
   - `LLMClient.resolve_model()`: resolution order skill.model → extension config model → cheap_model (if cheap task) → default
   - `Skill.model` field in SKILL.md frontmatter for per-skill model override

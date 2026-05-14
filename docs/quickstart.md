@@ -8,8 +8,8 @@ Get Nexus running on your homelab with Telegram, email, and calendar integration
 
 - Docker + Docker Compose
 - Telegram account (for bot creation)
-- Google account (for email/calendar)
-- An LLM API key (Anthropic recommended)
+- Google account (for email/calendar, optional)
+- An LLM API key (Anthropic recommended) OR [Ollama](https://ollama.com) for local models
 
 ---
 
@@ -156,10 +156,14 @@ For user-facing dashboards:
 
 ## What's Next
 
+- **Type `/help`** in Telegram to see all available commands
 - **Customize your persona**: edit `personas/default.md` or create a new one
 - **Add skills**: create SKILL.md files in `~/.nexus/skills/`
 - **Enable more MCP servers**: uncomment entries in `config.yaml`
+- **Use local models**: install [Ollama](https://ollama.com), pull a model (`ollama pull qwen3:8b`), set `model: "qwen3:8b"` in config. AgentGateway routes automatically.
+- **Mix cloud + local**: set `model: "claude-sonnet-4-20250514"` for conversations and `cheap_model: "qwen3:8b"` for background tasks
 - **Webhook mode**: set `telegram.webhook_url` in config for production
 - **JSON logging**: `NEXUS_JSON_LOGS=true` for log aggregation
+- **Tailscale**: set `dashboard.base_url: "https://nexus.your-tailnet.ts.net"` for remote access
 
 See [Extension Development Guide](extension-development.md) for building your own extensions.

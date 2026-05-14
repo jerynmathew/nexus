@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 3.1
-> Last updated: 2026-05-13
-> Status: M1–M5 complete. M6.2–M6.3 complete. M6.1 blocked (Presidium). M7 planned.
+> Version: 3.2
+> Last updated: 2026-05-14
+> Status: M1–M5 complete. M6.1.5–M6.3 complete. M6.1 blocked (Presidium). M6.2.1 pending audit. M7 planned. Deployed on Docker with multi-model AgentGateway (Anthropic + Ollama).
 
 ---
 
