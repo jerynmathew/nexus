@@ -792,6 +792,10 @@ class ConversationManager(AgentProcess):
         tenant_id = payload.get("tenant_id", "")
         channel_id = payload.get("channel_id", "")
 
+        if command == "help":
+            await self._send_reply(channel_id, self._build_help_response())
+            return None
+
         if command == "status":
             status_text = await self._build_status_report(tenant_id)
             await self._send_reply(channel_id, status_text)
