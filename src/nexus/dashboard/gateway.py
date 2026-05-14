@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -32,11 +33,13 @@ class DashboardApp:
         dashboard_agent: str = "dashboard",
         content_store: ContentStore | None = None,
         port: int = 8080,
+        web_transport: Any = None,
     ) -> None:
         self._runtime = runtime
         self._dashboard_agent = dashboard_agent
         self._content_store = content_store or ContentStore()
         self._port = port
+        self._web_transport = web_transport
 
     async def __call__(
         self,
@@ -47,6 +50,11 @@ class DashboardApp:
         if scope["type"] == "lifespan":
             await self._handle_lifespan(receive, send)
             return
+        if scope["type"] == "websocket":
+            path = scope.get("path", "")
+            if path == "/ws/chat" and self._web_transport:
+                await self._handle_websocket_chat(scope, receive, send)
+            return
         if scope["type"] != "http":
             return
 
@@ -55,6 +63,8 @@ class DashboardApp:
 
         if method == "GET" and path == "/":
             await self._serve_static("index.html", send)
+        elif method == "GET" and path == "/chat":
+            await self._serve_static("chat.html", send)
         elif method == "GET" and path == "/dashboard/finance":
             await self._serve_static("finance.html", send)
         elif method == "GET" and path == "/dashboard/work":
@@ -296,6 +306,40 @@ class DashboardApp:
             return
 
         await self._send_html(send, 200, html)
+
+    async def _handle_websocket_chat(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
+        await send({"type": "websocket.accept"})
+        channel_id = uuid.uuid4().hex[:12]
+        queue = self._web_transport.register_connection(channel_id)
+
+        async def send_responses() -> None:
+            try:
+                while True:
+                    msg = await queue.get()
+                    await send({"type": "websocket.send", "text": msg})
+            except Exception:
+                pass
+
+        send_task = asyncio.create_task(send_responses())
+
+        try:
+            while True:
+                event = await receive()
+                if event["type"] == "websocket.disconnect":
+                    break
+                if event["type"] == "websocket.receive":
+                    text = event.get("text", "")
+                    if text:
+                        data = json.loads(text)
+                        user_text = data.get("text", "")
+                        tenant_id = data.get("tenant_id", "")
+                        if user_text:
+                            await self._web_transport.handle_message(
+                                channel_id, user_text, tenant_id
+                            )
+        finally:
+            send_task.cancel()
+            self._web_transport.unregister_connection(channel_id)
 
     async def _serve_static(self, filename: str, send: Any) -> None:
         path = _STATIC_DIR / filename

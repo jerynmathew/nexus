@@ -22,6 +22,7 @@ from nexus.mcp.manager import MCPManager
 from nexus.media.handler import MediaHandler
 from nexus.media.vision import ClaudeVision
 from nexus.transport.telegram import TelegramTransport
+from nexus.transport.web import WebTransport
 
 try:
     from nexus.media.stt import WhisperSTT
@@ -182,10 +183,23 @@ async def _start_dashboard(
     if not config.dashboard.enabled:
         return None
     content_store = ContentStore(views_dir=config.dashboard.views_dir)
+
+    default_tenant = config.seed_users[0].tenant_id if config.seed_users else ""
+
+    async def send_to_conv(payload: dict[str, Any]) -> None:
+        await runtime.send("conversation_manager", payload)
+
+    web_transport = WebTransport(
+        conversation_manager_send=send_to_conv,
+        tenant_id=default_tenant,
+    )
+    conv.add_transport("web_", web_transport)
+
     dashboard_app = DashboardApp(
         runtime=runtime,
         content_store=content_store,
         port=config.dashboard.port,
+        web_transport=web_transport,
     )
     conv.set_content_store(content_store, config.dashboard)
     await dashboard_app.start()

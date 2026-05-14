@@ -114,6 +114,11 @@ class ConversationManager(AgentProcess):
     def set_transport(self, transport: Any) -> None:
         self._transport = transport
 
+    def add_transport(self, name: str, transport: Any) -> None:
+        if not hasattr(self, "_transports"):
+            self._transports: dict[str, Any] = {}
+        self._transports[name] = transport
+
     def set_mcp_manager(self, mcp: MCPManager) -> None:
         self._mcp = mcp
 
@@ -986,11 +991,19 @@ class ConversationManager(AgentProcess):
             logger.debug("[%s] Failed to checkpoint session", self.name)
 
     async def _send_reply(self, channel_id: str, text: str) -> None:
-        if self._transport and hasattr(self._transport, "send_text"):
+        transport = self._resolve_transport(channel_id)
+        if transport and hasattr(transport, "send_text"):
             try:
-                await self._transport.send_text(channel_id, text)
+                await transport.send_text(channel_id, text)
             except Exception:
                 logger.debug("[%s] Failed to send reply via transport", self.name)
+
+    def _resolve_transport(self, channel_id: str) -> Any:
+        if hasattr(self, "_transports"):
+            for prefix, transport in self._transports.items():
+                if channel_id.startswith(prefix):
+                    return transport
+        return self._transport
 
     async def _send_response_with_viewer(
         self,
@@ -1017,9 +1030,10 @@ class ConversationManager(AgentProcess):
             await self._send_reply(channel_id, response_text)
 
     async def _send_typing(self, channel_id: str) -> None:
-        if self._transport and hasattr(self._transport, "send_typing"):
+        transport = self._resolve_transport(channel_id)
+        if transport and hasattr(transport, "send_typing"):
             with contextlib.suppress(Exception):
-                await self._transport.send_typing(channel_id)
+                await transport.send_typing(channel_id)
 
     async def _process_media(self, payload: dict[str, Any], text: str) -> str:
         if not self._media_handler:
