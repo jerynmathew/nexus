@@ -118,6 +118,13 @@ class MemoryAgent(AgentProcess):
     def register_extension_schemas(self, schemas: list[str]) -> None:
         self._extension_schemas.extend(schemas)
 
+    async def apply_extension_schemas(self) -> None:
+        if not self._db:
+            return
+        for ext_schema in self._extension_schemas:
+            await self._db.executescript(ext_schema)
+        await self._db.commit()
+
     async def on_start(self) -> None:
         if self._db:
             await self._db.close()

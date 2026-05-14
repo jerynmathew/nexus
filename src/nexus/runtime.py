@@ -270,6 +270,7 @@ async def _load_extensions(
     memory = agents.get("memory")
     if isinstance(memory, MemoryAgent) and nexus_ctx.schemas:
         memory.register_extension_schemas(nexus_ctx.schemas)
+        await memory.apply_extension_schemas()
 
     if conv._skill_manager and nexus_ctx.skill_dirs:
         for skill_dir in nexus_ctx.skill_dirs:

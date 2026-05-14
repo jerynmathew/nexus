@@ -87,6 +87,7 @@ class TelegramTransport:
         self._app.add_handler(CommandHandler("status", self._on_command))
         self._app.add_handler(CommandHandler("checkpoint", self._on_command))
         self._app.add_handler(CommandHandler("rollback", self._on_command))
+        self._app.add_handler(MessageHandler(filters.COMMAND, self._on_command))
         self._app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
         self._app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self._on_voice))
         self._app.add_handler(MessageHandler(filters.PHOTO, self._on_photo))
