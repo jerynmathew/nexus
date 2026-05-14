@@ -1,101 +1,76 @@
-# Handoff: M1–M6 Complete + First Deployment
+# Handoff: M1–M6 Complete + M7.1 Chat UI + First Deployment
 
 > Created: 2026-05-14
-> Session: M5 extensions + M6 production + Docker deployment + multi-model routing
+> Session: 23 commits — M5 extensions, M6 production, Docker deployment, multi-model routing, web chat
 
 ## Status
 
-M1–M6 complete (except M6.1 Presidium — blocked on upstream). First Docker deployment done and tested. M7 (Presence) planned.
+**M1–M6 complete. M7.1 chat UI built. 292/311 milestones checked. 19 remaining (M7).**
 
-- 718 total tests (556 core + 95 finance + 67 work), 92% core coverage
-- 283 of 305 milestone items complete
-- Deployed on Docker with AgentGateway v1.1.0 (Anthropic + Ollama multi-provider)
+- 718 tests (556 core + 95 finance + 67 work), 89% core coverage
+- Deployed on Docker with AgentGateway v1.1.0 (Anthropic + Ollama)
+- Google OAuth complete, Telegram + web chat both working
 
 ## What's Running
 
-| Service | Container | Port | Provider |
+| Service | Container | Port | Status |
 |---|---|---|---|
-| Nexus | nexus | 8080 (dashboard) | — |
+| Nexus | nexus | 8080 | Running |
 | AgentGateway v1.1.0 | agentgateway | 4000 | Anthropic (claude-*) + Ollama (*) |
-| Google MCP | mcp-google | 8000 | Gmail/Calendar/Tasks (OAuth complete) |
-| Ollama | host process | 11434 | qwen3:8b (local) |
+| Google MCP | mcp-google | 8000 | OAuth complete for jerynmathew@gmail.com |
+| Ollama | host process | 11434 | qwen3:8b |
 
-## Deployment Fixes Applied
+### Current LLM Config (config.yaml, gitignored)
 
-Commit f78162d + subsequent commits fixed 13 bugs found during first Docker deployment:
-
-1. Wrong Anthropic model name (claude-haiku-4-20250414 → claude-haiku-4-5-20251001)
-2. Empty content blocks rejected by Anthropic — omit content field when empty
-3. Stale session replay — filter empty messages from history
-4. Tool loop exhaustion — fallback extracts last tool result
-5. Telegram link rendering — extract links before html.escape
-6. ANSI escape codes in MCP errors — stripped
-7. Auth URL passthrough — captured from tool results
-8. LLM error logging — 400/500 responses log body
-9. Dockerfile — extensions + skills included
-10. Extension schema timing — apply_extension_schemas() after load
-11. Catch-all command handler — forwards all /commands to extensions
-12. Think tag stripping — Qwen3 `<think>` tags removed from responses
-13. Markdown headings/lists — ## → bold, - → bullet in Telegram
-
-## Architecture Decisions Added
-
-- **#17 Adopt, don't invent** — use OSS libraries, build only the intelligence layer
-- **#18 Local-first, sync-optional** — works with zero external accounts
-
-## Pending: M6.2.1 Deployment Fix Audit
-
-Verify the 13 fixes against upstream docs (Anthropic, MCP SDK, Telegram, AgentGateway, Google MCP). See milestones.md M6.2.1 for checklist.
-
-## What Remains
-
-| Category | Items | Status |
-|---|---|---|
-| M6.1 Presidium | 3 | Blocked on upstream |
-| M6.2.1 Fix Audit | 6 | Pending — verify fixes against upstream docs |
-| M7.1 PWA | 5 | Planned — frontend |
-| M7.2 Android | 5 | Planned — mobile |
-| M7.3 Avatar | 5 | Planned — frontend |
-| M7 Exit | 4 | Planned — verification |
-
-## Key Configuration
-
-### Multi-model routing (agentgateway.yaml)
-```yaml
-llm:
-  port: 4000
-  models:
-    - name: "claude-*"           # Cloud models → Anthropic
-      provider: anthropic
-      params:
-        apiKey: "$ANTHROPIC_API_KEY"
-    - name: "*"                  # Everything else → Ollama
-      provider: openAI
-      params:
-        hostOverride: "host.docker.internal:11434"
-```
-
-### Current config.yaml (Ollama for testing)
 ```yaml
 llm:
   base_url: "http://agentgateway:4000"
-  model: "qwen3:8b"             # Local via Ollama
+  model: "qwen3:8b"
   cheap_model: "qwen3:8b"
+  max_tokens: 8192
 ```
 
-### To switch to Anthropic for conversations
-```yaml
-llm:
-  base_url: "http://agentgateway:4000"
-  model: "claude-sonnet-4-20250514"    # Cloud conversations
-  cheap_model: "qwen3:8b"              # Local for cheap tasks
-```
+To switch to cloud: `model: "claude-sonnet-4-20250514"`, `cheap_model: "claude-haiku-4-5-20251001"`
+
+## What Was Built This Session (23 commits)
+
+### M5: Extensions
+- nexus-finance: 6 commands, 2 MCP servers, 8 signal handlers, charts, XIRR
+- nexus-work: 4 commands, 5 DB tables, 6 signal handlers, priority engine, briefings, calendar sync
+- User dashboards at /dashboard/finance and /dashboard/work
+
+### M6: Production
+- Rate limiting, webhook Telegram, JSON logging, security audit
+- Hierarchical model routing (skill/extension/task/default)
+- Docs: quickstart, extension dev guide, demo script
+- Deployment fix audit (6/8 conformant, 2/8 workarounds)
+- M6.1 Presidium closed N/A (lightweight governance sufficient)
+
+### Deployment (13 bugs fixed)
+- Anthropic API compat, Telegram HTML, MCP errors, think tags, schema timing, catch-all commands
+
+### Multi-Model
+- AgentGateway v0.12.0 to v1.1.0, model-name routing, Ollama support
+
+### M7.1: Web Chat
+- /chat page with WebSocket, WebTransport, multi-transport routing
+- Needs real-world testing by user
+
+### Architecture Decisions
+- #17 Adopt, don't invent
+- #18 Local-first, sync-optional
+
+## What Remains (M7: 19 items)
+
+- M7.1: PWA manifest, dashboard+chat integration, push notifications, offline (chat UI done)
+- M7.2: Android app (not started, recommend skip — PWA covers mobile)
+- M7.3: Animated avatar, voice-first, Dross mode (not started)
+- M7 exit: cross-platform parity verification
 
 ## Context for Continuation
 
-- Push: `gh auth switch --user jerynmathew`, push, switch back to `jeryn-fiddler`
-- Sub-agents with "deep"/"oracle" fail — use "quick" or "unspecified-high"
-- Test namespaces collide — run core and extension tests separately
-- config.yaml is gitignored — user-specific
-- Google OAuth complete for jerynmathew@gmail.com — creds in mcp-google-creds volume
-- AgentGateway pinned to v1.1.0 (not :latest which is v0.12.0)
+- config.yaml gitignored, currently Ollama. Push: gh auth switch --user jerynmathew
+- AgentGateway pinned v1.1.0 (not :latest). Google creds in mcp-google-creds volume
+- Web chat channel_id prefix: web_. Test namespaces collide — run tests separately
+- Sub-agents deep/oracle fail — use quick/unspecified-high
+- Chat UI at /chat needs testing — built but not yet verified by user
