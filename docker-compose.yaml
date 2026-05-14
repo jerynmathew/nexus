@@ -22,7 +22,7 @@ services:
       - full
 
   agentgateway:
-    image: cr.agentgateway.dev/agentgateway:latest
+    image: cr.agentgateway.dev/agentgateway:v1.1.0
     container_name: agentgateway
     restart: unless-stopped
     ports:

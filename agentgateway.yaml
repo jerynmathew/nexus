@@ -1,13 +1,11 @@
-binds:
-  - port: 4000
-    listeners:
-      - routes:
-          - name: anthropic
-            backends:
-              - ai:
-                  name: anthropic
-                  provider:
-                    anthropic: {}
-            policies:
-              backendAuth:
-                key: "$ANTHROPIC_API_KEY"
+llm:
+  port: 4000
+  models:
+    - name: "claude-*"
+      provider: anthropic
+      params:
+        apiKey: "$ANTHROPIC_API_KEY"
+    - name: "*"
+      provider: openAI
+      params:
+        hostOverride: "host.docker.internal:11434"
