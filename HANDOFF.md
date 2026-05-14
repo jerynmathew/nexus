@@ -40,6 +40,15 @@ Depends on upstream `civitas-io/presidium` package. GovernedModelProvider, Gover
 - M7.2: Android app (WebSocket, voice, device pairing)
 - M7.3: Animated avatar + voice-first ("Dross mode")
 
+## Pending: Deployment Fix Audit (M6.2.1)
+
+Commit f78162d fixed 11 bugs during first Docker deployment. Several fixes need verification against upstream documentation to ensure we're conforming to APIs rather than hacking around issues. See milestones.md M6.2.1 for the full checklist. Key concerns:
+- AgentGateway passthrough config vs documented patterns
+- Anthropic empty content block handling — is this our bug or AgentGateway's translation issue?
+- MCP tool error handling — exception path vs isError flag
+- Telegram HTML link rendering approach
+- Google OAuth URL passthrough vs MCP server's intended flow
+
 ## Context for Continuation
 
 - Push: `gh auth switch --user jerynmathew`, push, switch back to `jeryn-fiddler`

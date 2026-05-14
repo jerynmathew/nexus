@@ -499,6 +499,17 @@
 - [x] Tests for full resolution chain (28 tests)
 - [x] See [model-routing.md](../design/model-routing.md) for full design
 
+### M6.2.1 — Deployment Fix Audit (pending)
+
+- [ ] Verify AgentGateway config against [agentgateway.dev docs](https://agentgateway.dev/docs/llm/providers/anthropic/) — is passthrough `anthropic: {}` the correct pattern, or should we use the simplified `llm:` format with a newer image?
+- [ ] Verify Anthropic Messages API conformance — empty content block handling, tool_calls message format, tool result content requirements. Cross-reference [Anthropic API docs](https://docs.anthropic.com/en/api/messages)
+- [ ] Verify MCP tool error handling — is our `except Exception` path in `call_tool()` the right way to handle MCP server errors, or should we use the `isError` flag on `CallToolResult`? Cross-reference [MCP SDK docs](https://modelcontextprotocol.io/docs)
+- [ ] Verify Telegram HTML rendering — our `_markdown_to_html` link extraction approach vs Telegram's [supported HTML tags](https://core.telegram.org/bots/api#html-style). Are we handling all edge cases (nested formatting, escaped chars in URLs)?
+- [ ] Review Google Workspace MCP OAuth flow — is the auth URL passthrough the right pattern, or does the MCP server have a built-in mechanism we should use instead?
+- [ ] Ensure none of the fixes are hacks that paper over upstream bugs vs proper conformance to documented APIs
+
+> Context: commit f78162d fixed 11 bugs found during first Docker deployment. Some fixes (ANSI stripping, empty content filtering, auth URL capture) may be working around issues rather than conforming to documented behavior. This audit ensures we're doing it right.
+
 ### M6.2 — Production Hardening ✅
 
 - [x] Rate limiting per tenant (RateLimiter, sliding window, 30 req/60s default)
