@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+
+_THINK_TAG = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +122,8 @@ class LLMClient:
         choice = data.get("choices", [{}])[0]
         message = choice.get("message", {})
 
-        content = message.get("content") or ""
+        raw_content = message.get("content") or ""
+        content = _THINK_TAG.sub("", raw_content).strip()
 
         tool_calls: list[ToolCall] = []
         raw_tool_calls = message.get("tool_calls", [])

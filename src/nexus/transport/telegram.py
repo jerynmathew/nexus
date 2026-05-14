@@ -38,6 +38,10 @@ def _markdown_to_html(text: str) -> str:
 
     safe = html.escape(text)
 
+    safe = re.sub(r"^#{1,6}\s+(.+)$", r"<b>\1</b>", safe, flags=re.MULTILINE)
+    safe = re.sub(r"^\s*[-*]\s+", "• ", safe, flags=re.MULTILINE)
+    safe = re.sub(r"^\s*(\d+)\.\s+", r"\1. ", safe, flags=re.MULTILINE)
+
     safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)
     safe = re.sub(r"__(.+?)__", r"<u>\1</u>", safe)
     safe = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"<i>\1</i>", safe)
