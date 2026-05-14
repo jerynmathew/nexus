@@ -48,7 +48,7 @@ class LLMConfig(BaseModel):
     base_url: str = "http://localhost:4000"
     api_key: str = ""
     model: str = "claude-sonnet-4-20250514"
-    cheap_model: str = "claude-haiku-4-20250414"
+    cheap_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 4096
 
 

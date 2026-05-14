@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import re as _re
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
@@ -11,6 +12,8 @@ from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamablehttp_client
 
 from nexus.config import MCPServerEntry
+
+_ANSI_ESCAPE = _re.compile(r"\x1b\[[0-9;]*m")
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +128,8 @@ class MCPManager:
         except Exception as exc:
             logger.warning("MCP tool '%s' failed: %s", tool_name, exc)
             await self._reconnect_server(server_name)
-            return f"Tool '{tool_name}' failed: {exc}"
+            clean = _ANSI_ESCAPE.sub("", str(exc))
+            return f"Tool '{tool_name}' failed: {clean[:2000]}"
 
     async def _reconnect_server(self, server_name: str) -> Any | None:
         config = self._server_configs.get(server_name)
@@ -143,7 +147,8 @@ class MCPManager:
                 if hasattr(block, "text"):
                     parts.append(block.text)
             error_text = "\n".join(parts) if parts else "Unknown error"
-            return f"Tool error: {error_text}"
+            clean = _ANSI_ESCAPE.sub("", error_text)
+            return f"Tool error: {clean[:2000]}"
 
         for block in result.content:
             if hasattr(block, "text"):

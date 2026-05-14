@@ -6,9 +6,12 @@ services:
     depends_on:
       agentgateway:
         condition: service_started
+    ports:
+      - "8080:8080"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./personas:/app/personas:ro
+      - ./skills:/app/skills:ro
       - nexus-data:/app/data
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

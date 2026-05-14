@@ -25,6 +25,17 @@ _MAX_MESSAGE_LENGTH = 4096
 
 
 def _markdown_to_html(text: str) -> str:
+    links: dict[str, str] = {}
+
+    def _capture_link(match: re.Match[str]) -> str:
+        label = match.group(1)
+        url = match.group(2)
+        placeholder = f"\x00LINK{len(links)}\x00"
+        links[placeholder] = f'<a href="{url}">{html.escape(label)}</a>'
+        return placeholder
+
+    text = re.sub(r"\[(.+?)\]\((.+?)\)", _capture_link, text)
+
     safe = html.escape(text)
 
     safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)
@@ -33,7 +44,9 @@ def _markdown_to_html(text: str) -> str:
     safe = re.sub(r"(?<!_)_(?!_)(.+?)(?<!_)_(?!_)", r"<i>\1</i>", safe)
     safe = re.sub(r"```(\w*)\n(.*?)```", r"<pre>\2</pre>", safe, flags=re.DOTALL)
     safe = re.sub(r"`(.+?)`", r"<code>\1</code>", safe)
-    safe = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', safe)
+
+    for placeholder, link_html in links.items():
+        safe = safe.replace(html.escape(placeholder), link_html)
 
     return safe
 

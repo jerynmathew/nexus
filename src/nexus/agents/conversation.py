@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,13 @@ logger = logging.getLogger(__name__)
 
 _MAX_TOOL_ITERATIONS = 5
 _LONG_RESPONSE_THRESHOLD = 2000
+_ACTION_URL_PATTERN = re.compile(r"https?://[^\s\"\])<>]{20,}", re.IGNORECASE)
+_ACTION_URL_KEYWORDS = {"oauth", "authorize", "auth", "login", "callback", "consent"}
+
+
+def _extract_action_urls(tool_result: str) -> list[str]:
+    urls = _ACTION_URL_PATTERN.findall(tool_result)
+    return [url for url in urls if any(kw in url.lower() for kw in _ACTION_URL_KEYWORDS)]
 
 
 class ConversationManager(AgentProcess):
@@ -42,7 +50,7 @@ class ConversationManager(AgentProcess):
         llm_base_url: str = "http://localhost:4000",
         llm_api_key: str = "",
         llm_model: str = "claude-sonnet-4-20250514",
-        llm_cheap_model: str = "claude-haiku-4-20250414",
+        llm_cheap_model: str = "claude-haiku-4-5-20251001",
         llm_max_tokens: int = 4096,
         personas_dir: str = "personas",
         users_dir: str = "data/users",
@@ -390,7 +398,10 @@ class ConversationManager(AgentProcess):
     def _build_messages(self, session: Session, current_text: str) -> list[dict[str, Any]]:
         messages: list[dict[str, Any]] = []
         for msg in session.messages[-20:]:
-            messages.append({"role": msg["role"], "content": msg["content"]})
+            content = msg.get("content", "")
+            if not content:
+                continue
+            messages.append({"role": msg["role"], "content": content})
         messages.append({"role": "user", "content": current_text})
         return messages
 
@@ -421,6 +432,7 @@ class ConversationManager(AgentProcess):
             return LLMResponse(content="LLM client not initialized.")
 
         response: LLMResponse | None = None
+        captured_urls: list[str] = []
 
         for _i in range(_MAX_TOOL_ITERATIONS):
             response = await self._llm.chat(
@@ -439,22 +451,23 @@ class ConversationManager(AgentProcess):
                     tc.input,
                     tenant,
                 )
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": response.content or "",
-                        "tool_calls": [
-                            {
-                                "id": tc.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tc.name,
-                                    "arguments": json.dumps(tc.input),
-                                },
-                            }
-                        ],
-                    }
-                )
+                captured_urls.extend(_extract_action_urls(tool_result))
+                assistant_msg: dict[str, Any] = {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.name,
+                                "arguments": json.dumps(tc.input),
+                            },
+                        }
+                    ],
+                }
+                if response.content:
+                    assistant_msg["content"] = response.content
+                messages.append(assistant_msg)
                 messages.append(
                     {
                         "role": "tool",
@@ -465,6 +478,27 @@ class ConversationManager(AgentProcess):
 
         if response is None:
             return LLMResponse(content="I couldn't complete that request.")
+
+        if response.tool_calls and not response.content:
+            last_tool_results = [
+                m["content"] for m in messages if m.get("role") == "tool" and m.get("content")
+            ]
+            if last_tool_results:
+                fallback = last_tool_results[-1][:2000]
+                response = LLMResponse(
+                    content=f"Here's what I found:\n\n{fallback}",
+                    model=response.model,
+                )
+
+        if captured_urls and not any(url in response.content for url in captured_urls):
+            suffix = "\n\n".join(f"🔗 {url}" for url in captured_urls)
+            return LLMResponse(
+                content=f"{response.content}\n\n{suffix}",
+                model=response.model,
+                tokens_in=response.tokens_in,
+                tokens_out=response.tokens_out,
+                tool_calls=response.tool_calls,
+            )
         return response
 
     async def _execute_tool_with_governance(

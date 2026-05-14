@@ -35,7 +35,7 @@ class LLMClient:
         base_url: str = "http://localhost:4000",
         api_key: str = "",
         default_model: str = "claude-sonnet-4-20250514",
-        cheap_model: str = "claude-haiku-4-20250414",
+        cheap_model: str = "claude-haiku-4-5-20251001",
         timeout: float = 120.0,
     ) -> None:
         self._base_url = base_url.rstrip("/")
@@ -105,6 +105,8 @@ class LLMClient:
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 429:
                 logger.warning("LLM rate limited (429), retry after backoff")
+            else:
+                logger.error("LLM %d error: %s", exc.response.status_code, exc.response.text[:500])
             raise
         except httpx.ConnectError:
             logger.error("Cannot connect to LLM gateway at %s", self._base_url)

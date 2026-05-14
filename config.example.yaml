@@ -6,7 +6,7 @@ llm:
   base_url: "http://localhost:4000"    # AgentGateway sidecar
   api_key: "${ANTHROPIC_API_KEY}"
   model: "claude-sonnet-4-20250514"
-  cheap_model: "claude-haiku-4-20250414"  # Used for classify, summarize, skill execution
+  cheap_model: "claude-haiku-4-5-20251001"  # Used for classify, summarize, skill execution
   max_tokens: 4096
 
 telegram:
@@ -64,7 +64,7 @@ skills_dir: "skills"
 #   nexus-finance:
 #     model: "gpt-4o"                  # Override: finance LLM calls use GPT-4o
 #   nexus-work:
-#     model: "claude-haiku-4-20250414" # Override: work uses cheap model
+#     model: "claude-haiku-4-5-20251001" # Override: work uses cheap model
 
 seed_users:
   - name: "Jeryn"

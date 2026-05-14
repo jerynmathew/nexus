@@ -10,6 +10,12 @@ COPY src/ src/
 COPY personas/ personas/
 RUN uv pip install --no-cache-dir .
 
+COPY extensions/nexus-finance/ /app/extensions/nexus-finance/
+RUN uv pip install --no-cache-dir ./extensions/nexus-finance
+
+COPY extensions/nexus-work/ /app/extensions/nexus-work/
+RUN uv pip install --no-cache-dir ./extensions/nexus-work
+
 FROM python:3.12-slim
 
 RUN groupadd -r nexus && useradd -r -g nexus -d /app nexus
@@ -18,11 +24,11 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 COPY personas/ /app/personas/
-COPY config.example.yaml /app/config.example.yaml
+COPY skills/ /app/skills/
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-RUN mkdir -p /app/data && chown -R nexus:nexus /app
+RUN mkdir -p /app/data /app/data/logs /app/data/views && chown -R nexus:nexus /app
 
 USER nexus
 
