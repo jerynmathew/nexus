@@ -71,6 +71,18 @@ This repo follows the conventions established in `civitas-io/python-civitas`:
 - **Private symbols:** prefix `_`.
 - **Comments:** only when the WHY is non-obvious.
 
+### Coding Discipline
+
+Based on [Karpathy's guidelines](https://github.com/multica-ai/andrej-karpathy-skills) for reducing LLM coding mistakes.
+
+**1. Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If a simpler approach exists, say so. If something is unclear, stop and ask.
+
+**2. Simplicity first.** Minimum code that solves the problem. No features beyond what was asked. No abstractions for single-use code. No error handling for impossible scenarios. If 200 lines could be 50, rewrite it. Would a senior engineer say this is overcomplicated? If yes, simplify.
+
+**3. Surgical changes.** Touch only what you must. Don't "improve" adjacent code, comments, or formatting. Don't refactor things that aren't broken. Match existing style. Remove imports/variables that YOUR changes made unused. Don't remove pre-existing dead code unless asked. Every changed line should trace directly to the request.
+
+**4. Goal-driven execution.** Transform tasks into verifiable goals. "Fix the bug" → "Write a test that reproduces it, then make it pass." For multi-step tasks, state a plan with verification checks. Loop until verified. Strong success criteria enable independent work.
+
 ### Async Conventions
 
 - All I/O-bound operations **must be async**.
