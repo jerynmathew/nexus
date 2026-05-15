@@ -60,6 +60,18 @@ To switch to cloud: `model: "claude-sonnet-4-20250514"`, `cheap_model: "claude-h
 - #17 Adopt, don't invent
 - #18 Local-first, sync-optional
 
+## Pending: M6.4 Codebase Audit Remediation
+
+Full audit at `docs/reviews/codebase-audit.md`. Key findings:
+1. **ConversationManager god object** (1091 lines) — extract ToolExecutor, SessionManager, ResponseFormatter
+2. **15 tests without assertions** — add postcondition checks
+3. **85 non-top-level imports in tests** — move to module level
+4. **Gateway API handlers** (100+ lines) — extract DB query helpers
+5. **20 over-broad `except Exception:`** — narrow or add logging
+6. **Duplicate param parsers** — extract shared utility
+
+Priority: tests → imports → gateway → exceptions → ConversationManager decomposition
+
 ## What Remains (M7: 19 items)
 
 - M7.1: PWA manifest, dashboard+chat integration, push notifications, offline (chat UI done)

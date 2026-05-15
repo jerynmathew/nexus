@@ -533,6 +533,18 @@ Nexus's lightweight governance (PolicyEngine, TrustStore, AuditSink from M2.7/M3
 
 **Goal:** Native apps, animated avatar, voice-first interaction. Low priority — Telegram + web dashboard covers core use cases. This milestone is about presence and personality.
 
+### M6.4 — Codebase Audit Remediation (pending)
+
+- [ ] ConversationManager decomposition — extract ToolExecutor, SessionManager, ResponseFormatter
+- [ ] Tests without assertions — add assertions to 15 test functions
+- [ ] Non-top-level imports in tests — move 85 inline imports to top level
+- [ ] Gateway API handler extraction — split _handle_finance_api and _handle_work_api
+- [ ] Over-broad exception handling audit — narrow or log 20 `except Exception:` instances
+- [ ] Duplicate param parser extraction — shared utility from nexus-finance + nexus-work
+- [ ] Document `__version__` lazy import as accepted exception in AGENTS.md
+
+> Full audit: [docs/reviews/codebase-audit.md](../reviews/codebase-audit.md)
+
 ### M7.1 — Web App (PWA)
 
 - [ ] Progressive Web App — installable on any device, works offline for cached data
