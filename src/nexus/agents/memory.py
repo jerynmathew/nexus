@@ -229,6 +229,7 @@ class MemoryAgent(AgentProcess):
             ) as cursor:
                 rows = await cursor.fetchall()
         except Exception:
+            logger.debug("[%s] FTS search failed for query=%r", self.name, fts_query)
             return {"results": []}
 
         results = [

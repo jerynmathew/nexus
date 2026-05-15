@@ -51,3 +51,4 @@ class TestRateLimiter:
     def test_reset_nonexistent(self) -> None:
         limiter = RateLimiter()
         limiter.reset("nobody")
+        assert limiter.remaining("nobody") == limiter._max

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 from civitas.messages import Message
 
 from nexus.agents.conversation import ConversationManager
+from nexus.agents.intent import Intent
 from nexus.governance.policy import PolicyDecision
 from nexus.llm.client import LLMResponse
 from nexus.models.session import Session
+from nexus.models.tenant import TenantContext
+from nexus.skills.parser import Skill, SkillSection
 
 
 def _make_conv(**overrides) -> ConversationManager:
@@ -145,8 +149,6 @@ class TestResolveTenant:
 class TestGetOrCreateSession:
     async def test_existing_session(self) -> None:
         c = _make_conv()
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         s = Session(session_id="s1", tenant_id="t1")
         c._sessions["t1"] = s
@@ -155,8 +157,6 @@ class TestGetOrCreateSession:
 
     async def test_restore_from_memory(self) -> None:
         c = _make_conv()
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         mem_resp = Message(
             sender="memory",
@@ -169,8 +169,6 @@ class TestGetOrCreateSession:
 
     async def test_create_new_on_failure(self) -> None:
         c = _make_conv()
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         c.ask = AsyncMock(side_effect=Exception("fail"))
         result = await c._get_or_create_session(tenant)
@@ -230,16 +228,12 @@ class TestBuildMessages:
 
 class TestGetToolsForIntent:
     def test_no_mcp(self) -> None:
-        from nexus.agents.intent import Intent
-
         c = _make_conv()
         c._mcp = None
         result = c._get_tools_for_intent(Intent(original_text="hi"))
         assert result is None
 
     def test_with_tool_groups(self) -> None:
-        from nexus.agents.intent import Intent
-
         c = _make_conv()
         c._mcp = MagicMock()
         c._mcp.filter_tools.return_value = [{"type": "function"}]
@@ -248,8 +242,6 @@ class TestGetToolsForIntent:
         assert len(result) == 1
 
     def test_fallback_to_all(self) -> None:
-        from nexus.agents.intent import Intent
-
         c = _make_conv()
         c._mcp = MagicMock()
         c._mcp.filter_tools.return_value = []
@@ -261,8 +253,6 @@ class TestGetToolsForIntent:
 
 class TestToolUseLoop:
     async def test_no_llm(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._llm = None
         tenant = TenantContext(tenant_id="t1", name="A")
@@ -270,8 +260,6 @@ class TestToolUseLoop:
         assert "not initialized" in result.content
 
     async def test_no_tool_calls(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._llm = AsyncMock()
         c._llm.chat.return_value = LLMResponse(content="hello")
@@ -280,8 +268,6 @@ class TestToolUseLoop:
         assert result.content == "hello"
 
     async def test_with_tool_calls(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._llm = AsyncMock()
         tc = MagicMock()
@@ -308,8 +294,6 @@ class TestToolUseLoop:
 
 class TestExecuteToolWithGovernance:
     async def test_deny(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._policy = MagicMock()
         c._policy.check.return_value = PolicyDecision.DENY
@@ -321,8 +305,6 @@ class TestExecuteToolWithGovernance:
         c._trust.update_score.assert_called_once()
 
     async def test_allow(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._policy = MagicMock()
         c._policy.check.return_value = PolicyDecision.ALLOW
@@ -335,8 +317,6 @@ class TestExecuteToolWithGovernance:
         assert result == "done"
 
     async def test_no_mcp(self) -> None:
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._policy = MagicMock()
         c._policy.check.return_value = PolicyDecision.ALLOW
@@ -360,6 +340,7 @@ class TestHandleInbound:
         c.ask = AsyncMock(side_effect=Exception("no"))
         msg = _msg("inbound_message", tenant_id="bad", text="hi", channel_id="c1")
         await c._handle_inbound(msg)
+        c._transport.send_text.assert_called_once()
 
     async def test_happy_path(self) -> None:
         c = _make_conv()
@@ -372,8 +353,6 @@ class TestHandleInbound:
         c._persona_loader = MagicMock()
         c._persona_loader.build_system_identity.return_value = "You are test."
         c._classifier = MagicMock()
-        from nexus.agents.intent import Intent
-
         c._classifier.classify = AsyncMock(return_value=Intent(original_text="hi"))
 
         msg = _msg("inbound_message", tenant_id="t1", text="hi", channel_id="c1")
@@ -392,8 +371,6 @@ class TestHandleInbound:
         c._persona_loader = MagicMock()
         c._persona_loader.build_system_identity.return_value = "You are test."
         c._classifier = MagicMock()
-        from nexus.agents.intent import Intent
-
         c._classifier.classify = AsyncMock(return_value=Intent(original_text="hi"))
 
         msg = _msg("inbound_message", tenant_id="t1", text="hi", channel_id="c1")
@@ -567,12 +544,15 @@ class TestSendReply:
         c = _make_conv()
         c._transport = None
         await c._send_reply("c1", "hello")
+        assert c._transport is None
 
     async def test_transport_error(self) -> None:
         c = _make_conv()
         c._transport = AsyncMock()
         c._transport.send_text.side_effect = Exception("err")
         await c._send_reply("c1", "hello")
+        c._transport.send_text.assert_called_once()
+        assert c._transport is not None
 
 
 class TestSendResponseWithViewer:
@@ -607,6 +587,7 @@ class TestSendTyping:
         c = _make_conv()
         c._transport = None
         await c._send_typing("c1")
+        assert c._transport is None
 
 
 class TestProcessMedia:
@@ -674,8 +655,6 @@ class TestExecuteSkillParallel:
         c._llm.model_for_task.return_value = "cheap"
         c._transport = AsyncMock()
 
-        from nexus.skills.parser import Skill, SkillSection
-
         sections = [
             SkillSection(name="Email", content="Check email"),
             SkillSection(name="Calendar", content="Check calendar"),
@@ -687,8 +666,6 @@ class TestExecuteSkillParallel:
             execution="parallel",
             sections=sections,
         )
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_parallel(skill, tenant, "c1", None, "cheap")
         assert c._transport.send_text.call_count == 2
@@ -697,8 +674,6 @@ class TestExecuteSkillParallel:
         c = _make_conv()
 
         async def slow_chat(**kwargs):
-            import asyncio
-
             await asyncio.sleep(100)
             return LLMResponse(content="late")
 
@@ -706,14 +681,10 @@ class TestExecuteSkillParallel:
         c._llm.chat.side_effect = slow_chat
         c._transport = AsyncMock()
 
-        from nexus.skills.parser import Skill, SkillSection
-
         sections = [SkillSection(name="Slow", content="x", timeout=0)]
         skill = Skill(
             name="test", description="d", content="", execution="parallel", sections=sections
         )
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_parallel(skill, tenant, "c1", None, "cheap")
         sent = c._transport.send_text.call_args[0][1]
@@ -722,13 +693,12 @@ class TestExecuteSkillParallel:
     async def test_parallel_not_initialized(self) -> None:
         c = _make_conv()
         c._llm = None
-        from nexus.skills.parser import Skill
-
+        c._transport = AsyncMock()
         skill = Skill(name="test", description="d", content="x", execution="parallel")
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_parallel(skill, tenant, "c1", None, "cheap")
+        assert c._llm is None
+        c._transport.send_text.assert_not_called()
 
 
 class TestBuildSystemPrompt:
@@ -740,9 +710,6 @@ class TestBuildSystemPrompt:
         c._mcp.all_tool_schemas.return_value = []
         c._skill_manager = MagicMock()
         c._skill_manager.build_summary.return_value = "morning-briefing, heartbeat"
-
-        from nexus.agents.intent import Intent
-        from nexus.models.tenant import TenantContext
 
         tenant = TenantContext(tenant_id="t1", name="A")
         intent = Intent(original_text="hi")
@@ -759,9 +726,6 @@ class TestBuildSystemPrompt:
     async def test_no_persona_loader(self) -> None:
         c = _make_conv()
         c._persona_loader = None
-        from nexus.agents.intent import Intent
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         prompt = await c._build_system_prompt(tenant, Intent(original_text="hi"))
         assert prompt == ""
@@ -778,6 +742,7 @@ class TestPersistAndCheckpoint:
         c = _make_conv()
         c.send = AsyncMock(side_effect=Exception("fail"))
         await c._persist_message("s1", "user", "hi")
+        c.send.assert_called_once()
 
     async def test_checkpoint_session_success(self) -> None:
         c = _make_conv()
@@ -791,13 +756,11 @@ class TestPersistAndCheckpoint:
         c.send = AsyncMock(side_effect=Exception("fail"))
         session = Session(session_id="s1", tenant_id="t1")
         await c._checkpoint_session(session)
+        c.send.assert_called_once()
 
 
 class TestLlmRespond:
     async def test_not_initialized(self) -> None:
-        from nexus.agents.intent import Intent
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._llm = None
         tenant = TenantContext(tenant_id="t1", name="A")
@@ -806,9 +769,6 @@ class TestLlmRespond:
         assert "not fully initialized" in result
 
     async def test_with_compression(self) -> None:
-        from nexus.agents.intent import Intent
-        from nexus.models.tenant import TenantContext
-
         c = _make_conv()
         c._llm = AsyncMock()
         c._llm.chat.return_value = LLMResponse(content="compressed response")
@@ -837,6 +797,7 @@ class TestReportActivity:
         c = _make_conv()
         c.cast = AsyncMock(side_effect=Exception("fail"))
         await c._report_activity("t1", "hi")
+        c.cast.assert_called_once()
 
 
 class TestReportMcpHealth:
@@ -853,6 +814,7 @@ class TestReportMcpHealth:
         c = _make_conv()
         c._mcp = None
         await c._report_mcp_health()
+        assert c._mcp is None
 
 
 class TestExecuteSkillSequential:
@@ -862,11 +824,7 @@ class TestExecuteSkillSequential:
         c._llm.chat.return_value = LLMResponse(content="HEARTBEAT_OK")
         c._llm.model_for_task.return_value = "cheap"
         c._transport = AsyncMock()
-        from nexus.skills.parser import Skill
-
         skill = Skill(name="hb", description="d", content="check", execution="sequential")
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_sequential(skill, tenant, "c1", None, "cheap")
         c._transport.send_text.assert_not_called()
@@ -876,11 +834,7 @@ class TestExecuteSkillSequential:
         c._llm = AsyncMock()
         c._llm.chat.return_value = LLMResponse(content="Good morning!")
         c._transport = AsyncMock()
-        from nexus.skills.parser import Skill
-
         skill = Skill(name="briefing", description="d", content="brief", execution="sequential")
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_sequential(skill, tenant, "c1", None, "cheap")
         c._transport.send_text.assert_called()
@@ -888,10 +842,9 @@ class TestExecuteSkillSequential:
     async def test_not_initialized(self) -> None:
         c = _make_conv()
         c._llm = None
-        from nexus.skills.parser import Skill
-
+        c._transport = AsyncMock()
         skill = Skill(name="test", description="d", content="x", execution="sequential")
-        from nexus.models.tenant import TenantContext
-
         tenant = TenantContext(tenant_id="t1", name="A")
         await c._execute_skill_sequential(skill, tenant, "c1", None, "cheap")
+        assert c._llm is None
+        c._transport.send_text.assert_not_called()

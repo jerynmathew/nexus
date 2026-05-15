@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from nexus.transport.base import Button
 from nexus.transport.telegram import TelegramTransport
 
 
@@ -245,7 +246,6 @@ class TestTelegramTransport:
         t, _, _ = transport
         bot = AsyncMock()
         t._bot = bot
-        from nexus.transport.base import Button
 
         await t.send_buttons("123", "Pick:", [Button(label="OK", callback_data="ok")])
         bot.send_message.assert_called_once()

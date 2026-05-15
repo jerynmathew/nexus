@@ -195,6 +195,7 @@ class MCPManager:
                 await session.send_ping()
                 results[name] = True
             except Exception:
+                logger.debug("MCP health check failed for '%s'", name)
                 results[name] = False
         return results
 

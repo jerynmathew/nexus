@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 
 from nexus.logging_config import JSONFormatter, setup_logging
 
@@ -29,8 +30,6 @@ class TestJSONFormatter:
         try:
             raise ValueError("test error")
         except ValueError:
-            import sys
-
             exc_info = sys.exc_info()
 
         record = logging.LogRecord(

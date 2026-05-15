@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
-from nexus.media.handler import MediaHandler
+from nexus.llm.client import LLMResponse
+from nexus.media.handler import (
+    MediaHandler,
+    _extract_pdf_text,
+    _run_ffmpeg,
+)
+from nexus.media.vision import ClaudeVision
 from nexus.media.vision import _detect_mime as vision_detect_mime
 
 
@@ -65,8 +71,6 @@ class TestMediaHandlerExtended:
         assert handler.has_vision is False
 
     async def test_process_document_pdf_delegates(self) -> None:
-        from unittest.mock import AsyncMock, patch
-
         handler = MediaHandler()
         with patch.object(handler, "_parse_pdf", new_callable=AsyncMock, return_value="pdf text"):
             result = await handler.process_document(b"%PDF-1.4", "report.pdf")
@@ -102,7 +106,6 @@ class TestMediaHandlerExtended:
 
     async def test_process_video(self) -> None:
         handler = MediaHandler()
-        from unittest.mock import patch
 
         with patch.object(handler, "_extract_video_content", return_value=("", [])):
             transcription, frames = await handler.process_video(b"video-data")
@@ -112,24 +115,18 @@ class TestMediaHandlerExtended:
 
 class TestRunFfmpeg:
     def test_file_not_found(self) -> None:
-        from nexus.media.handler import _run_ffmpeg
-
         result = _run_ffmpeg(["-i", "/nonexistent/file.mp4", "/tmp/out.wav"])
         assert result is False
 
 
 class TestExtractPdfText:
     def test_handles_invalid_pdf(self) -> None:
-        from nexus.media.handler import _extract_pdf_text
-
         result = _extract_pdf_text(b"%PDF-fake")
         assert isinstance(result, str)
 
 
 class TestExtractVideoContent:
     def test_no_ffmpeg(self) -> None:
-        from nexus.media.handler import MediaHandler
-
         handler = MediaHandler()
         transcription, frames = handler._extract_video_content(b"fake-video")
         assert transcription == ""
@@ -138,9 +135,6 @@ class TestExtractVideoContent:
 
 class TestClaudeVision:
     async def test_describe(self) -> None:
-        from nexus.llm.client import LLMResponse
-        from nexus.media.vision import ClaudeVision
-
         llm = AsyncMock()
         llm.chat.return_value = LLMResponse(content="A photo of a sunset")
         vision = ClaudeVision(llm)
@@ -149,9 +143,6 @@ class TestClaudeVision:
         llm.chat.assert_called_once()
 
     async def test_describe_default_prompt(self) -> None:
-        from nexus.llm.client import LLMResponse
-        from nexus.media.vision import ClaudeVision
-
         llm = AsyncMock()
         llm.chat.return_value = LLMResponse(content="An image")
         vision = ClaudeVision(llm)

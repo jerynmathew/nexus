@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
+from nexus.transport.base import Button
 from nexus.transport.cli import CLITransport
 
 
@@ -18,8 +19,6 @@ class TestCLITransport:
         assert "Hello from Nexus" in captured.out
 
     async def test_send_buttons(self, capsys):
-        from nexus.transport.base import Button
-
         t = CLITransport(conversation_manager_send=AsyncMock())
         await t.send_buttons(
             "cli",
@@ -34,11 +33,11 @@ class TestCLITransport:
     async def test_send_typing_noop(self):
         t = CLITransport(conversation_manager_send=AsyncMock())
         await t.send_typing("cli")
+        assert t.transport_name == "cli"
 
     async def test_start_creates_task(self):
         send_fn = AsyncMock()
         t = CLITransport(conversation_manager_send=send_fn)
-        from unittest.mock import patch
 
         with patch.object(t, "_read_loop", new_callable=AsyncMock):
             await t.start()
@@ -66,7 +65,6 @@ class TestCLITransport:
         send_fn = AsyncMock()
         t = CLITransport(conversation_manager_send=send_fn, tenant_id="test")
         t._running = True
-        from unittest.mock import patch
 
         with patch("sys.stdin") as mock_stdin:
             mock_stdin.readline.side_effect = ["quit\n"]
@@ -77,7 +75,6 @@ class TestCLITransport:
         send_fn = AsyncMock()
         t = CLITransport(conversation_manager_send=send_fn, tenant_id="test")
         t._running = True
-        from unittest.mock import patch
 
         with patch("sys.stdin") as mock_stdin:
             mock_stdin.readline.side_effect = ["hello\n", ""]
@@ -90,7 +87,6 @@ class TestCLITransport:
         send_fn = AsyncMock()
         t = CLITransport(conversation_manager_send=send_fn, tenant_id="test")
         t._running = True
-        from unittest.mock import patch
 
         with patch("sys.stdin") as mock_stdin:
             mock_stdin.readline.side_effect = ["\n", "actual\n", ""]
@@ -101,7 +97,6 @@ class TestCLITransport:
         send_fn = AsyncMock()
         t = CLITransport(conversation_manager_send=send_fn, tenant_id="test")
         t._running = True
-        from unittest.mock import patch
 
         with patch("sys.stdin") as mock_stdin:
             mock_stdin.readline.side_effect = [""]

@@ -93,6 +93,7 @@ class TestSchedulerAgent:
         agent = SchedulerAgent(name="scheduler")
         agent.send = AsyncMock(side_effect=Exception("fail"))
         await agent._persist_last_run("skill1", "2026-01-01 07:00")
+        agent.send.assert_called_once()
 
     async def test_load_state_success(self) -> None:
         agent = SchedulerAgent(name="scheduler")
@@ -117,6 +118,7 @@ class TestSchedulerAgent:
         with patch("nexus.agents.scheduler.SkillManager") as mock_sm:
             mock_sm.return_value.get_scheduled.return_value = []
             await agent._on_tick()
+        assert agent.send.call_count == 1  # health check only
 
     async def test_on_tick_with_matching_skill(self) -> None:
         agent = SchedulerAgent(name="scheduler")
@@ -146,8 +148,6 @@ class TestSchedulerAgent:
         skill.schedule = "* * * * *"
         skill.active_hours_only = False
 
-        from datetime import UTC, datetime
-
         now = datetime.now(UTC)
         current_minute = now.strftime("%Y-%m-%d %H:%M")
         agent._last_runs = {"test-skill": current_minute}
@@ -155,6 +155,7 @@ class TestSchedulerAgent:
         with patch("nexus.agents.scheduler.SkillManager") as mock_sm:
             mock_sm.return_value.get_scheduled.return_value = [skill]
             await agent._on_tick()
+        assert agent.send.call_count == 1  # health check only, skill skipped
 
     async def test_on_tick_no_schedule(self) -> None:
         agent = SchedulerAgent(name="scheduler")
@@ -167,6 +168,7 @@ class TestSchedulerAgent:
         with patch("nexus.agents.scheduler.SkillManager") as mock_sm:
             mock_sm.return_value.get_scheduled.return_value = [skill]
             await agent._on_tick()
+        assert agent.send.call_count == 1  # health check only
 
     async def test_handle_tick_action(self) -> None:
         agent = SchedulerAgent(name="scheduler")
@@ -181,3 +183,4 @@ class TestSchedulerAgent:
                 await agent.handle(msg)
             finally:
                 agent._current_message = None
+        assert agent.send.call_count == 1  # health check only

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from civitas.messages import Message
+
 from nexus.dashboard.server import DashboardServer
 
 
 async def _call(server: DashboardServer, payload: dict) -> dict:
-    from civitas.messages import Message
-
     msg = Message(sender="test", recipient="dashboard", payload=payload, reply_to="test")
     server._current_message = msg
     try:
@@ -16,8 +16,6 @@ async def _call(server: DashboardServer, payload: dict) -> dict:
 
 
 async def _cast(server: DashboardServer, payload: dict) -> None:
-    from civitas.messages import Message
-
     msg = Message(sender="test", recipient="dashboard", payload={**payload, "__cast__": True})
     server._current_message = msg
     try:

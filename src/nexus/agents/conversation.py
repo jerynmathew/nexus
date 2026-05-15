@@ -372,7 +372,7 @@ class ConversationManager(AgentProcess):
                 memory_lines = [f"- {r['key']}: {r['value']}" for r in results]
                 parts.append("# Relevant Memories\n\n" + "\n".join(memory_lines))
         except Exception:
-            pass
+            logger.debug("[%s] Memory search for system prompt failed", self.name)
 
         if self._skill_manager:
             summary = self._skill_manager.build_summary()
@@ -839,6 +839,7 @@ class ConversationManager(AgentProcess):
             lines.append(f"Agents: {h.get('agent_count', 0)}")
             lines.append(f"Uptime: {int(h.get('uptime_seconds', 0)) // 60}m")
         except Exception:
+            logger.debug("[%s] Health query failed", self.name)
             lines.append("Health: unavailable")
 
         if self._mcp:
@@ -888,6 +889,7 @@ class ConversationManager(AgentProcess):
                 f"✅ Checkpoint saved: `{checkpoint_label}`",
             )
         except Exception:
+            logger.debug("[%s] Checkpoint save failed", self.name, exc_info=True)
             await self._send_reply(channel_id, "Failed to save checkpoint.")
         return
 
@@ -917,6 +919,7 @@ class ConversationManager(AgentProcess):
                     f"Available checkpoints:\n{names}\n\nUse: /rollback <name>",
                 )
             except Exception:
+                logger.debug("[%s] Checkpoint list failed", self.name, exc_info=True)
                 await self._send_reply(channel_id, "Failed to list checkpoints.")
             return
 
@@ -944,6 +947,7 @@ class ConversationManager(AgentProcess):
                 f"✅ Rolled back to: `{label}`",
             )
         except Exception:
+            logger.debug("[%s] Rollback failed", self.name, exc_info=True)
             await self._send_reply(channel_id, "Failed to rollback.")
         return
 

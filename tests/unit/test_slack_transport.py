@@ -44,6 +44,7 @@ class TestStop:
         t, _, _ = _make_transport()
         t._handler = None
         await t.stop()
+        assert t._handler is None
 
 
 class TestSendText:
@@ -51,6 +52,7 @@ class TestSendText:
         t, _, _ = _make_transport()
         t._app = None
         await t.send_text("C123", "hello")
+        assert t._app is None
 
     async def test_success(self) -> None:
         t, _, _ = _make_transport()
@@ -65,6 +67,7 @@ class TestSendButtons:
         t, _, _ = _make_transport()
         t._app = None
         await t.send_buttons("C1", "Pick:", [Button(label="A", callback_data="a")])
+        assert t._app is None
 
     async def test_success(self) -> None:
         t, _, _ = _make_transport()
@@ -176,3 +179,4 @@ class TestSendTyping:
     async def test_no_op(self) -> None:
         t, _, _ = _make_transport()
         await t.send_typing("C1")
+        assert t._app is None

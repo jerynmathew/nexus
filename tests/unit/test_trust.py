@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
+from civitas.messages import Message
+
 from nexus.governance.trust import TrustStore, tool_category
 
 
@@ -78,10 +82,6 @@ class TestTrustStore:
 
 class TestTrustPersistence:
     async def test_load_from_memory_success(self) -> None:
-        from unittest.mock import AsyncMock
-
-        from civitas.messages import Message
-
         store = TrustStore()
         resp = Message(
             sender="memory",
@@ -94,16 +94,12 @@ class TestTrustPersistence:
         assert store.get_score("t1", "calendar") == 0.6
 
     async def test_load_from_memory_failure(self) -> None:
-        from unittest.mock import AsyncMock
-
         store = TrustStore()
         ask_fn = AsyncMock(side_effect=Exception("fail"))
         await store.load_from_memory(ask_fn, "t1")
         assert store.get_score("t1", "gmail") == 0.5
 
     async def test_save_to_memory_success(self) -> None:
-        from unittest.mock import AsyncMock
-
         store = TrustStore()
         store.update_score("t1", "gmail", 0.1)
         send_fn = AsyncMock()
@@ -111,9 +107,9 @@ class TestTrustPersistence:
         send_fn.assert_called_once()
 
     async def test_save_to_memory_failure(self) -> None:
-        from unittest.mock import AsyncMock
-
         store = TrustStore()
         store.update_score("t1", "gmail", 0.1)
         send_fn = AsyncMock(side_effect=Exception("fail"))
         await store.save_to_memory(send_fn, "t1")
+        send_fn.assert_called_once()
+        assert store.get_score("t1", "gmail") == 0.6

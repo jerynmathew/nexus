@@ -65,7 +65,7 @@ This repo follows the conventions established in `civitas-io/python-civitas`:
 
 - **Formatter / linter:** `ruff`. Config in `pyproject.toml`.
 - **Line length:** 100.
-- **Imports:** top-level only, sorted by ruff `I` rules.
+- **Imports:** top-level only, sorted by ruff `I` rules. Exception: extension `version` properties may use inline imports to avoid circular dependencies.
 - **Type hints:** required on all public functions and methods.
 - **Docstrings:** Google style on all public classes and functions.
 - **Private symbols:** prefix `_`.
@@ -138,6 +138,7 @@ nexus/
 │       ├── cli.py               # Typer CLI: nexus run, nexus setup, nexus dashboard
 │       ├── config.py            # Pydantic config models + YAML loading
 │       ├── extensions.py        # NexusExtension protocol, NexusContext API (MCP + DB), ExtensionLoader
+│       ├── utils.py             # Shared utilities (parse_key_value_params)
 │       │
 │       ├── agents/
 │       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM, skill execution

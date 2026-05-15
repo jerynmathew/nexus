@@ -68,6 +68,7 @@ class TestRuntimeOverrides:
     def test_clear_nonexistent(self) -> None:
         client = LLMClient()
         client.clear_model_override("nothing")
+        assert client.get_model_override("nothing") is None
 
     def test_override_replaces(self) -> None:
         client = LLMClient()

@@ -73,6 +73,7 @@ class TestWorkExtension:
         ctx.send_to_memory = AsyncMock(return_value={"rows": []})
         ext._ctx = ctx
         await ext._morning_briefing({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_called()
 
     async def test_evening_wrap_handler(self) -> None:
         ext = WorkExtension()
@@ -80,6 +81,7 @@ class TestWorkExtension:
         ctx.send_to_memory = AsyncMock(return_value={"rows": []})
         ext._ctx = ctx
         await ext._evening_wrap({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_called()
 
     async def test_meeting_prep_handler(self) -> None:
         ext = WorkExtension()
@@ -87,6 +89,7 @@ class TestWorkExtension:
         ctx.send_to_memory = AsyncMock(return_value={"rows": []})
         ext._ctx = ctx
         await ext._meeting_prep({"tenant_id": "t1", "meeting_id": 1})
+        ctx.send_to_memory.assert_called()
 
     async def test_action_extract_handler(self) -> None:
         ext = WorkExtension()
@@ -122,3 +125,4 @@ class TestWorkExtension:
         ctx.call_tool = AsyncMock(return_value="not json")
         ext._ctx = ctx
         await ext._calendar_sync({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_not_called()

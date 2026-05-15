@@ -114,88 +114,98 @@ class DashboardApp:
         )
         return dict(result) if isinstance(result, dict) else result
 
+    async def _query_latest_snapshot(self) -> tuple[dict[str, Any] | None, dict[str, float]]:
+        """Return the latest finance snapshot and asset allocation."""
+        result = await self._query_memory(
+            "SELECT snapshot_date, total_value, equity_value, mf_value,"
+            " etf_value, gold_value, debt_value, asset_allocation"
+            " FROM finance_snapshots ORDER BY snapshot_date DESC LIMIT 1"
+        )
+        rows = result.get("rows", [])
+        if not rows:
+            return None, {}
+        r = rows[0]
+        snapshot = {
+            "snapshot_date": r[0],
+            "total_value": r[1],
+            "equity_value": r[2],
+            "mf_value": r[3],
+            "etf_value": r[4],
+            "gold_value": r[5],
+            "debt_value": r[6],
+        }
+        allocation = json.loads(r[7]) if r[7] else {}
+        return snapshot, allocation
+
+    async def _query_holdings(self) -> list[dict[str, Any]]:
+        """Return all holdings sorted by value."""
+        result = await self._query_memory(
+            "SELECT symbol, name, asset_class, quantity, avg_price,"
+            " current_price, current_value, pnl, pnl_pct, source"
+            " FROM finance_holdings ORDER BY current_value DESC"
+        )
+        return [
+            {
+                "symbol": r[0],
+                "name": r[1],
+                "asset_class": r[2],
+                "quantity": r[3],
+                "avg_price": r[4],
+                "current_price": r[5],
+                "current_value": r[6],
+                "pnl": r[7],
+                "pnl_pct": r[8],
+                "source": r[9],
+            }
+            for r in result.get("rows", [])
+        ]
+
+    async def _query_fire_config(self) -> dict[str, Any] | None:
+        """Return FIRE configuration if set."""
+        result = await self._query_memory(
+            "SELECT target_corpus, monthly_expenses, withdrawal_rate,"
+            " inflation_rate, expected_return"
+            " FROM finance_fire_config LIMIT 1"
+        )
+        rows = result.get("rows", [])
+        if not rows:
+            return None
+        fr = rows[0]
+        return {
+            "target_corpus": fr[0],
+            "monthly_expenses": fr[1],
+            "withdrawal_rate": fr[2] or 0.04,
+            "inflation_rate": fr[3] or 0.06,
+            "expected_return": fr[4] or 0.12,
+        }
+
+    async def _query_snapshot_history(self, limit: int = 30) -> list[dict[str, Any]]:
+        """Return recent snapshots in chronological order."""
+        result = await self._query_memory(
+            "SELECT snapshot_date, total_value, equity_value, mf_value,"
+            " gold_value, debt_value"
+            f" FROM finance_snapshots ORDER BY snapshot_date DESC LIMIT {limit}"
+        )
+        return [
+            {
+                "date": r[0],
+                "total_value": r[1],
+                "equity_value": r[2],
+                "mf_value": r[3],
+                "gold_value": r[4],
+                "debt_value": r[5],
+            }
+            for r in reversed(result.get("rows", []))
+        ]
+
     async def _handle_finance_api(self, send: Any) -> None:
         try:
-            snap = await self._query_memory(
-                "SELECT snapshot_date, total_value, equity_value, mf_value,"
-                " etf_value, gold_value, debt_value, asset_allocation"
-                " FROM finance_snapshots ORDER BY snapshot_date DESC LIMIT 1"
-            )
-            snap_rows = snap.get("rows", [])
-            snapshot = None
-            allocation: dict[str, float] = {}
-            if snap_rows:
-                r = snap_rows[0]
-                snapshot = {
-                    "snapshot_date": r[0],
-                    "total_value": r[1],
-                    "equity_value": r[2],
-                    "mf_value": r[3],
-                    "etf_value": r[4],
-                    "gold_value": r[5],
-                    "debt_value": r[6],
-                }
-                if r[7]:
-                    allocation = json.loads(r[7])
-
-            holdings_result = await self._query_memory(
-                "SELECT symbol, name, asset_class, quantity, avg_price,"
-                " current_price, current_value, pnl, pnl_pct, source"
-                " FROM finance_holdings ORDER BY current_value DESC"
-            )
-            holdings = [
-                {
-                    "symbol": r[0],
-                    "name": r[1],
-                    "asset_class": r[2],
-                    "quantity": r[3],
-                    "avg_price": r[4],
-                    "current_price": r[5],
-                    "current_value": r[6],
-                    "pnl": r[7],
-                    "pnl_pct": r[8],
-                    "source": r[9],
-                }
-                for r in holdings_result.get("rows", [])
-            ]
+            snapshot, allocation = await self._query_latest_snapshot()
+            holdings = await self._query_holdings()
 
             total_pnl = sum(h["pnl"] or 0 for h in holdings)
             total_cost = sum(h["quantity"] * h["avg_price"] for h in holdings)
             total_pnl_pct = (total_pnl / total_cost * 100) if total_cost > 0 else 0
-
-            fire_result = await self._query_memory(
-                "SELECT target_corpus, monthly_expenses, withdrawal_rate,"
-                " inflation_rate, expected_return"
-                " FROM finance_fire_config LIMIT 1"
-            )
-            fire_config = None
-            fire_rows = fire_result.get("rows", [])
-            if fire_rows:
-                fr = fire_rows[0]
-                fire_config = {
-                    "target_corpus": fr[0],
-                    "monthly_expenses": fr[1],
-                    "withdrawal_rate": fr[2] or 0.04,
-                    "inflation_rate": fr[3] or 0.06,
-                    "expected_return": fr[4] or 0.12,
-                }
-
-            history_result = await self._query_memory(
-                "SELECT snapshot_date, total_value, equity_value, mf_value,"
-                " gold_value, debt_value"
-                " FROM finance_snapshots ORDER BY snapshot_date DESC LIMIT 30"
-            )
-            snapshots = [
-                {
-                    "date": r[0],
-                    "total_value": r[1],
-                    "equity_value": r[2],
-                    "mf_value": r[3],
-                    "gold_value": r[4],
-                    "debt_value": r[5],
-                }
-                for r in reversed(history_result.get("rows", []))
-            ]
 
             await self._send_response(
                 send,
@@ -207,67 +217,74 @@ class DashboardApp:
                     "holdings_count": len(holdings),
                     "total_pnl": round(total_pnl, 2),
                     "total_pnl_pct": round(total_pnl_pct, 2),
-                    "fire_config": fire_config,
-                    "snapshots": snapshots,
+                    "fire_config": await self._query_fire_config(),
+                    "snapshots": await self._query_snapshot_history(),
                 },
             )
         except Exception as exc:
             logger.warning("Finance API error: %s", exc)
             await self._send_response(send, 500, {"error": str(exc)})
 
+    async def _query_open_actions(self) -> list[dict[str, Any]]:
+        result = await self._query_memory(
+            "SELECT id, title, status, priority, due_date, assigned_to"
+            " FROM work_actions WHERE status != 'done'"
+            " ORDER BY created_at DESC"
+        )
+        return [
+            {
+                "id": r[0],
+                "title": r[1],
+                "status": r[2],
+                "priority": r[3],
+                "due_date": r[4],
+                "assigned_to": r[5],
+            }
+            for r in result.get("rows", [])
+        ]
+
+    async def _query_active_delegations(self) -> list[dict[str, Any]]:
+        result = await self._query_memory(
+            "SELECT id, delegated_to, task, status, due_date, last_update"
+            " FROM work_delegations WHERE status != 'done'"
+            " ORDER BY created_at DESC"
+        )
+        return [
+            {
+                "id": r[0],
+                "delegated_to": r[1],
+                "task": r[2],
+                "status": r[3],
+                "due_date": r[4],
+                "last_update": r[5],
+            }
+            for r in result.get("rows", [])
+        ]
+
+    async def _query_recent_meetings(self, limit: int = 10) -> list[dict[str, Any]]:
+        result = await self._query_memory(
+            "SELECT id, title, meeting_date, attendees, notes"
+            f" FROM work_meetings ORDER BY meeting_date DESC LIMIT {limit}"
+        )
+        return [
+            {
+                "id": r[0],
+                "title": r[1],
+                "meeting_date": r[2],
+                "attendees": r[3],
+                "notes": r[4],
+            }
+            for r in result.get("rows", [])
+        ]
+
     async def _handle_work_api(self, send: Any) -> None:
         try:
-            actions_result = await self._query_memory(
-                "SELECT id, title, status, priority, due_date, assigned_to"
-                " FROM work_actions WHERE status != 'done'"
-                " ORDER BY created_at DESC"
-            )
-            actions = [
-                {
-                    "id": r[0],
-                    "title": r[1],
-                    "status": r[2],
-                    "priority": r[3],
-                    "due_date": r[4],
-                    "assigned_to": r[5],
-                }
-                for r in actions_result.get("rows", [])
-            ]
+            actions = await self._query_open_actions()
+            delegations = await self._query_active_delegations()
+            meetings = await self._query_recent_meetings()
 
             overdue = sum(1 for a in actions if a["status"] == "overdue")
-
-            deleg_result = await self._query_memory(
-                "SELECT id, delegated_to, task, status, due_date, last_update"
-                " FROM work_delegations WHERE status != 'done'"
-                " ORDER BY created_at DESC"
-            )
-            delegations = [
-                {
-                    "id": r[0],
-                    "delegated_to": r[1],
-                    "task": r[2],
-                    "status": r[3],
-                    "due_date": r[4],
-                    "last_update": r[5],
-                }
-                for r in deleg_result.get("rows", [])
-            ]
             stale = sum(1 for d in delegations if d["status"] == "stale")
-
-            meetings_result = await self._query_memory(
-                "SELECT id, title, meeting_date, attendees, notes"
-                " FROM work_meetings ORDER BY meeting_date DESC LIMIT 10"
-            )
-            meetings = [
-                {
-                    "id": r[0],
-                    "title": r[1],
-                    "meeting_date": r[2],
-                    "attendees": r[3],
-                    "notes": r[4],
-                }
-                for r in meetings_result.get("rows", [])
-            ]
 
             next_action = None
             if actions and _HAS_WORK:
@@ -318,7 +335,7 @@ class DashboardApp:
                     msg = await queue.get()
                     await send({"type": "websocket.send", "text": msg})
             except Exception:
-                pass
+                logger.debug("WebSocket send loop ended for %s", channel_id)
 
         send_task = asyncio.create_task(send_responses())
 

@@ -391,6 +391,7 @@ class TestTenantSeeding:
         users = [{"name": "Bob", "tenant_id": "bob", "role": "user"}]
         await _handle(memory_agent, _make_msg({"action": "seed_tenants", "users": users}))
         await _handle(memory_agent, _make_msg({"action": "seed_tenants", "users": users}))
+        assert memory_agent._db is not None
 
 
 class TestTenantIsolation:

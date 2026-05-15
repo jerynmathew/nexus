@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 from typer.testing import CliRunner
 
@@ -25,8 +26,6 @@ class TestRun:
         assert "Error" in result.output
 
     def test_valid_config(self, tmp_path: Path) -> None:
-        from unittest.mock import AsyncMock, patch
-
         config = tmp_path / "config.yaml"
         config.write_text("llm:\n  model: test\n")
 

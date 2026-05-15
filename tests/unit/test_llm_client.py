@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import AsyncMock, MagicMock
+
+import httpx
+import pytest
 
 from nexus.llm.client import LLMClient
 
@@ -76,8 +80,6 @@ class TestLLMClient:
         assert client.model_for_task("CONVERSE") == "sonnet"
 
     async def test_chat_with_system(self) -> None:
-        from unittest.mock import AsyncMock, MagicMock
-
         client = LLMClient(base_url="http://localhost:9999")
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
@@ -96,8 +98,6 @@ class TestLLMClient:
         await client.close()
 
     async def test_chat_with_tools(self) -> None:
-        from unittest.mock import AsyncMock, MagicMock
-
         client = LLMClient(base_url="http://localhost:9999")
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
@@ -117,11 +117,6 @@ class TestLLMClient:
         await client.close()
 
     async def test_chat_rate_limit(self) -> None:
-        from unittest.mock import AsyncMock, MagicMock
-
-        import httpx
-        import pytest
-
         client = LLMClient(base_url="http://localhost:9999")
         mock_resp = MagicMock()
         mock_resp.status_code = 429
@@ -134,11 +129,6 @@ class TestLLMClient:
         await client.close()
 
     async def test_chat_connect_error(self) -> None:
-        from unittest.mock import AsyncMock
-
-        import httpx
-        import pytest
-
         client = LLMClient(base_url="http://localhost:9999")
         client._client.post = AsyncMock(side_effect=httpx.ConnectError("refused"))
         with pytest.raises(httpx.ConnectError):

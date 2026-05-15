@@ -91,11 +91,13 @@ class TestFinanceExtension:
         ext._ctx = ctx
 
         await ext._check_bank_reminders({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_called()
 
     async def test_check_bank_reminders_no_tenant(self) -> None:
         ext = FinanceExtension()
         ext._ctx = AsyncMock()
         await ext._check_bank_reminders({})
+        ext._ctx.send_to_memory.assert_not_called()
 
     async def test_maturity_alerts(self) -> None:
         ext = FinanceExtension()
@@ -111,6 +113,7 @@ class TestFinanceExtension:
         ext._ctx = ctx
 
         await ext._check_maturity_alerts({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_called()
 
     async def test_maturity_alerts_no_maturity_date(self) -> None:
         ext = FinanceExtension()
@@ -123,3 +126,4 @@ class TestFinanceExtension:
         ext._ctx = ctx
 
         await ext._check_maturity_alerts({"tenant_id": "t1"})
+        ctx.send_to_memory.assert_called_once()

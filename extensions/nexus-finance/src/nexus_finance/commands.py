@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from nexus.extensions import NexusContext
+from nexus.utils import parse_key_value_params
 
 from nexus_finance.charts import allocation_pie_chart, gold_price_chart
 from nexus_finance.parsers.hdfc import parse_hdfc_csv
@@ -555,12 +556,7 @@ async def _handle_holdings_add(
 
 
 def _parse_key_value_params(text: str) -> dict[str, str]:
-    params: dict[str, str] = {}
-    for token in text.split():
-        if "=" in token:
-            key, _, value = token.partition("=")
-            params[key.lower()] = value
-    return params
+    return parse_key_value_params(text)
 
 
 def _build_manual_holding(

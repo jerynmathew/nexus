@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from unittest.mock import AsyncMock
 
@@ -205,10 +206,9 @@ class TestStartStop:
     async def test_stop_no_task(self) -> None:
         app = _make_app()
         await app.stop()
+        assert not hasattr(app, "_server_task") or app._server_task is None
 
     async def test_stop_with_task(self) -> None:
-        import asyncio
-
         app = _make_app()
         app._server_task = asyncio.create_task(asyncio.sleep(100))
         await app.stop()

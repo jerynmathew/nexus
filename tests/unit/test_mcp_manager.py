@@ -3,6 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from nexus.config import MCPServerEntry
 from nexus.mcp.manager import MCPManager
 
@@ -96,7 +98,6 @@ class TestCreateClient:
     async def test_unsupported_transport(self) -> None:
         m = MCPManager()
         entry = _entry(transport="grpc")
-        import pytest
 
         with pytest.raises(ValueError, match="Unsupported"):
             await m._create_client(entry)

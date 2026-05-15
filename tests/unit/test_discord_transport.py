@@ -44,6 +44,7 @@ class TestStop:
         t, _, _ = _make_transport()
         t._client = None
         await t.stop()
+        assert t._client is None
 
 
 class TestSendText:
@@ -51,12 +52,14 @@ class TestSendText:
         t, _, _ = _make_transport()
         t._client = None
         await t.send_text("123", "hello")
+        assert t._client is None
 
     async def test_channel_not_found(self) -> None:
         t, _, _ = _make_transport()
         t._client = MagicMock()
         t._client.get_channel.return_value = None
         await t.send_text("123", "hello")
+        t._client.get_channel.assert_called_once_with(123)
 
     async def test_success(self) -> None:
         t, _, _ = _make_transport()
@@ -80,6 +83,7 @@ class TestSendButtons:
         t, _, _ = _make_transport()
         t._client = None
         await t.send_buttons("123", "Choose:", [Button(label="A", callback_data="a")])
+        assert t._client is None
 
     async def test_success(self) -> None:
         t, _, _ = _make_transport()
@@ -95,6 +99,7 @@ class TestSendTyping:
         t, _, _ = _make_transport()
         t._client = None
         await t.send_typing("123")
+        assert t._client is None
 
     async def test_success(self) -> None:
         t, _, _ = _make_transport()
@@ -289,6 +294,7 @@ class TestOnMessage:
         try:
             await t.start()
             await handlers["on_ready"]()
+            assert t._client is not None
         finally:
             _cleanup_discord(t, orig, old)
 
@@ -319,12 +325,14 @@ class TestSendTypingChannelNotFound:
         t._client = MagicMock()
         t._client.get_channel.return_value = None
         await t.send_typing("123")
+        t._client.get_channel.assert_called_once_with(123)
 
     async def test_buttons_channel_not_found(self) -> None:
         t, _, _ = _make_transport()
         t._client = MagicMock()
         t._client.get_channel.return_value = None
         await t.send_buttons("123", "Pick:", [Button(label="A", callback_data="a")])
+        t._client.get_channel.assert_called_once_with(123)
 
 
 class TestSplitDiscord:

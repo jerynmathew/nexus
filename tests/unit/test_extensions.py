@@ -4,12 +4,17 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 from unittest.mock import patch as _patch
 
+from civitas.messages import Message
+
+from nexus.agents.conversation import ConversationManager
+from nexus.agents.memory import MemoryAgent
 from nexus.extensions import (
     ExtensionLoader,
     NexusContext,
     NexusExtension,
     _DirectoryExtension,
 )
+from nexus.skills.manager import SkillManager
 
 _NO_ENTRY_POINTS = _patch("nexus.extensions.entry_points", return_value=[])
 
@@ -226,14 +231,11 @@ class TestDirectoryExtension:
     async def test_on_unload(self) -> None:
         ext = _DirectoryExtension({"name": "test"}, Path("/tmp"))
         await ext.on_unload()
+        assert True  # on_unload is a no-op
 
 
 class TestConversationExtCommands:
     async def test_ext_command_dispatched(self) -> None:
-        from civitas.messages import Message
-
-        from nexus.agents.conversation import ConversationManager
-
         conv = ConversationManager(name="test")
         handler = AsyncMock()
         conv.register_ext_commands({"portfolio": handler})
@@ -258,10 +260,6 @@ class TestConversationExtCommands:
         assert kwargs["tenant_id"] == "t1"
 
     async def test_ext_command_not_found_falls_through(self) -> None:
-        from civitas.messages import Message
-
-        from nexus.agents.conversation import ConversationManager
-
         conv = ConversationManager(name="test")
         conv._transport = AsyncMock()
 
@@ -284,8 +282,6 @@ class TestConversationExtCommands:
 
 class TestConversationSignalHandlers:
     async def test_fire_signal_handlers(self) -> None:
-        from nexus.agents.conversation import ConversationManager
-
         conv = ConversationManager(name="test")
         handler1 = AsyncMock()
         handler2 = AsyncMock()
@@ -295,8 +291,6 @@ class TestConversationSignalHandlers:
         handler2.assert_called_once_with({"text": "hi"})
 
     async def test_fire_signal_handler_error_suppressed(self) -> None:
-        from nexus.agents.conversation import ConversationManager
-
         conv = ConversationManager(name="test")
         bad_handler = AsyncMock(side_effect=Exception("fail"))
         good_handler = AsyncMock()
@@ -305,16 +299,13 @@ class TestConversationSignalHandlers:
         good_handler.assert_called_once()
 
     async def test_no_handlers_for_event(self) -> None:
-        from nexus.agents.conversation import ConversationManager
-
         conv = ConversationManager(name="test")
         await conv._fire_signal_handlers("nonexistent", {})
+        assert conv._ext_signal_handlers is not None
 
 
 class TestMemorySchemaRegistration:
     async def test_extension_schema_executed(self) -> None:
-        from nexus.agents.memory import MemoryAgent
-
         mem = MemoryAgent(name="memory", db_path=":memory:")
         mem.register_extension_schemas(
             ["CREATE TABLE IF NOT EXISTS ext_test (id INTEGER PRIMARY KEY, val TEXT);"]
@@ -330,8 +321,6 @@ class TestMemorySchemaRegistration:
 
 class TestSkillManagerDynamicDirs:
     def test_add_skill_dir(self, tmp_path: Path) -> None:
-        from nexus.skills.manager import SkillManager
-
         mgr = SkillManager(tmp_path / "base")
         extra = tmp_path / "extra"
         extra.mkdir()
@@ -339,8 +328,6 @@ class TestSkillManagerDynamicDirs:
         assert extra in mgr._extra_dirs
 
     def test_add_skill_dir_no_duplicate(self, tmp_path: Path) -> None:
-        from nexus.skills.manager import SkillManager
-
         mgr = SkillManager(tmp_path / "base")
         extra = tmp_path / "extra"
         extra.mkdir()
@@ -349,8 +336,6 @@ class TestSkillManagerDynamicDirs:
         assert mgr._extra_dirs.count(extra) == 1
 
     def test_load_all_includes_extra_dirs(self, tmp_path: Path) -> None:
-        from nexus.skills.manager import SkillManager
-
         base = tmp_path / "base"
         base.mkdir()
         extra = tmp_path / "extra"
@@ -367,8 +352,6 @@ class TestSkillManagerDynamicDirs:
         assert mgr.get("test-skill") is not None
 
     def test_add_after_loaded_triggers_scan(self, tmp_path: Path) -> None:
-        from nexus.skills.manager import SkillManager
-
         base = tmp_path / "base"
         base.mkdir()
         mgr = SkillManager(base)

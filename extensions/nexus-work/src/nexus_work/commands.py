@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from nexus.extensions import NexusContext
+from nexus.utils import parse_key_value_params
 
 from nexus_work.priority import score_action
 
@@ -541,13 +542,7 @@ async def handle_next(
 
 
 def _extract_inline_params(text: str) -> dict[str, str]:
-    params: dict[str, str] = {}
-    title_parts: list[str] = []
-    for token in text.split():
-        if "=" in token:
-            key, _, value = token.partition("=")
-            params[key.lower()] = value
-        else:
-            title_parts.append(token)
+    params = parse_key_value_params(text)
+    title_parts = [t for t in text.split() if "=" not in t]
     params["title"] = " ".join(title_parts)
     return params
