@@ -876,3 +876,306 @@ class TestExecuteSkillSequential:
         await c._execute_skill_sequential(skill, tenant, "c1", None, "cheap")
         assert c._llm is None
         c._formatter._default_transport.send_text.assert_not_called()
+
+
+class TestAddTransport:
+    def test_add_transport(self) -> None:
+        c = _make_conv()
+        t = AsyncMock()
+        c.add_transport("web_", t)
+        assert c._formatter._transports.get("web_") is t
+
+
+class TestExtensionRegistration:
+    def test_register_ext_commands_updates_dict(self) -> None:
+        c = _make_conv()
+        handler = AsyncMock()
+        ctx = MagicMock()
+        c.register_ext_commands({"custom": handler}, nexus_context=ctx)
+        assert c._ext_commands["custom"] is handler
+        assert c._nexus_context is ctx
+
+    def test_register_ext_commands_no_context(self) -> None:
+        c = _make_conv()
+        handler = AsyncMock()
+        c.register_ext_commands({"cmd": handler})
+        assert c._ext_commands["cmd"] is handler
+        assert c._nexus_context is None
+
+    def test_register_ext_signal_handlers(self) -> None:
+        c = _make_conv()
+        h1 = AsyncMock()
+        h2 = AsyncMock()
+        c.register_ext_signal_handlers({"inbound_message": [h1, h2]})
+        assert c._ext_signal_handlers["inbound_message"] == [h1, h2]
+
+    def test_register_ext_signal_handlers_appends(self) -> None:
+        c = _make_conv()
+        h1 = AsyncMock()
+        h2 = AsyncMock()
+        c.register_ext_signal_handlers({"evt": [h1]})
+        c.register_ext_signal_handlers({"evt": [h2]})
+        assert h1 in c._ext_signal_handlers["evt"]
+        assert h2 in c._ext_signal_handlers["evt"]
+
+
+class TestRateLimiting:
+    async def test_rate_limited_reply(self) -> None:
+        from nexus.ratelimit import RateLimiter
+
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c._rate_limiter = RateLimiter(max_requests=0, window_seconds=60)
+        msg = _msg("inbound_message", tenant_id="t1", text="hi", channel_id="c1")
+        await c._handle_inbound(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "too fast" in sent
+
+
+class TestHandleInboundExtended:
+    async def test_unauthorized_tenant(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c._resolve_tenant = AsyncMock(return_value=None)
+        msg = _msg("inbound_message", tenant_id="bad", text="hi", channel_id="c1")
+        await c._handle_inbound(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "not authorized" in sent
+
+    async def test_media_type_calls_process_media(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c.ask = AsyncMock(side_effect=Exception("skip"))
+        c.send = AsyncMock()
+        c.cast = AsyncMock()
+        c._process_media = AsyncMock(return_value="transcribed voice")
+        c._classifier = MagicMock()
+        c._classifier.classify = AsyncMock(return_value=Intent(original_text="transcribed voice"))
+        c._llm_respond = AsyncMock(return_value="LLM response")
+        c._media_handler = AsyncMock()
+        msg = _msg(
+            "inbound_message",
+            tenant_id="t1",
+            text="",
+            channel_id="c1",
+            media_type="voice",
+        )
+        await c._handle_inbound(msg)
+        c._process_media.assert_called_once()
+
+    async def test_permission_denied(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        tenant = TenantContext(tenant_id="t1", name="Alice", role="user", permissions={})
+        c._resolve_tenant = AsyncMock(return_value=tenant)
+        c.ask = AsyncMock(side_effect=Exception("skip"))
+        c.send = AsyncMock()
+        c.cast = AsyncMock()
+        c._classifier = MagicMock()
+        c._classifier.classify = AsyncMock(
+            return_value=Intent(target_service="gmail", action="read", original_text="read email")
+        )
+        msg = _msg("inbound_message", tenant_id="t1", text="read email", channel_id="c1")
+        await c._handle_inbound(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "permission" in sent.lower()
+
+    async def test_help_query_in_inbound(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c.ask = AsyncMock(side_effect=Exception("skip"))
+        c.send = AsyncMock()
+        c.cast = AsyncMock()
+        c._classifier = MagicMock()
+        c._classifier.classify = AsyncMock(return_value=Intent(original_text="help"))
+        msg = _msg("inbound_message", tenant_id="t1", text="help", channel_id="c1")
+        await c._handle_inbound(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "Available Commands" in sent
+
+
+class TestHandleCommandExtended:
+    async def test_help_command(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        msg = _msg("command", command="help", args="", tenant_id="t1", channel_id="c1")
+        await c._handle_command(msg)
+        c._formatter._default_transport.send_text.assert_called()
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "Available Commands" in sent
+
+    async def test_checkpoint_command_dispatches(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c._sessions["t1"] = Session(session_id="s1", tenant_id="t1")
+        c.send = AsyncMock()
+        msg = _msg(
+            "command", command="checkpoint", args="my-label", tenant_id="t1", channel_id="c1"
+        )
+        await c._handle_command(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "my-label" in sent
+
+    async def test_rollback_command_dispatches(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        session_data = Session(session_id="s1", tenant_id="t1").to_dict()
+        resp = Message(
+            sender="memory",
+            recipient="test",
+            payload={"value": json.dumps(session_data)},
+        )
+        c.ask = AsyncMock(return_value=resp)
+        c.send = AsyncMock()
+        msg = _msg("command", command="rollback", args="cp1", tenant_id="t1", channel_id="c1")
+        await c._handle_command(msg)
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "Rolled back" in sent
+
+    async def test_ext_command_dispatch(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        handler = AsyncMock()
+        c._ext_commands["mycommand"] = handler
+        msg = _msg("command", command="mycommand", args="somearg", tenant_id="t1", channel_id="c1")
+        await c._handle_command(msg)
+        handler.assert_called_once_with(
+            command="mycommand",
+            args="somearg",
+            tenant_id="t1",
+            channel_id="c1",
+            send_reply=c._formatter.send_reply,
+            nexus_context=c._nexus_context,
+        )
+
+
+class TestBuildStatusReportExtended:
+    async def test_health_success(self) -> None:
+        c = _make_conv()
+        health_resp = Message(
+            sender="dashboard",
+            recipient="test",
+            payload={"status": "healthy", "agent_count": 3, "uptime_seconds": 120},
+        )
+        c.ask = AsyncMock(return_value=health_resp)
+        c._mcp = None
+        report = await c._build_status_report("t1")
+        assert "healthy" in report
+        assert "2m" in report
+
+    async def test_trust_scores_present(self) -> None:
+        c = _make_conv()
+        c.ask = AsyncMock(side_effect=Exception("no dashboard"))
+        c._mcp = None
+        c._trust.update_score("t1", "search", 0.7)
+        report = await c._build_status_report("t1")
+        assert "Trust" in report
+        assert "search" in report
+
+
+class TestRollbackExtended:
+    async def test_list_failure(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c.ask = AsyncMock(side_effect=Exception("fail"))
+        await c._handle_rollback("t1", "c1", "")
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "Failed to list" in sent
+
+    async def test_rollback_with_label_failure(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c.ask = AsyncMock(side_effect=Exception("fail"))
+        await c._handle_rollback("t1", "c1", "cp1")
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "Failed to rollback" in sent
+
+
+class TestSignalHandlers:
+    async def test_failure_suppressed(self) -> None:
+        c = _make_conv()
+        failing_handler = AsyncMock(side_effect=Exception("handler failed"))
+        c._ext_signal_handlers["inbound_message"] = [failing_handler]
+        await c._fire_signal_handlers("inbound_message", {"tenant_id": "t1"})
+        failing_handler.assert_called_once()
+
+    async def test_success(self) -> None:
+        c = _make_conv()
+        handler = AsyncMock()
+        c._ext_signal_handlers["inbound_message"] = [handler]
+        await c._fire_signal_handlers("inbound_message", {"tenant_id": "t1"})
+        handler.assert_called_once_with({"tenant_id": "t1"})
+
+
+class TestSkillTriggerHappyPath:
+    async def test_happy_path(self) -> None:
+        c = _make_conv()
+        c._formatter.set_default_transport(AsyncMock())
+        c._llm = MagicMock()
+        c._llm.chat = AsyncMock(return_value=LLMResponse(content="Good morning!"))
+        c._llm.resolve_model = MagicMock(return_value="test-model")
+        c._mcp = None
+        skill = Skill(name="briefing", description="d", content="brief", execution="sequential")
+        c._skill_manager = MagicMock()
+        c._skill_manager.get.return_value = skill
+        tenant = TenantContext(tenant_id="t1", name="Alice")
+        c._resolve_tenant = AsyncMock(return_value=tenant)
+        msg = _msg("execute_skill", skill_name="briefing", tenant_id="t1", channel_id="c1")
+        result = await c._handle_skill_trigger(msg)
+        assert result is None
+        c._formatter._default_transport.send_text.assert_called()
+
+
+class TestSkillParallelException:
+    async def test_generic_exception_shows_unavailable(self) -> None:
+        c = _make_conv()
+        c._llm = MagicMock()
+        c._llm.chat = AsyncMock(side_effect=RuntimeError("connection failed"))
+        c._formatter.set_default_transport(AsyncMock())
+        sections = [SkillSection(name="Section", content="x")]
+        skill = Skill(
+            name="test", description="d", content="", execution="parallel", sections=sections
+        )
+        tenant = TenantContext(tenant_id="t1", name="A")
+        await c._execute_skill_parallel(skill, tenant, "c1", None, "cheap")
+        sent = c._formatter._default_transport.send_text.call_args[0][1]
+        assert "unavailable" in sent
+
+
+class TestBuildMessagesEmptyContent:
+    def test_skips_empty_content(self) -> None:
+        c = _make_conv()
+        session = Session(session_id="s1", tenant_id="t1")
+        session.add_message("user", "hello")
+        session.add_message("assistant", "")
+        session.add_message("user", "world")
+        messages = c._build_messages(session, "new")
+        contents = [m["content"] for m in messages]
+        assert "" not in contents
+        assert "hello" in contents
+        assert "new" in contents
+
+
+class TestExecuteSkillNoLlm:
+    async def test_returns_early(self) -> None:
+        c = _make_conv()
+        c._llm = None
+        skill = Skill(name="test", description="d", content="x", execution="sequential")
+        tenant = TenantContext(tenant_id="t1", name="A")
+        await c._execute_skill(skill, tenant, "c1")
+
+
+class TestExecuteSkillParallelDispatch:
+    async def test_parallel_dispatch(self) -> None:
+        c = _make_conv()
+        c._llm = AsyncMock()
+        c._llm.chat.return_value = LLMResponse(content="result")
+        c._llm.resolve_model.return_value = "cheap"
+        c._formatter.set_default_transport(AsyncMock())
+        sections = [SkillSection(name="S1", content="do it")]
+        skill = Skill(
+            name="test", description="d", content="", execution="parallel", sections=sections
+        )
+        tenant = TenantContext(tenant_id="t1", name="A")
+        await c._execute_skill(skill, tenant, "c1")
+        c._formatter._default_transport.send_text.assert_called()
