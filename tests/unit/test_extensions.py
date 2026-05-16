@@ -239,7 +239,7 @@ class TestConversationExtCommands:
         conv = ConversationManager(name="test")
         handler = AsyncMock()
         conv.register_ext_commands({"portfolio": handler})
-        conv._transport = AsyncMock()
+        conv._formatter.set_default_transport(AsyncMock())
 
         msg = Message(
             sender="test",
@@ -261,7 +261,8 @@ class TestConversationExtCommands:
 
     async def test_ext_command_not_found_falls_through(self) -> None:
         conv = ConversationManager(name="test")
-        conv._transport = AsyncMock()
+        transport = AsyncMock()
+        conv._formatter.set_default_transport(transport)
 
         msg = Message(
             sender="test",
@@ -276,7 +277,7 @@ class TestConversationExtCommands:
             reply_to="test",
         )
         await conv._handle_command(msg)
-        sent = conv._transport.send_text.call_args[0][1]
+        sent = transport.send_text.call_args[0][1]
         assert "Unknown command" in sent
 
 

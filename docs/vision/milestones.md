@@ -535,7 +535,7 @@ Nexus's lightweight governance (PolicyEngine, TrustStore, AuditSink from M2.7/M3
 
 ### M6.4 — Codebase Audit Remediation ✅
 
-- [ ] ConversationManager decomposition — extract ToolExecutor, SessionManager, ResponseFormatter (deferred — separate effort)
+- [x] ConversationManager decomposition — extracted ToolExecutor (152 lines), ResponseFormatter (75 lines), help.py (122 lines). 1095→826 lines (−25%). SessionManager deferred (tightly coupled to MessageBus).
 - [x] Tests without assertions — added postcondition assertions to 44 test functions (0 remaining)
 - [x] Non-top-level imports in tests — moved 86 inline imports to module level across 14 files (0 remaining)
 - [x] Gateway API handler extraction — 7 query helpers extracted, handlers reduced from 99→22 and 78→29 lines

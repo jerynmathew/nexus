@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Added `logger.debug` to 8 silent `except Exception:` handlers in conversation, memory, MCP, and gateway
   - Extracted shared `parse_key_value_params()` to `src/nexus/utils.py` (was duplicated in nexus-finance and nexus-work)
   - Documented extension `__version__` inline import as accepted exception in AGENTS.md
+  - Decomposed ConversationManager (1095→826 lines): extracted ToolExecutor, ResponseFormatter, help.py
 
 ### Added
 - **Multi-provider AgentGateway (v1.1.0)**

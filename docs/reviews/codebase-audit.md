@@ -16,26 +16,22 @@
 | Non-top-level imports (tests) | 86 instances | Low | ✅ Fixed — all moved to module level |
 | Non-top-level imports (extensions) | 2 instances | Low | ✅ Accepted — documented in AGENTS.md |
 | Tests without assertions | 44 tests | Medium | ✅ Fixed — all now have postcondition checks |
-| ConversationManager god object | 1091 lines, 40+ methods | High | Deferred — separate effort |
+| ConversationManager god object | 1091 lines, 40+ methods | High | ✅ Fixed — 1095→826 lines, 3 modules extracted |
 | Duplicate logic across extensions | 2 near-identical param parsers | Low | ✅ Fixed — shared `nexus.utils.parse_key_value_params` |
 | Gateway API handlers too long | 2 functions (100+ lines) | Medium | ✅ Fixed — 7 query helpers extracted |
 
 ---
 
-## Issue 1: ConversationManager God Object (HIGH)
+## Issue 1: ConversationManager God Object (HIGH) — ✅ RESOLVED
 
-**File:** `src/nexus/agents/conversation.py` — 1091 lines, 40+ methods
+**File:** `src/nexus/agents/conversation.py` — reduced from 1095 to 826 lines (−25%)
 
-**Karpathy #2 violation:** Simplicity first. One class doing routing, LLM calls, tool execution, session management, transport management, help commands, skill execution, governance, media processing, and status reporting.
+Extracted 3 modules:
+1. `tool_executor.py` (152 lines) — `ToolExecutor` class: tool-use loop, governance checks, action URL capture. Dependencies injected: LLMClient, MCPManager, PolicyEngine, TrustStore, AuditSink.
+2. `response_formatter.py` (75 lines) — `ResponseFormatter` class: transport routing, send_reply, send_response (with content store viewer), send_typing. Owns transport references.
+3. `help.py` (122 lines) — Pure functions: `is_help_query`, `build_help_response`, `build_capabilities_section`. No class, no state, no async.
 
-**Plan:**
-1. Extract `ToolExecutor` — `_tool_use_loop`, `_execute_tool_with_governance`, `_extract_action_urls` → separate module
-2. Extract `SessionManager` — `_get_or_create_session`, `_checkpoint_session`, `_handle_checkpoint`, `_handle_rollback` → separate module
-3. Extract `ResponseFormatter` — `_send_response_with_viewer`, `_markdown_to_html` logic → separate module
-4. Keep ConversationManager as thin orchestrator: receive message → classify → delegate → respond
-
-**Effort:** Medium. No behavioral change, pure structural refactor.
-**Verification:** All existing tests pass unchanged.
+SessionManager extraction was evaluated and deferred — the session methods are tightly coupled to AgentProcess MessageBus (`self.ask`/`self.send`) and extracting them would require callback injection that adds complexity without simplification.
 
 ---
 

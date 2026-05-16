@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import json
 import logging
-import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -13,14 +12,17 @@ from civitas.messages import Message
 from civitas.process import AgentProcess
 
 from nexus.agents.compressor import ContextCompressor
+from nexus.agents.help import build_capabilities_section, build_help_response, is_help_query
 from nexus.agents.intent import Intent, RegexClassifier
+from nexus.agents.response_formatter import ResponseFormatter
+from nexus.agents.tool_executor import ToolExecutor
 from nexus.config import DashboardConfig
 from nexus.dashboard.views import ContentStore
 from nexus.extensions import CommandHandler, SignalHandler
 from nexus.governance.audit import AuditEntry, AuditSink
-from nexus.governance.policy import PolicyDecision, PolicyEngine
+from nexus.governance.policy import PolicyEngine
 from nexus.governance.trust import TrustStore, tool_category
-from nexus.llm.client import LLMClient, LLMResponse
+from nexus.llm.client import LLMClient
 from nexus.mcp.manager import MCPManager
 from nexus.media.handler import MediaHandler
 from nexus.models.session import Session
@@ -31,16 +33,6 @@ from nexus.skills.manager import SkillManager
 from nexus.skills.parser import Skill
 
 logger = logging.getLogger(__name__)
-
-_MAX_TOOL_ITERATIONS = 5
-_LONG_RESPONSE_THRESHOLD = 2000
-_ACTION_URL_PATTERN = re.compile(r"https?://[^\s\"\])<>]{20,}", re.IGNORECASE)
-_ACTION_URL_KEYWORDS = {"oauth", "authorize", "auth", "login", "callback", "consent"}
-
-
-def _extract_action_urls(tool_result: str) -> list[str]:
-    urls = _ACTION_URL_PATTERN.findall(tool_result)
-    return [url for url in urls if any(kw in url.lower() for kw in _ACTION_URL_KEYWORDS)]
 
 
 class ConversationManager(AgentProcess):
@@ -83,11 +75,12 @@ class ConversationManager(AgentProcess):
         self._media_handler: MediaHandler | None = None
         self._sessions: dict[str, Session] = {}
         self._pending_approvals: dict[str, dict[str, Any]] = {}
-        self._transport: Any = None
         self._ext_commands: dict[str, CommandHandler] = {}
         self._ext_signal_handlers: dict[str, list[SignalHandler]] = {}
         self._nexus_context: Any = None
         self._rate_limiter = RateLimiter()
+        self._formatter = ResponseFormatter()
+        self._tool_executor: ToolExecutor | None = None
 
     async def on_start(self) -> None:
         self._llm = LLMClient(
@@ -102,6 +95,14 @@ class ConversationManager(AgentProcess):
         )
         self._skill_manager = SkillManager(Path(self._skills_dir))
         self._mcp = MCPManager()
+        self._tool_executor = ToolExecutor(
+            llm=self._llm,
+            mcp=self._mcp,
+            policy=self._policy,
+            trust=self._trust,
+            audit=self._audit,
+            max_tokens=self._llm_max_tokens,
+        )
 
     async def on_stop(self) -> None:
         if self._llm:
@@ -112,12 +113,10 @@ class ConversationManager(AgentProcess):
             self._mcp = None
 
     def set_transport(self, transport: Any) -> None:
-        self._transport = transport
+        self._formatter.set_default_transport(transport)
 
     def add_transport(self, name: str, transport: Any) -> None:
-        if not hasattr(self, "_transports"):
-            self._transports: dict[str, Any] = {}
-        self._transports[name] = transport
+        self._formatter.add_transport(name, transport)
 
     def set_mcp_manager(self, mcp: MCPManager) -> None:
         self._mcp = mcp
@@ -127,8 +126,7 @@ class ConversationManager(AgentProcess):
         store: ContentStore,
         config: DashboardConfig,
     ) -> None:
-        self._content_store = store
-        self._dashboard_config = config
+        self._formatter.set_content_store(store, config)
 
     def set_media_handler(self, handler: MediaHandler) -> None:
         self._media_handler = handler
@@ -194,14 +192,14 @@ class ConversationManager(AgentProcess):
         if not self._rate_limiter.check(tenant_id):
             remaining = self._rate_limiter.remaining(tenant_id)
             logger.warning("Rate limited tenant %s (%d remaining)", tenant_id, remaining)
-            await self._send_reply(
+            await self._formatter.send_reply(
                 channel_id, "You're sending messages too fast. Please wait a moment."
             )
             return None
 
         tenant = await self._resolve_tenant(tenant_id)
         if tenant is None:
-            await self._send_reply(channel_id, "Sorry, you're not authorized.")
+            await self._formatter.send_reply(channel_id, "Sorry, you're not authorized.")
             return None
 
         if media_type and self._media_handler:
@@ -214,20 +212,20 @@ class ConversationManager(AgentProcess):
             intent.target_service,
             intent.action or "read",
         ):
-            await self._send_reply(
+            await self._formatter.send_reply(
                 channel_id,
                 f"You don't have permission for {intent.target_service}.",
             )
             return None
 
-        if self._is_help_query(text):
-            response_text = self._build_help_response()
+        if is_help_query(text):
+            response_text = build_help_response(self._ext_commands)
             session.add_message("user", text)
             session.add_message("assistant", response_text)
-            await self._send_reply(channel_id, response_text)
+            await self._formatter.send_reply(channel_id, response_text)
             return None
 
-        await self._send_typing(channel_id)
+        await self._formatter.send_typing(channel_id)
 
         try:
             response_text = await self._llm_respond(session, tenant, text, intent)
@@ -240,7 +238,7 @@ class ConversationManager(AgentProcess):
         await self._persist_message(session.session_id, "user", text)
         await self._persist_message(session.session_id, "assistant", response_text)
         await self._checkpoint_session(session)
-        await self._send_response_with_viewer(channel_id, response_text)
+        await self._formatter.send_response(channel_id, response_text)
         await self._report_activity(tenant_id, text)
         await self._fire_signal_handlers("inbound_message", payload)
         return None
@@ -329,7 +327,7 @@ class ConversationManager(AgentProcess):
         text: str,
         intent: Intent,
     ) -> str:
-        if not self._llm or not self._persona_loader:
+        if not self._llm or not self._persona_loader or not self._tool_executor:
             return "I'm not fully initialized yet. Please try again in a moment."
 
         system_prompt = await self._build_system_prompt(tenant, intent)
@@ -340,7 +338,7 @@ class ConversationManager(AgentProcess):
             logger.info("[%s] Context compressed for %s", self.name, tenant.tenant_id)
 
         tools = self._get_tools_for_intent(intent)
-        response = await self._tool_use_loop(messages, system_prompt, tools, tenant)
+        response = await self._tool_executor.execute(messages, system_prompt, tools, tenant)
         return response.content
 
     async def _build_system_prompt(self, tenant: TenantContext, intent: Intent) -> str:
@@ -379,122 +377,13 @@ class ConversationManager(AgentProcess):
             if summary:
                 parts.append("# Available Skills\n\n" + summary)
 
-        capabilities = self._build_capabilities_section()
+        capabilities = build_capabilities_section(
+            self._ext_commands, self._mcp, self._media_handler
+        )
         if capabilities:
             parts.append(capabilities)
 
         return "\n\n---\n\n".join(parts)
-
-    def _build_capabilities_section(self) -> str:
-        lines: list[str] = ["# Available Capabilities"]
-
-        if self._mcp:
-            tools = self._mcp.all_tool_schemas()
-            if tools:
-                lines.append(f"\nYou have {len(tools)} tools available via MCP.")
-            else:
-                lines.append("\nNo MCP tools currently connected.")
-        else:
-            lines.append(
-                "\nNo MCP connection. You cannot access email, calendar, or external services.",
-            )
-
-        if self._ext_commands:
-            lines.append("\n## User Slash Commands (IMPORTANT)")
-            lines.append(
-                "These are the PRIMARY commands available to the user. "
-                "When asked about available commands, list THESE FIRST. "
-                "These are NOT tools — the user types them directly."
-            )
-            cmd_descriptions = {
-                "actions": "Manage action items — add, list, done, priority, block",
-                "delegate": "Track delegations to people — add, list, done",
-                "meetings": "Track meetings — add, list, notes",
-                "next": "Show highest-priority action item",
-                "portfolio": "Portfolio summary — value, P&L, allocation",
-                "fire": "FIRE progress — corpus vs target, SIP projections",
-                "rebalance": "Rebalance suggestions vs target allocation",
-                "research": "Research mutual funds via MFapi.in",
-                "gold": "Gold price data and trends",
-                "holdings": "Manage holdings — add FD/PPF/SGB/gold/loan, upload, banks",
-            }
-            for cmd_name in sorted(self._ext_commands):
-                desc = cmd_descriptions.get(cmd_name, "")
-                lines.append(f"  /{cmd_name} — {desc}" if desc else f"  /{cmd_name}")
-
-        if self._media_handler:
-            if self._media_handler.has_vision:
-                lines.append("\nYou can analyze images sent by the user.")
-        else:
-            lines.append("\nVoice and image processing are not available.")
-
-        lines.append("\n## Formatting")
-        lines.append(
-            "Use markdown: **bold**, *italic*, [links](url), `code`. "
-            "Use **bold** for headings instead of ##. Use • for bullet lists."
-        )
-
-        return "\n".join(lines)
-
-    @staticmethod
-    def _is_help_query(text: str) -> bool:
-        lower = text.lower().strip()
-        patterns = [
-            "what commands",
-            "what can you do",
-            "what are the commands",
-            "available commands",
-            "list commands",
-            "help",
-            "/help",
-            "show commands",
-        ]
-        return any(p in lower for p in patterns)
-
-    def _build_help_response(self) -> str:
-        cmd_descriptions = {
-            "actions": "Manage action items — add, list, done, priority, block",
-            "delegate": "Track delegations — add, list, done",
-            "meetings": "Track meetings — add, list, notes",
-            "next": "Show highest-priority action item",
-            "portfolio": "Portfolio summary — value, P&L, allocation",
-            "fire": "FIRE progress — corpus vs target, SIP projections",
-            "rebalance": "Rebalance suggestions vs target allocation",
-            "research": "Research mutual funds",
-            "gold": "Gold price data and trends",
-            "holdings": "Manage holdings — add FD/PPF/SGB/gold/loan, upload, banks",
-            "status": "Check Nexus system health",
-        }
-
-        lines = ["**Available Commands**\n"]
-
-        work_cmds = ["actions", "delegate", "meetings", "next"]
-        finance_cmds = ["portfolio", "fire", "rebalance", "research", "gold", "holdings"]
-        system_cmds = ["status"]
-
-        lines.append("**Work**")
-        for cmd in work_cmds:
-            if cmd in self._ext_commands or cmd in ("status",):
-                desc = cmd_descriptions.get(cmd, "")
-                lines.append(f"• /{cmd} — {desc}")
-
-        lines.append("\n**Finance**")
-        for cmd in finance_cmds:
-            if cmd in self._ext_commands:
-                desc = cmd_descriptions.get(cmd, "")
-                lines.append(f"• /{cmd} — {desc}")
-
-        lines.append("\n**System**")
-        for cmd in system_cmds:
-            desc = cmd_descriptions.get(cmd, "")
-            lines.append(f"• /{cmd} — {desc}")
-
-        lines.append(
-            "\nYou can also ask me anything in natural language — "
-            "check email, calendar, search the web, and more."
-        )
-
-        return "\n".join(lines)
 
     def _build_messages(self, session: Session, current_text: str) -> list[dict[str, Any]]:
         messages: list[dict[str, Any]] = []
@@ -521,119 +410,6 @@ class ConversationManager(AgentProcess):
                 return tools
         all_tools = self._mcp.all_tool_schemas()
         return all_tools if all_tools else None
-
-    async def _tool_use_loop(
-        self,
-        messages: list[dict[str, Any]],
-        system_prompt: str,
-        tools: list[dict[str, Any]] | None,
-        tenant: TenantContext,
-    ) -> LLMResponse:
-        if not self._llm:
-            return LLMResponse(content="LLM client not initialized.")
-
-        response: LLMResponse | None = None
-        captured_urls: list[str] = []
-
-        for _i in range(_MAX_TOOL_ITERATIONS):
-            response = await self._llm.chat(
-                messages=messages,
-                system=system_prompt,
-                tools=tools,
-                max_tokens=self._llm_max_tokens,
-            )
-
-            if not response.tool_calls:
-                break
-
-            for tc in response.tool_calls:
-                tool_result = await self._execute_tool_with_governance(
-                    tc.name,
-                    tc.input,
-                    tenant,
-                )
-                captured_urls.extend(_extract_action_urls(tool_result))
-                assistant_msg: dict[str, Any] = {
-                    "role": "assistant",
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.name,
-                                "arguments": json.dumps(tc.input),
-                            },
-                        }
-                    ],
-                }
-                if response.content:
-                    assistant_msg["content"] = response.content
-                messages.append(assistant_msg)
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": tool_result,
-                    }
-                )
-
-        if response is None:
-            return LLMResponse(content="I couldn't complete that request.")
-
-        if response.tool_calls and not response.content:
-            last_tool_results = [
-                m["content"] for m in messages if m.get("role") == "tool" and m.get("content")
-            ]
-            if last_tool_results:
-                fallback = last_tool_results[-1][:2000]
-                response = LLMResponse(
-                    content=f"Here's what I found:\n\n{fallback}",
-                    model=response.model,
-                )
-
-        if captured_urls and not any(url in response.content for url in captured_urls):
-            suffix = "\n\n".join(f"🔗 {url}" for url in captured_urls)
-            return LLMResponse(
-                content=f"{response.content}\n\n{suffix}",
-                model=response.model,
-                tokens_in=response.tokens_in,
-                tokens_out=response.tokens_out,
-                tool_calls=response.tool_calls,
-            )
-        return response
-
-    async def _execute_tool_with_governance(
-        self,
-        tool_name: str,
-        arguments: dict[str, Any],
-        tenant: TenantContext,
-    ) -> str:
-        category = tool_category(tool_name)
-        trust_score = self._trust.get_score(tenant.tenant_id, category)
-        decision = self._policy.check(tool_name, arguments, trust_score=trust_score)
-
-        self._audit.log(
-            AuditEntry(
-                agent=self.name,
-                tenant_id=tenant.tenant_id,
-                tool_name=tool_name,
-                arguments_summary=AuditSink.summarize_arguments(arguments),
-                decision=decision.value,
-                detail=f"trust={trust_score:.2f}",
-            )
-        )
-
-        if decision == PolicyDecision.DENY:
-            self._trust.update_score(tenant.tenant_id, category, -0.15)
-            return f"Action '{tool_name}' is not allowed (trust: {trust_score:.2f})."
-
-        if decision == PolicyDecision.REQUIRE_APPROVAL:
-            logger.info("[%s] Tool '%s' requires approval", self.name, tool_name)
-
-        if not self._mcp:
-            return f"Tool '{tool_name}' is not available (no MCP connection)."
-
-        return await self._mcp.call_tool(tool_name, arguments)
 
     async def _handle_skill_trigger(self, message: Message) -> Message | None:
         skill_name = message.payload.get("skill_name")
@@ -715,7 +491,7 @@ class ConversationManager(AgentProcess):
 
         for section in skill.sections:
             content = results.get(section.name, f"⚠ {section.name}: no result")
-            await self._send_reply(channel_id, f"**{section.name}**\n\n{content}")
+            await self._formatter.send_reply(channel_id, f"**{section.name}**\n\n{content}")
 
     async def _execute_skill_sequential(
         self,
@@ -736,7 +512,7 @@ class ConversationManager(AgentProcess):
         if resp.content.strip() == "HEARTBEAT_OK":
             logger.info("[%s] Heartbeat: nothing actionable", self.name)
             return
-        await self._send_response_with_viewer(channel_id, resp.content)
+        await self._formatter.send_response(channel_id, resp.content)
 
     async def _handle_transport_callback(self, message: Message) -> Message | None:
         callback_data = message.payload.get("callback_data", "")
@@ -759,7 +535,7 @@ class ConversationManager(AgentProcess):
                     )
                 )
                 score = self._trust.get_score(tenant_id, category)
-                await self._send_reply(
+                await self._formatter.send_reply(
                     channel_id,
                     f"✅ Approved. ({category} trust: {score:.2f})",
                 )
@@ -781,7 +557,7 @@ class ConversationManager(AgentProcess):
                     )
                 )
                 score = self._trust.get_score(tenant_id, category)
-                await self._send_reply(
+                await self._formatter.send_reply(
                     channel_id,
                     f"❌ Rejected. ({category} trust: {score:.2f})",
                 )
@@ -798,12 +574,12 @@ class ConversationManager(AgentProcess):
         channel_id = payload.get("channel_id", "")
 
         if command == "help":
-            await self._send_reply(channel_id, self._build_help_response())
+            await self._formatter.send_reply(channel_id, build_help_response(self._ext_commands))
             return None
 
         if command == "status":
             status_text = await self._build_status_report(tenant_id)
-            await self._send_reply(channel_id, status_text)
+            await self._formatter.send_reply(channel_id, status_text)
             return None
 
         if command == "checkpoint":
@@ -821,12 +597,12 @@ class ConversationManager(AgentProcess):
                 args=args,
                 tenant_id=tenant_id,
                 channel_id=channel_id,
-                send_reply=self._send_reply,
+                send_reply=self._formatter.send_reply,
                 nexus_context=self._nexus_context,
             )
             return None
 
-        await self._send_reply(channel_id, f"Unknown command: /{command}")
+        await self._formatter.send_reply(channel_id, f"Unknown command: /{command}")
         return None
 
     async def _build_status_report(self, tenant_id: str) -> str:
@@ -869,7 +645,7 @@ class ConversationManager(AgentProcess):
     ) -> None:
         session = self._sessions.get(tenant_id)
         if not session:
-            await self._send_reply(channel_id, "No active session to checkpoint.")
+            await self._formatter.send_reply(channel_id, "No active session to checkpoint.")
             return
 
         checkpoint_label = label.strip() or f"checkpoint-{len(session.messages)}"
@@ -884,13 +660,13 @@ class ConversationManager(AgentProcess):
                     "value": json.dumps(session.to_dict()),
                 },
             )
-            await self._send_reply(
+            await self._formatter.send_reply(
                 channel_id,
                 f"✅ Checkpoint saved: `{checkpoint_label}`",
             )
         except Exception:
             logger.debug("[%s] Checkpoint save failed", self.name, exc_info=True)
-            await self._send_reply(channel_id, "Failed to save checkpoint.")
+            await self._formatter.send_reply(channel_id, "Failed to save checkpoint.")
         return
 
     async def _handle_rollback(
@@ -911,16 +687,16 @@ class ConversationManager(AgentProcess):
                 )
                 checkpoints = result.payload.get("configs", {}).get("checkpoints", {})
                 if not checkpoints:
-                    await self._send_reply(channel_id, "No checkpoints available.")
+                    await self._formatter.send_reply(channel_id, "No checkpoints available.")
                     return
                 names = "\n".join(f"  `{k}`" for k in checkpoints)
-                await self._send_reply(
+                await self._formatter.send_reply(
                     channel_id,
                     f"Available checkpoints:\n{names}\n\nUse: /rollback <name>",
                 )
             except Exception:
                 logger.debug("[%s] Checkpoint list failed", self.name, exc_info=True)
-                await self._send_reply(channel_id, "Failed to list checkpoints.")
+                await self._formatter.send_reply(channel_id, "Failed to list checkpoints.")
             return
 
         try:
@@ -935,20 +711,20 @@ class ConversationManager(AgentProcess):
             )
             value = result.payload.get("value")
             if not value:
-                await self._send_reply(channel_id, f"Checkpoint `{label}` not found.")
+                await self._formatter.send_reply(channel_id, f"Checkpoint `{label}` not found.")
                 return
 
             session_data = json.loads(value)
             restored = Session.from_dict(session_data)
             self._sessions[tenant_id] = restored
             await self._checkpoint_session(restored)
-            await self._send_reply(
+            await self._formatter.send_reply(
                 channel_id,
                 f"✅ Rolled back to: `{label}`",
             )
         except Exception:
             logger.debug("[%s] Rollback failed", self.name, exc_info=True)
-            await self._send_reply(channel_id, "Failed to rollback.")
+            await self._formatter.send_reply(channel_id, "Failed to rollback.")
         return
 
     async def _report_mcp_health(self) -> None:
@@ -993,51 +769,6 @@ class ConversationManager(AgentProcess):
             )
         except Exception:
             logger.debug("[%s] Failed to checkpoint session", self.name)
-
-    async def _send_reply(self, channel_id: str, text: str) -> None:
-        transport = self._resolve_transport(channel_id)
-        if transport and hasattr(transport, "send_text"):
-            try:
-                await transport.send_text(channel_id, text)
-            except Exception:
-                logger.debug("[%s] Failed to send reply via transport", self.name)
-
-    def _resolve_transport(self, channel_id: str) -> Any:
-        if hasattr(self, "_transports"):
-            for prefix, transport in self._transports.items():
-                if channel_id.startswith(prefix):
-                    return transport
-        return self._transport
-
-    async def _send_response_with_viewer(
-        self,
-        channel_id: str,
-        response_text: str,
-    ) -> None:
-        if (
-            len(response_text) > _LONG_RESPONSE_THRESHOLD
-            and self._content_store
-            and self._dashboard_config
-        ):
-            view_id = self._content_store.store(response_text)
-            if self._dashboard_config.base_url:
-                base = self._dashboard_config.base_url.rstrip("/")
-            else:
-                base = f"http://{self._dashboard_config.host}:{self._dashboard_config.port}"
-            view_url = f"{base}/view/{view_id}"
-            tldr = response_text[:300].rsplit(" ", 1)[0] + "..."
-            await self._send_reply(
-                channel_id,
-                f"{tldr}\n\nSee full details → {view_url}",
-            )
-        else:
-            await self._send_reply(channel_id, response_text)
-
-    async def _send_typing(self, channel_id: str) -> None:
-        transport = self._resolve_transport(channel_id)
-        if transport and hasattr(transport, "send_typing"):
-            with contextlib.suppress(Exception):
-                await transport.send_typing(channel_id)
 
     async def _process_media(self, payload: dict[str, Any], text: str) -> str:
         if not self._media_handler:

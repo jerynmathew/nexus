@@ -141,7 +141,10 @@ nexus/
 │       ├── utils.py             # Shared utilities (parse_key_value_params)
 │       │
 │       ├── agents/
-│       │   ├── conversation.py  # ConversationManager — routing, sessions, LLM, skill execution
+│       │   ├── conversation.py  # ConversationManager — thin orchestrator (routing, sessions, LLM)
+│       │   ├── tool_executor.py # ToolExecutor — tool-use loop + governance checks
+│       │   ├── response_formatter.py # ResponseFormatter — transport routing + content store viewer
+│       │   ├── help.py          # Help/capabilities text builders (pure functions)
 │       │   ├── memory.py        # MemoryAgent — SQLite, facts, preferences, ext_query/ext_execute
 │       │   ├── scheduler.py     # SchedulerAgent — cron tasks, triggers skills
 │       │   ├── intent.py        # IntentClassifier protocol + implementations
