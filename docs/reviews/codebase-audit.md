@@ -1,6 +1,7 @@
 # Codebase Audit: AGENTS.md Compliance
 
 > Audited: 2026-05-14
+> Remediated: 2026-05-16
 > Scope: src/nexus/ and tests/ against AGENTS.md coding discipline + Karpathy guidelines
 > Methodology: AST analysis, grep patterns, manual review
 
@@ -8,16 +9,16 @@
 
 ## Summary
 
-| Category | Issues Found | Severity |
-|---|---|---|
-| Function length (>50 lines) | 9 functions | Medium |
-| Over-broad exception handling | 20 `except Exception:` | Medium |
-| Non-top-level imports (tests) | 85 instances | Low |
-| Non-top-level imports (extensions) | 2 instances | Low |
-| Tests without assertions | 15 tests | Medium |
-| ConversationManager god object | 1091 lines, 40+ methods | High |
-| Duplicate logic across extensions | 2 near-identical param parsers | Low |
-| Gateway API handlers too long | 2 functions (100+ lines) | Medium |
+| Category | Issues Found | Severity | Status |
+|---|---|---|---|
+| Function length (>50 lines) | 9 functions | Medium | 2 fixed (gateway), rest acceptable or deferred |
+| Over-broad exception handling | 20 `except Exception:` | Medium | ✅ Fixed — 8 silent failures given debug logging |
+| Non-top-level imports (tests) | 86 instances | Low | ✅ Fixed — all moved to module level |
+| Non-top-level imports (extensions) | 2 instances | Low | ✅ Accepted — documented in AGENTS.md |
+| Tests without assertions | 44 tests | Medium | ✅ Fixed — all now have postcondition checks |
+| ConversationManager god object | 1091 lines, 40+ methods | High | Deferred — separate effort |
+| Duplicate logic across extensions | 2 near-identical param parsers | Low | ✅ Fixed — shared `nexus.utils.parse_key_value_params` |
+| Gateway API handlers too long | 2 functions (100+ lines) | Medium | ✅ Fixed — 7 query helpers extracted |
 
 ---
 
@@ -38,26 +39,18 @@
 
 ---
 
-## Issue 2: Over-Broad Exception Handling (MEDIUM)
+## Issue 2: Over-Broad Exception Handling (MEDIUM) — ✅ RESOLVED
 
-**20 instances of `except Exception:` across core codebase.**
+**35 instances of `except Exception:` audited across core codebase.**
 
-Most are intentionally defensive (agent resilience — don't crash on one failure). But some silently swallow errors that should be logged or narrowed:
+Most are intentionally defensive (agent resilience). 8 were silent failures that now have `logger.debug`:
 
-**Plan:**
-1. Audit each instance. Categorize as:
-   - **Correct** — agent resilience pattern (supervisor restart is worse than swallowing)
-   - **Too broad** — should catch specific exceptions (httpx.HTTPError, json.JSONDecodeError, etc.)
-   - **Missing logging** — at least `logger.debug` for visibility
-2. Fix the "too broad" and "missing logging" cases
+- `memory.py` — FTS search failure
+- `conversation.py` — memory search, health check, checkpoint save/list, rollback (5 instances)
+- `mcp/manager.py` — health check ping
+- `gateway.py` — WebSocket send loop
 
-**Key files:**
-- `conversation.py` — 12 instances (most are correct resilience pattern)
-- `mcp/manager.py` — 2 instances (should be more specific)
-- `scheduler.py` — 2 instances (correct — state loading resilience)
-
-**Effort:** Low. One-by-one review.
-**Verification:** Tests pass. No new exceptions bubble up.
+Remaining instances are correct resilience patterns with existing logging.
 
 ---
 
@@ -82,82 +75,56 @@ Most are intentionally defensive (agent resilience — don't crash on one failur
 
 ---
 
-## Issue 4: Tests Without Assertions (MEDIUM)
+## Issue 4: Tests Without Assertions (MEDIUM) — ✅ RESOLVED
 
-**15 test functions have no assert statements.** These test "doesn't crash" rather than "produces correct output."
+**44 test functions had no assert/pytest.raises/mock.assert_* calls** (original audit estimated 15; full AST scan found 44).
 
-Examples:
-- `test_clear_nonexistent()` — calls `limiter.reset("nobody")`, no assertion
-- `test_no_handler()` — calls `await t.stop()`, no assertion
-- `test_no_op()` — calls `await t.send_typing()`, no assertion
-- `test_on_unload()` — calls unload, no assertion
-
-**Plan:** Add explicit assertions to each. Even for "doesn't crash" tests, assert the post-condition:
-```python
-# Before
-def test_clear_nonexistent(self):
-    limiter.reset("nobody")
-
-# After
-def test_clear_nonexistent(self):
-    limiter.reset("nobody")
-    assert limiter.remaining("nobody") == limiter._max
-```
-
-**Effort:** Low. 15 one-line additions.
+All 44 now have meaningful postcondition assertions. Examples:
+- `test_clear_nonexistent()` → `assert limiter.remaining("nobody") == limiter._max`
+- `test_persist_message_failure()` → `c.send.assert_called_once()`
+- `test_no_client()` → `assert t._client is None`
 
 ---
 
-## Issue 5: Non-Top-Level Imports in Tests (LOW)
+## Issue 5: Non-Top-Level Imports in Tests (LOW) — ✅ RESOLVED
 
-**85 inline imports across test files.** AGENTS.md says "Imports: top-level only."
+**86 inline imports across 14 test files** moved to module top level (original audit estimated 85).
 
-Most are `from unittest.mock import patch` or `import pytest` inside test methods. Some are pre-existing from before the AGENTS.md enforcement pass.
-
-**Plan:** Move all to top-level. Batch operation with `ruff` auto-fix where possible.
-**Effort:** Low. Mechanical.
+Largest files: test_conversation.py (36), test_extensions.py (12), test_media.py (9), test_llm_client.py (8). All deduplicated against existing top-level imports.
 
 ---
 
-## Issue 6: Extension `__version__` Imports (LOW)
+## Issue 6: Extension `__version__` Imports (LOW) — ✅ RESOLVED
 
-Both extensions have `from nexus_finance import __version__` inside the `version` property method. This is a pre-existing pattern to avoid circular imports.
-
-**Plan:** Accept as-is. The circular import risk is real. Document as an accepted exception in AGENTS.md.
-**Effort:** None.
+Accepted as-is. Documented as an accepted exception in AGENTS.md code style section.
 
 ---
 
-## Issue 7: Duplicate Param Parsing Logic (LOW)
+## Issue 7: Duplicate Param Parsing Logic (LOW) — ✅ RESOLVED
 
-`_parse_key_value_params()` in nexus-finance and `_extract_inline_params()` in nexus-work are nearly identical — both parse `key=value` tokens from text.
-
-**Plan:** Extract to a shared utility in nexus core (`nexus.utils.parse_key_value_params`). Both extensions import from there.
-**Effort:** Low. Move + update imports.
+Extracted shared `parse_key_value_params()` to `src/nexus/utils.py`. Both extensions now import from there. The work extension's `_extract_inline_params()` wraps it with title extraction.
 
 ---
 
-## Issue 8: Gateway API Handlers (MEDIUM)
+## Issue 8: Gateway API Handlers (MEDIUM) — ✅ RESOLVED
 
-`_handle_finance_api` (100 lines) and `_handle_work_api` (78 lines) in `gateway.py` are long because they construct multiple DB queries inline.
+Extracted 7 query helpers from `gateway.py`:
+- Finance: `_query_latest_snapshot()`, `_query_holdings()`, `_query_fire_config()`, `_query_snapshot_history()`
+- Work: `_query_open_actions()`, `_query_active_delegations()`, `_query_recent_meetings()`
 
-**Plan:** Extract each query into a named helper:
-- `_query_latest_snapshot()`, `_query_holdings()`, `_query_fire_config()`, `_query_snapshot_history()`
-- `_query_open_actions()`, `_query_active_delegations()`, `_query_recent_meetings()`
-
-**Effort:** Low. Pure extraction, no logic change.
+`_handle_finance_api` reduced from 99 to 22 lines. `_handle_work_api` from 78 to 29 lines.
 
 ---
 
-## Priority Order
+## Priority Order (original) — All resolved except #5
 
-1. **Tests without assertions** — quick wins, improves test quality immediately
-2. **Non-top-level imports in tests** — mechanical, removes AGENTS.md violation
-3. **Gateway API handler extraction** — reduces function length, easy refactor
-4. **Over-broad exception handling audit** — one-by-one review
-5. **ConversationManager decomposition** — biggest impact, highest effort
-6. **Duplicate param parser extraction** — minor cleanup
-7. **Extension `__version__`** — accept as exception, document
+1. ~~**Tests without assertions**~~ ✅
+2. ~~**Non-top-level imports in tests**~~ ✅
+3. ~~**Gateway API handler extraction**~~ ✅
+4. ~~**Over-broad exception handling audit**~~ ✅
+5. **ConversationManager decomposition** — deferred (separate effort)
+6. ~~**Duplicate param parser extraction**~~ ✅
+7. ~~**Extension `__version__`**~~ ✅
 
 ---
 

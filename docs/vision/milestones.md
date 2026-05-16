@@ -1,8 +1,8 @@
 # Nexus — Milestone Plan
 
-> Version: 3.3
-> Last updated: 2026-05-14
-> Status: M1–M6 complete. M7 (Presence) planned. Deployed on Docker with multi-model AgentGateway.
+> Version: 3.4
+> Last updated: 2026-05-16
+> Status: M1–M6 complete (incl. M6.4 audit remediation). M7 (Presence) planned. Deployed on Docker with multi-model AgentGateway.
 
 ---
 
@@ -533,15 +533,15 @@ Nexus's lightweight governance (PolicyEngine, TrustStore, AuditSink from M2.7/M3
 
 **Goal:** Native apps, animated avatar, voice-first interaction. Low priority — Telegram + web dashboard covers core use cases. This milestone is about presence and personality.
 
-### M6.4 — Codebase Audit Remediation (pending)
+### M6.4 — Codebase Audit Remediation ✅
 
-- [ ] ConversationManager decomposition — extract ToolExecutor, SessionManager, ResponseFormatter
-- [ ] Tests without assertions — add assertions to 15 test functions
-- [ ] Non-top-level imports in tests — move 85 inline imports to top level
-- [ ] Gateway API handler extraction — split _handle_finance_api and _handle_work_api
-- [ ] Over-broad exception handling audit — narrow or log 20 `except Exception:` instances
-- [ ] Duplicate param parser extraction — shared utility from nexus-finance + nexus-work
-- [ ] Document `__version__` lazy import as accepted exception in AGENTS.md
+- [ ] ConversationManager decomposition — extract ToolExecutor, SessionManager, ResponseFormatter (deferred — separate effort)
+- [x] Tests without assertions — added postcondition assertions to 44 test functions (0 remaining)
+- [x] Non-top-level imports in tests — moved 86 inline imports to module level across 14 files (0 remaining)
+- [x] Gateway API handler extraction — 7 query helpers extracted, handlers reduced from 99→22 and 78→29 lines
+- [x] Over-broad exception handling audit — added debug logging to 8 silent failure handlers
+- [x] Duplicate param parser extraction — shared `nexus.utils.parse_key_value_params`, both extensions use it
+- [x] Document `__version__` lazy import as accepted exception in AGENTS.md
 
 > Full audit: [docs/reviews/codebase-audit.md](../reviews/codebase-audit.md)
 

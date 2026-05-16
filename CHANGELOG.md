@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- **M6.4 Codebase audit remediation**
+  - Added postcondition assertions to 44 test functions that previously only tested "doesn't crash"
+  - Moved 86 non-top-level imports to module level across 14 test files
+  - Extracted 7 DB query helpers from gateway API handlers (`_handle_finance_api` 99→22 lines, `_handle_work_api` 78→29 lines)
+  - Added `logger.debug` to 8 silent `except Exception:` handlers in conversation, memory, MCP, and gateway
+  - Extracted shared `parse_key_value_params()` to `src/nexus/utils.py` (was duplicated in nexus-finance and nexus-work)
+  - Documented extension `__version__` inline import as accepted exception in AGENTS.md
+
 ### Added
 - **Multi-provider AgentGateway (v1.1.0)**
   - Upgraded from v0.12.0 to v1.1.0 for `llm:` config format support
